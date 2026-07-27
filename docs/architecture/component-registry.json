@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-27",
+  "workTracking": {
+    "activeWorkUnit": "bootstrap-foundation",
+    "branch": "codex/bootstrap-structure",
+    "activeComponentIds": [
+      "gongpil.architecture",
+      "gongpil.code-map-tooling"
+    ],
+    "activeFeatureIds": [
+      "architecture.code-map.track",
+      "architecture.code-map.validate"
+    ],
+    "summary": "저장소 기초 구조와 상시 Code Map 추적 체계를 구축한다."
+  },
+  "components": [
+    {
+      "id": "gongpil.repository",
+      "name": "Gongpil Repository",
+      "path": ".",
+      "kind": "project",
+      "status": "CURRENT",
+      "responsibility": "공필 프로젝트의 최상위 경계와 공통 작업 규칙",
+      "owns": ["AGENTS.md", "README.md", "master-context"],
+      "dependsOn": [],
+      "usedBy": [],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["README.md", "GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md"]
+    },
+    {
+      "id": "gongpil.client",
+      "name": "Client",
+      "path": "client",
+      "kind": "process",
+      "status": "TARGET",
+      "responsibility": "Browser 실행 전 모드·경로·런타임·세션 기준 결정과 Core 수명 관리",
+      "owns": ["bootstrap-paths", "process-lifecycle", "desktop-window"],
+      "dependsOn": ["gongpil.core", "gongpil.packages"],
+      "usedBy": ["gongpil.installer", "gongpil.tests"],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["client/README.md", "docs/architecture/bootstrap-flow.md"]
+    },
+    {
+      "id": "gongpil.core",
+      "name": "Core",
+      "path": "core",
+      "kind": "process",
+      "status": "TARGET",
+      "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
+      "owns": ["project-state", "source-data", "revision", "permissions", "proposals"],
+      "dependsOn": ["gongpil.platform", "gongpil.packages"],
+      "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md"]
+    },
+    {
+      "id": "gongpil.browser",
+      "name": "Browser",
+      "path": "browser",
+      "kind": "ui",
+      "status": "TARGET",
+      "responsibility": "절대 저장 경로를 알지 않는 WebView와 브라우저 공통 사용자 인터페이스",
+      "owns": ["ui-state", "navigation", "panels", "approval-view"],
+      "dependsOn": ["gongpil.core", "gongpil.packages"],
+      "usedBy": ["gongpil.installer", "gongpil.tests"],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["browser/README.md", "docs/architecture/bootstrap-flow.md"]
+    },
+    {
+      "id": "gongpil.installer",
+      "name": "Installer",
+      "path": "installer",
+      "kind": "distribution",
+      "status": "TARGET",
+      "responsibility": "설치형·포터블 패키지, 제거 선택지와 배포 자원 관리",
+      "owns": ["installed-package", "portable-package", "uninstall-policy"],
+      "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.platform"],
+      "usedBy": ["gongpil.tests", "gongpil.distribution"],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["installer/README.md"]
+    },
+    {
+      "id": "gongpil.platform",
+      "name": "Platform",
+      "path": "platform",
+      "kind": "platform",
+      "status": "TARGET",
+      "responsibility": "실행 추적, 플러그인 격리와 업데이트 기반",
+      "owns": ["execution", "plugin-host", "plugin-runtime", "updater"],
+      "dependsOn": ["gongpil.packages"],
+      "usedBy": ["gongpil.core", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["platform/README.md"]
+    },
+    {
+      "id": "gongpil.packages",
+      "name": "Packages",
+      "path": "packages",
+      "kind": "library-group",
+      "status": "TARGET",
+      "responsibility": "프로세스 경계에서 공유하는 버전 있는 계약과 도메인 패키지",
+      "owns": ["contracts", "domain-packages", "plugin-sdk"],
+      "dependsOn": [],
+      "usedBy": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.platform", "gongpil.builtin-plugins", "gongpil.tests"],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["packages/README.md"]
+    },
+    {
+      "id": "gongpil.builtin-plugins",
+      "name": "Built-in Plugins",
+      "path": "builtin-plugins",
+      "kind": "plugin-group",
+      "status": "TARGET",
+      "responsibility": "일반 플러그인 규격으로 배포되는 기본 사용자 기능",
+      "owns": ["markdown-editor", "search", "map-viewer"],
+      "dependsOn": ["gongpil.core", "gongpil.platform", "gongpil.packages"],
+      "usedBy": ["gongpil.tests"],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["builtin-plugins/README.md"]
+    },
+    {
+      "id": "gongpil.architecture",
+      "name": "Architecture Documents",
+      "path": "docs/architecture",
+      "kind": "documentation",
+      "status": "CURRENT",
+      "responsibility": "현재 구조, 목표 경계, 기능 위치와 의존성 기록",
+      "owns": ["repository-layout", "bootstrap-flow", "code-map", "component-registry"],
+      "dependsOn": [],
+      "usedBy": ["gongpil.code-map-tooling"],
+      "publicInterfaces": [],
+      "tests": ["scripts/validate-code-map.ps1"],
+      "relatedDocs": ["docs/architecture/code-map.md"]
+    },
+    {
+      "id": "gongpil.code-map-tooling",
+      "name": "Code Map Tooling",
+      "path": "scripts",
+      "kind": "tooling",
+      "status": "CURRENT",
+      "responsibility": "Code Map 구조, 경로, 관계와 현재 작업 상태 검증",
+      "owns": ["code-map-validation"],
+      "dependsOn": ["gongpil.architecture"],
+      "usedBy": [],
+      "publicInterfaces": ["scripts/validate-code-map.ps1"],
+      "tests": ["scripts/validate-code-map.ps1"],
+      "relatedDocs": ["docs/architecture/code-map.md"]
+    },
+    {
+      "id": "gongpil.tests",
+      "name": "Cross-boundary Tests",
+      "path": "tests",
+      "kind": "test-group",
+      "status": "TARGET",
+      "responsibility": "통합, E2E, 마이그레이션과 장애 주입 검증",
+      "owns": ["integration-tests", "e2e-tests", "fixtures", "migration-tests"],
+      "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.installer", "gongpil.platform", "gongpil.packages", "gongpil.builtin-plugins"],
+      "usedBy": [],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["tests/README.md"]
+    },
+    {
+      "id": "gongpil.templates",
+      "name": "Templates",
+      "path": "templates",
+      "kind": "template-group",
+      "status": "TARGET",
+      "responsibility": "프로젝트·플러그인·ADR 생성 템플릿",
+      "owns": ["project-template", "plugin-template", "adr-template"],
+      "dependsOn": [],
+      "usedBy": [],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["templates/README.md"]
+    },
+    {
+      "id": "gongpil.distribution",
+      "name": "Distribution",
+      "path": "distribution",
+      "kind": "artifact-group",
+      "status": "TARGET",
+      "responsibility": "검증된 설치형·포터블·플러그인 패키지와 체크섬 산출 위치",
+      "owns": ["release-artifacts", "checksums"],
+      "dependsOn": ["gongpil.installer"],
+      "usedBy": [],
+      "publicInterfaces": [],
+      "tests": [],
+      "relatedDocs": ["distribution/README.md"]
+    }
+  ],
+  "features": [
+    {
+      "id": "architecture.code-map.track",
+      "name": "기능과 현재 작업 위치 추적",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.architecture",
+      "path": "docs/architecture/component-registry.json",
+      "entrypoints": ["workTracking", "components", "features"],
+      "tests": ["scripts/validate-code-map.ps1"]
+    },
+    {
+      "id": "architecture.code-map.validate",
+      "name": "Code Map 자동 검증",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.code-map-tooling",
+      "path": "scripts/validate-code-map.ps1",
+      "entrypoints": ["validate-code-map.ps1"],
+      "tests": ["scripts/validate-code-map.ps1"]
+    },
+    {
+      "id": "bootstrap.paths.resolve",
+      "name": "실행 기준 경로 결정",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.client",
+      "path": "client",
+      "entrypoints": [],
+      "tests": []
+    },
+    {
+      "id": "bootstrap.core.lifecycle",
+      "name": "Core 프로세스 수명 관리",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.client",
+      "path": "client",
+      "entrypoints": [],
+      "tests": []
+    },
+    {
+      "id": "project.document.revision",
+      "name": "문서 snapshot과 revision 관리",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.core",
+      "path": "core",
+      "entrypoints": [],
+      "tests": []
+    },
+    {
+      "id": "document.proposal.apply",
+      "name": "변경 제안 승인과 원자적 적용",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.core",
+      "path": "core",
+      "entrypoints": [],
+      "tests": []
+    },
+    {
+      "id": "ui.shell",
+      "name": "공통 Browser 작업 셸",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.browser",
+      "path": "browser",
+      "entrypoints": [],
+      "tests": []
+    },
+    {
+      "id": "plugin.runtime",
+      "name": "플러그인 격리 실행과 RPC",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.platform",
+      "path": "platform",
+      "entrypoints": [],
+      "tests": []
+    },
+    {
+      "id": "install.windows",
+      "name": "Windows 설치형 패키지",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.installer",
+      "path": "installer",
+      "entrypoints": [],
+      "tests": []
+    },
+    {
+      "id": "plugin.markdown-editor",
+      "name": "Markdown 편집 플러그인",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.builtin-plugins",
+      "path": "builtin-plugins",
+      "entrypoints": [],
+      "tests": []
+    }
+  ]
+}
