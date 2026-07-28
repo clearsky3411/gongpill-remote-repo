@@ -4,16 +4,24 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 실제 Client-Core 자식 프로세스와 loopback 부트스트랩 수직 슬라이스 완성
-- 최근 완료 작업 브랜치: `codex/client-core-loopback-bootstrap`
-- 구현 코드: `client/src/`, `core/src/`, `packages/contracts/bootstrap/`, `platform/network-runtime/src/`
+- 상태: `CURRENT` 실제 Browser 화면에서 프로젝트와 문서를 생성·편집·안전 저장하는 사용 가능 MVP 완성
+- 최근 완료 작업 브랜치: `codex/usable-project-document-mvp`
+- 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
 - 기계 판독 부트스트랩 계약: `packages/contracts/bootstrap/bootstrap-contracts.schema.json`
 - 기계 판독 네트워크 계약: `packages/contracts/network/network-contracts.schema.json`
 - 네트워크 사용 지도: `docs/architecture/network-map.md`
 
-첫 실행 확인:
+현재 개발 환경에서 실제 사용:
+
+```powershell
+npm start
+```
+
+화면에서 프로젝트 이름을 입력해 만든 뒤, 문서 경로(예: `draft/1장.md`)를 추가하고 편집하여 저장한다. 종료할 때는 화면 오른쪽 위의 `공필 종료`를 누른다. 현재 이 명령은 시스템에 설치된 Node를 사용하며, Node 없이 실행되는 포터블 ZIP과 Windows Installer는 다음 작업에서 만든다.
+
+개발 검증:
 
 ```powershell
 npm run demo:bootstrap
@@ -21,6 +29,7 @@ npm run demo:network
 npm run demo:network:loopback
 npm run test:bootstrap
 npm run test:network
+npm run test:mvp
 npm run validate:architecture
 ```
 
@@ -42,7 +51,7 @@ npm run validate:architecture
 - [ ] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
 - [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
 - [ ] 기존 폴더 연결, 프로젝트 ID, 잠금과 읽기 전용 모드
-- [ ] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
+- [x] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
 - [ ] 청크 파싱, 증분 색인, 검색과 컨텍스트 조립
 - [ ] 변경 제안, diff, 승인, 적용, 감사와 원복
 - [ ] 실행 Flow/Scope/Trace, 진행률, 취소와 오류 추적
@@ -56,7 +65,28 @@ npm run validate:architecture
 - [ ] Windows 설치·업데이트·롤백·삭제와 포터블 배포
 - [ ] 보안·성능·장애 복구·E2E 검증 후 `0.1.0` 출시
 
-### 현재 완료 보고: NetworkRuntime loopback 수직 슬라이스
+### 현재 완료 보고: 실제 프로젝트·문서 MVP
+
+- [x] `npm start` 한 번으로 Client가 Core를 시작하고 기본 Browser 화면을 연다
+- [x] 일회용 launch URL을 HttpOnly same-origin 쿠키 세션으로 교환한다
+- [x] 프로젝트 생성·목록·열기와 안정적인 project ID·manifest를 제공한다
+- [x] Markdown·text·JSON 문서 생성·목록·읽기·편집·저장을 제공한다
+- [x] 프로젝트 경로 탈출과 Windows 예약 이름을 차단한다
+- [x] SHA-256 revision과 expected revision으로 동시 저장 충돌을 차단한다
+- [x] 같은 볼륨 임시 파일·flush·rename으로 원자 저장한다
+- [x] 저장 전 revision별 history 사본을 남긴다
+- [x] Browser에는 endpoint·token·절대 데이터 경로를 공개하지 않는다
+- [x] 화면 종료 요청 뒤 Client와 Core가 잔류 프로세스 없이 끝난다
+- [x] 실제 Core API와 실제 Client 진입점을 사용하는 MVP 테스트 5개가 통과한다
+
+사용자가 직접 확인할 항목:
+
+- [ ] `npm start`로 공필 화면이 열리는지 확인
+- [ ] 프로젝트와 `draft/1장.md` 문서를 만들고 내용을 저장
+- [ ] 공필을 종료 후 다시 실행해 저장한 내용이 남아 있는지 확인
+- [ ] `npm run test:mvp`가 5개 테스트를 모두 통과하는지 확인
+
+### 완료 보고: NetworkRuntime loopback 수직 슬라이스
 
 - [x] 명령·결과·이벤트·상태·오류의 v1 JSON 계약 정의
 - [x] 네트워크 접속 교체, 송신, 구독, 취소와 상태 관측 facade
@@ -81,7 +111,7 @@ npm run validate:architecture
 - [ ] `npm run test:network`가 11개 테스트를 모두 통과하는지 확인
 - [ ] `npm run validate:architecture`가 네 가지 아키텍처 검증을 모두 통과하는지 확인
 
-### 현재 완료 보고: Client-Core loopback bootstrap 수직 슬라이스
+### 완료 보고: Client-Core loopback bootstrap 수직 슬라이스
 
 - [x] 설치형·포터블 app/data/version/session/runtime 경로 결정
 - [x] 지정된 `bundledRuntimePath`로 실제 Core 자식 프로세스 시작
@@ -148,21 +178,23 @@ npm run validate:architecture
 
 ### Phase 3. 프로젝트와 데이터 루트
 
-- [ ] `machine.json`과 `dataRoot` 선택·검증
-- [ ] 새 프로젝트 생성과 기존 폴더 연결
-- [ ] project manifest와 안정적인 project ID
+- [x] `machine.json`과 `dataRoot` 생성·검증
+- [x] 새 프로젝트 생성
+- [ ] 기존 폴더 연결
+- [x] project manifest와 안정적인 project ID
 - [ ] 읽기 전용 모드와 동시 실행 잠금
-- [ ] canonical path와 외부 루트 탈출 방지
+- [x] canonical path와 외부 루트 탈출 방지
 - [ ] 원본·파생 데이터·캐시·로그 분류
 - [ ] 기본 백업과 프로젝트 닫기 정리
 
 ### Phase 4. 문서 저장소와 revision
 
-- [ ] 안정적인 file ID와 rename/move 추적
-- [ ] snapshot read와 revision 반환
-- [ ] expected revision 기반 충돌 검사
-- [ ] 같은 볼륨 임시 파일을 이용한 원자 저장
-- [ ] 인코딩·줄바꿈 보존
+- [x] 논리 경로 기반 안정적인 file ID
+- [ ] rename/move 추적
+- [x] snapshot read와 revision 반환
+- [x] expected revision 기반 충돌 검사
+- [x] 같은 볼륨 임시 파일을 이용한 원자 저장
+- [x] UTF-8 인코딩과 줄바꿈 상태 판별
 - [ ] 생성·이름 변경·이동·삭제 proposal
 - [ ] 저장 실패와 crash 복구
 - [ ] 승인 없는 원본 쓰기 경로 차단

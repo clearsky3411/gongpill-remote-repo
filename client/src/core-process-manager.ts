@@ -42,12 +42,12 @@ export class GongpilManagedCoreProcess {
     }
 
     this.childProcess.kill("SIGTERM");
-    if (await this.WaitForExit(this.stopTimeoutMs)) {
+    if (await this.WaitForExitWithin(this.stopTimeoutMs)) {
       return;
     }
 
     this.childProcess.kill("SIGKILL");
-    if (!await this.WaitForExit(this.stopTimeoutMs)) {
+    if (!await this.WaitForExitWithin(this.stopTimeoutMs)) {
       throw new GongpilCoreProcessError(
         "CORE_STOP_FAILED",
         "Core 프로세스를 종료하지 못했습니다.",
@@ -78,7 +78,14 @@ export class GongpilManagedCoreProcess {
     };
   }
 
-  private WaitForExit(timeoutMs: number): Promise<boolean> {
+  public WaitForExit(): Promise<void> {
+    if (!this.IsRunning()) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => this.childProcess.once("exit", () => resolve()));
+  }
+
+  private WaitForExitWithin(timeoutMs: number): Promise<boolean> {
     if (!this.IsRunning()) {
       return Promise.resolve(true);
     }

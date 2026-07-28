@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `code-map-completed-main-validation-fix` |
+| 작업 단위 | `usable-project-document-mvp` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
-| 다음 권장 작업 | `bundled-runtime-packaging-slice` |
-| 브랜치 | `codex/code-map-completed-main-validation` |
-| 활성 컴포넌트 | `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `architecture.code-map.validate` |
-| 목적 | 완료 작업 기록의 feature 브랜치와 병합 후 `main`이 다른 정상 상태 허용 |
+| 브랜치 | `codex/usable-project-document-mvp` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.contracts`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `project.workspace.manage`, `project.document.revision`, `ui.shell`, `bootstrap.core.lifecycle`, `network.runtime.facade`, `network.transport.browser-same-origin` |
+| 완료 결과 | 실제 화면에서 프로젝트 생성과 문서 읽기·편집·revision 충돌 방지·원자 저장이 가능한 MVP 통합 검증 |
+| 다음 작업 | `bundled-runtime-portable` |
 
 ## 상태 라벨
 
@@ -78,9 +78,11 @@ flowchart TD
 | 실제 loopback 사용자 확인 CLI | Network Runtime | `platform/network-runtime/demo/loopback-network-runtime-demo.ts` | `CURRENT` |
 | Node TypeScript 실행 진입점 | Repository | `package.json` | `CURRENT` |
 | 네트워크 사용 위치 검증 | Code Map Tooling | `scripts/validate-network-map.ps1` | `CURRENT` |
-| 문서 snapshot과 revision | Core | `core/` | `TARGET` |
+| Browser same-origin transport | Network Runtime | `platform/network-runtime/browser/network-runtime.js` | `CURRENT` |
+| 프로젝트 생성·목록·열기 | Core | `core/src/project-store.ts` | `CURRENT` |
+| 문서 snapshot과 revision | Core | `core/src/document-store.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/` | `TARGET` |
-| 공통 작업 UI | Browser | `browser/` | `TARGET` |
+| 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/` | `TARGET` |
 | Markdown 편집기 | Built-in Plugins | `builtin-plugins/` | `TARGET` |
@@ -122,7 +124,7 @@ Feature
 
 로컬은 loopback TCP 위의 HTTP JSON과 SSE, 클라우드는 같은 계약의 HTTPS를 사용한다. 기능별 네트워크 사용 위치는 `network-map.md`와 registry의 `networkUsage`에서 확인한다.
 
-facade와 상태 집계, in-memory transport, 실제 loopback HTTP JSON host·consumer와 세션당 단일 SSE 재접속이 실행 가능하다. `npm run demo:network:loopback`으로 동적 포트, 송수신, 재접속과 후보 실패 롤백을 확인한다.
+facade와 상태 집계, in-memory transport, 실제 loopback HTTP JSON host·consumer, Browser same-origin transport와 세션당 단일 SSE 재접속이 실행 가능하다. `npm start`로 실제 사용자 화면을 열고 `npm run demo:network:loopback`으로 동적 포트, 송수신, 재접속과 후보 실패 롤백을 확인한다.
 
 ## 상시 갱신 순서
 

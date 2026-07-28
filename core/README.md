@@ -1,6 +1,6 @@
 # Core
 
-상태: `CURRENT` (부트스트랩 수직 슬라이스)
+상태: `CURRENT` (프로젝트·문서 저장 MVP)
 
 Core는 공필 데이터와 권한을 최종 집행하는 프로세스다.
 
@@ -26,6 +26,6 @@ Core는 공필 데이터와 권한을 최종 집행하는 프로세스다.
 
 ## 현재 구현
 
-`src/core-process.ts`는 stdin의 `ClientBootstrapConfig` 한 줄을 검증하고 필요한 session 디렉터리를 준비한다. 세션 토큰은 자식 프로세스 환경에서만 읽으며, 실제 loopback host를 시작한 뒤 stdout에 `CoreReadyInfo` JSON 한 줄만 기록한다. `system.health.read`와 `system.readiness.verify`가 현재 최소 명령이다.
+`src/core-process.ts`는 stdin의 `ClientBootstrapConfig` 한 줄을 검증하고 실제 loopback host를 시작한다. `src/project-store.ts`는 machine 정보, 프로젝트 manifest와 workspace를 관리하며, `src/document-store.ts`는 논리 경로 경계, snapshot, SHA-256 revision, 동시 충돌 검사, history와 원자 저장을 집행한다.
 
-프로젝트 문서·revision·권한·제안 저장 기능은 아직 목표 상태다.
+현재 명령은 health/readiness, Browser session, 프로젝트 목록·생성·열기, 문서 목록·읽기·생성·저장과 종료 요청이다. 읽기 전용 잠금, 기존 폴더 연결, rename/move/delete와 proposal 승인은 아직 목표 상태다.

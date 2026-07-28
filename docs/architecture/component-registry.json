@@ -2,20 +2,31 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "code-map-completed-main-validation-fix",
+    "activeWorkUnit": "usable-project-document-mvp",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "nextSuggestedWorkUnit": "bundled-runtime-packaging-slice",
-    "branch": "codex/code-map-completed-main-validation",
+    "branch": "codex/usable-project-document-mvp",
     "activeComponentIds": [
+      "gongpil.client",
+      "gongpil.core",
+      "gongpil.browser",
+      "gongpil.contracts",
+      "gongpil.network-runtime",
+      "gongpil.tests",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "architecture.code-map.validate"
+      "project.workspace.manage",
+      "project.document.revision",
+      "ui.shell",
+      "bootstrap.core.lifecycle",
+      "network.runtime.facade",
+      "network.transport.browser-same-origin"
     ],
-    "summary": "진행 중 작업의 브랜치 일치는 계속 강제하면서 완료 작업은 source 브랜치 이력을 유지한 채 병합 후 main에서도 검증되도록 수정했다."
+    "summary": "사용자가 실제 화면에서 프로젝트를 만들고 문서를 읽고 편집·안전 저장할 수 있는 Client-Core-Browser MVP를 구현하고 통합 검증했다.",
+    "nextRecommendedWorkUnit": "bundled-runtime-portable"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -48,11 +59,11 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "Browser 실행 전 모드·경로·런타임·세션 기준 결정과 Core 수명 관리",
-      "owns": ["bootstrap-paths", "process-lifecycle", "core-activation", "browser-session-summary", "desktop-window"],
+      "owns": ["bootstrap-paths", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch", "desktop-window"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": ["client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
+      "publicInterfaces": ["client/src/client-process.ts", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["client/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -62,11 +73,11 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "source-data", "revision", "permissions", "proposals"],
+      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "permissions", "proposals"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": ["core/src/core-process.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
+      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -74,13 +85,13 @@
       "name": "Browser",
       "path": "browser",
       "kind": "ui",
-      "status": "TARGET",
+      "status": "CURRENT",
       "responsibility": "절대 저장 경로를 알지 않는 WebView와 브라우저 공통 사용자 인터페이스",
-      "owns": ["ui-state", "navigation", "panels", "approval-view"],
+      "owns": ["ui-state", "project-navigation", "document-editor", "connection-status", "approval-view"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": [],
-      "tests": [],
+      "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/styles.css"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["browser/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -118,11 +129,11 @@
       "kind": "platform-runtime",
       "status": "CURRENT",
       "responsibility": "접속 교체, 명령 송신, 결과·이벤트 수신, 재연결과 네트워크 상태 관측의 유일한 소유점",
-      "owns": ["connection-profile", "runtime-facade", "network-status", "transport-adapter", "in-memory-transport", "loopback-http-host", "loopback-http-transport", "single-sse-stream", "reconnect-policy", "network-demo"],
+      "owns": ["connection-profile", "runtime-facade", "network-status", "transport-adapter", "in-memory-transport", "loopback-http-host", "loopback-http-transport", "browser-same-origin-transport", "single-sse-stream", "reconnect-policy", "network-demo"],
       "dependsOn": ["gongpil.contracts"],
       "usedBy": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.tests"],
-      "publicInterfaces": ["packages/contracts/network/network-contracts.schema.json", "platform/network-runtime/src/contracts.ts", "platform/network-runtime/src/network-runtime.ts"],
-      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1"],
+      "publicInterfaces": ["packages/contracts/network/network-contracts.schema.json", "platform/network-runtime/src/contracts.ts", "platform/network-runtime/src/network-runtime.ts", "platform/network-runtime/browser/network-runtime.js"],
+      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1"],
       "relatedDocs": ["platform/network-runtime/README.md", "docs/architecture/network-runtime.md", "docs/architecture/network-map.md"]
     },
     {
@@ -202,11 +213,11 @@
       "kind": "test-group",
       "status": "CURRENT",
       "responsibility": "통합, E2E, 마이그레이션과 장애 주입 검증",
-      "owns": ["bootstrap-integration-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
+      "owns": ["bootstrap-integration-tests", "project-document-mvp-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.installer", "gongpil.platform", "gongpil.network-runtime", "gongpil.packages", "gongpil.builtin-plugins"],
       "usedBy": [],
       "publicInterfaces": [],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["tests/README.md"]
     },
     {
@@ -275,8 +286,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.client",
       "path": "client/src/core-process-manager.ts",
-      "entrypoints": ["GongpilCoreProcessManager.StartCore", "GongpilManagedCoreProcess.Stop", "GongpilCoreProcessManager.GetRunningProcessIds", "core/src/core-process.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
+      "entrypoints": ["npm start", "client/src/client-process.ts", "GongpilCoreProcessManager.StartCore", "GongpilManagedCoreProcess.WaitForExit", "GongpilManagedCoreProcess.Stop", "GongpilCoreProcessManager.GetRunningProcessIds", "core/src/core-process.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["system.health.read"], "events": [] }
     },
     {
@@ -320,14 +331,24 @@
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
+      "id": "project.workspace.manage",
+      "name": "프로젝트 생성, 목록과 열기",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/project-store.ts",
+      "entrypoints": ["GongpilProjectStore.Initialize", "GongpilProjectStore.ListProjects", "GongpilProjectStore.CreateProject", "GongpilProjectStore.GetProject", "project.list", "project.create", "project.open"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["project.list", "project.create", "project.open"], "events": ["project.changed"] }
+    },
+    {
       "id": "project.document.revision",
       "name": "문서 snapshot과 revision 관리",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.core",
-      "path": "core",
-      "entrypoints": [],
-      "tests": [],
-      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["document.read", "document.save"], "events": ["document.changed"] }
+      "path": "core/src/document-store.ts",
+      "entrypoints": ["GongpilDocumentStore.ListDocuments", "GongpilDocumentStore.ReadDocument", "GongpilDocumentStore.CreateDocument", "GongpilDocumentStore.SaveDocument", "document.list", "document.read", "document.create", "document.save"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["document.list", "document.read", "document.create", "document.save"], "events": ["document.changed"] }
     },
     {
       "id": "document.proposal.apply",
@@ -342,12 +363,12 @@
     {
       "id": "ui.shell",
       "name": "공통 Browser 작업 셸",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.browser",
-      "path": "browser",
-      "entrypoints": [],
-      "tests": [],
-      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["session.read"], "events": ["network.status.changed"] }
+      "path": "browser/src/index.html",
+      "entrypoints": ["npm start", "browser/src/app.js", "browser/src/styles.css"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["project.list", "project.create", "project.open", "document.list", "document.read", "document.create", "document.save", "system.shutdown.request"], "events": ["project.changed", "document.changed", "network.status.changed"] }
     },
     {
       "id": "plugin.runtime",
@@ -420,6 +441,16 @@
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
+      "id": "network.transport.browser-same-origin",
+      "name": "Browser same-origin HTTP JSON·SSE transport",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.network-runtime",
+      "path": "platform/network-runtime/browser/network-runtime.js",
+      "entrypoints": ["GongpilBrowserNetworkRuntime.Send", "GongpilBrowserNetworkRuntime.Subscribe", "GongpilBrowserNetworkRuntime.SubscribeStatus", "GongpilBrowserNetworkRuntime.Disconnect"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["network.command.browser"], "events": ["network.event.browser"] }
+    },
+    {
       "id": "network.transport.in-memory",
       "name": "NetworkRuntime in-memory transport",
       "status": "CURRENT",
@@ -445,8 +476,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.repository",
       "path": "package.json",
-      "entrypoints": ["scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.validate:architecture"],
-      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts"],
+      "entrypoints": ["scripts.start", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:mvp", "scripts.validate:architecture"],
+      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

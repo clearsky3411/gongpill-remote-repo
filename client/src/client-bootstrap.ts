@@ -133,6 +133,29 @@ export class GongpilClientBootstrap {
     return this.activeCore?.process.GetProcessId();
   }
 
+  public CreateBrowserLaunchUrl(launchPath: string): string {
+    const activeCore = this.activeCore;
+    if (activeCore === undefined) {
+      throw new GongpilClientBootstrapError({
+        code: "CORE_START_FAILED",
+        userMessage: "활성 Core가 없습니다.",
+        retryable: true,
+      });
+    }
+    if (!/^\/launch\/[A-Za-z0-9_-]{20,128}$/.test(launchPath)) {
+      throw new GongpilClientBootstrapError({
+        code: "INVALID_BOOTSTRAP_CONFIG",
+        userMessage: "Browser 시작 경로가 올바르지 않습니다.",
+        retryable: false,
+      });
+    }
+    return new URL(launchPath, activeCore.readyInfo.networkProfile.origin).toString();
+  }
+
+  public async WaitForActiveCoreExit(): Promise<void> {
+    await this.activeCore?.process.WaitForExit();
+  }
+
   private CreateBrowserSession(
     config: GongpilClientBootstrapConfig,
     readyInfo: GongpilCoreReadyInfo,

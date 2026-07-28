@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>공필</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">LOCAL-FIRST WRITING WORKSPACE</p>
+        <h1>공필</h1>
+      </div>
+      <div class="header-actions">
+        <span id="networkStatus" class="status-pill" data-state="starting">시작 중</span>
+        <button id="shutdownButton" class="ghost-button" type="button">공필 종료</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel projects-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">PROJECTS</p>
+            <h2>프로젝트</h2>
+          </div>
+        </div>
+        <form id="projectForm" class="compact-form">
+          <label for="projectName">새 프로젝트 이름</label>
+          <div class="form-row">
+            <input id="projectName" name="projectName" maxlength="100" placeholder="예: 장편 소설" required>
+            <button type="submit">만들기</button>
+          </div>
+        </form>
+        <div id="projectList" class="item-list" aria-live="polite"></div>
+      </aside>
+
+      <aside class="panel documents-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">DOCUMENTS</p>
+            <h2 id="documentPanelTitle">문서</h2>
+          </div>
+        </div>
+        <form id="documentForm" class="compact-form" hidden>
+          <label for="documentPath">새 문서 경로</label>
+          <div class="form-row">
+            <input id="documentPath" name="documentPath" placeholder="notes/idea.md" required>
+            <button type="submit">추가</button>
+          </div>
+        </form>
+        <div id="documentList" class="item-list empty-state">프로젝트를 선택하세요.</div>
+      </aside>
+
+      <section class="panel editor-panel">
+        <div class="editor-toolbar">
+          <div>
+            <p id="editorProject" class="section-label">EDITOR</p>
+            <h2 id="editorTitle">문서를 선택하세요</h2>
+            <p id="editorMeta" class="editor-meta">저장할 문서를 선택하면 편집기가 열립니다.</p>
+          </div>
+          <button id="saveButton" type="button" disabled>변경 저장</button>
+        </div>
+        <textarea id="editor" spellcheck="true" disabled aria-label="문서 편집기"></textarea>
+        <div class="editor-footer">
+          <span id="saveStatus">대기 중</span>
+          <span id="characterCount">0자</span>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

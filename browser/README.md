@@ -1,6 +1,6 @@
 # Browser
 
-상태: `TARGET`
+상태: `CURRENT` (프로젝트·문서 작업 화면 MVP)
 
 Browser는 WebView와 개발용 웹 브라우저에서 사용하는 공통 사용자 인터페이스다.
 
@@ -23,3 +23,12 @@ Browser는 WebView와 개발용 웹 브라우저에서 사용하는 공통 사�
 - UI가 보관하는 상태는 표현 상태이며 사용자 정본이 아니다.
 - Core 버전과 업데이트 상태는 표시할 수 있지만 활성 버전을 직접 선택하지 않는다.
 - endpoint, token, NetworkConnectionProfile을 전달받거나 저장하지 않는다.
+
+## 현재 구현
+
+- `src/index.html`: 프로젝트, 문서, 편집기와 종료 화면 구조
+- `src/styles.css`: 데스크톱·좁은 화면 대응 레이아웃과 상태 표시
+- `src/app.js`: 프로젝트·문서 생성/열기, revision 저장, 변경 경고와 종료 흐름
+- `platform/network-runtime/browser/network-runtime.js`: same-origin HTTP JSON/SSE 전용 facade
+
+`npm start`로 실제 Core와 함께 기본 Browser에서 열린다. Browser 기능 코드는 파일 시스템과 endpoint를 직접 다루지 않는다.

@@ -1,11 +1,13 @@
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { once } from "node:events";
+import { readFile } from "node:fs/promises";
 import {
   createServer,
   type IncomingMessage,
   type Server,
   type ServerResponse,
 } from "node:http";
+import { extname, relative, resolve } from "node:path";
 
 import {
   GONGPIL_NETWORK_PROTOCOL_VERSION,
@@ -28,12 +30,28 @@ export type GongpilLoopbackCommandHandler = (
   context: GongpilLoopbackCommandContext,
 ) => GongpilNetworkPayload | Promise<GongpilNetworkPayload>;
 
+export class GongpilLoopbackCommandError extends Error {
+  public constructor(code: string, userMessage: string, retryable = false) {
+    super(userMessage);
+    this.name = "GongpilLoopbackCommandError";
+    this.code = code;
+    this.userMessage = userMessage;
+    this.retryable = retryable;
+  }
+
+  public readonly code: string;
+  public readonly userMessage: string;
+  public readonly retryable: boolean;
+}
+
 export interface GongpilLoopbackHttpHostOptions {
   profileId: string;
   sessionToken: string;
   coreVersion?: string;
   coreApiVersion?: string;
   ready?: boolean;
+  browserAssetsRoot?: string;
+  browserNetworkRuntimePath?: string;
 }
 
 export class GongpilLoopbackHttpHost {
@@ -47,6 +65,12 @@ export class GongpilLoopbackHttpHost {
     this.coreVersion = options.coreVersion ?? "0.1.0";
     this.coreApiVersion = options.coreApiVersion ?? "1.0.0";
     this.ready = options.ready ?? true;
+    this.browserAssetsRoot = options.browserAssetsRoot === undefined
+      ? undefined
+      : resolve(options.browserAssetsRoot);
+    this.browserNetworkRuntimePath = options.browserNetworkRuntimePath === undefined
+      ? undefined
+      : resolve(options.browserNetworkRuntimePath);
   }
 
   public async Start(): Promise<GongpilNetworkConnectionProfile> {
@@ -84,6 +108,7 @@ export class GongpilLoopbackHttpHost {
       controller.abort();
     }
     this.activeRequestControllers.clear();
+    this.browserLaunchTokens.clear();
 
     const server = this.server;
     this.server = undefined;
@@ -103,6 +128,19 @@ export class GongpilLoopbackHttpHost {
       throw new Error(`올바르지 않은 command 이름: ${commandName}`);
     }
     this.commandHandlers.set(commandName, handler);
+  }
+
+  public CreateBrowserLaunchPath(): string {
+    const launchToken = randomBytes(32).toString("base64url");
+    this.browserLaunchTokens.add(launchToken);
+    while (this.browserLaunchTokens.size > 16) {
+      const oldestToken = this.browserLaunchTokens.values().next().value;
+      if (oldestToken === undefined) {
+        break;
+      }
+      this.browserLaunchTokens.delete(oldestToken);
+    }
+    return `/launch/${launchToken}`;
   }
 
   public Publish(
@@ -168,6 +206,11 @@ export class GongpilLoopbackHttpHost {
     response: ServerResponse,
   ): Promise<void> {
     try {
+      const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
+      if (request.method === "GET" && this.TryHandleBrowserLaunch(requestUrl, response)) {
+        return;
+      }
+
       if (!this.IsAuthorized(request)) {
         this.WriteJson(response, 401, {
           error: {
@@ -179,7 +222,6 @@ export class GongpilLoopbackHttpHost {
         return;
       }
 
-      const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
       if (request.method === "GET" && requestUrl.pathname === "/api/v1/health/live") {
         this.WriteJson(response, 200, { status: "alive" });
         return;
@@ -212,6 +254,15 @@ export class GongpilLoopbackHttpHost {
       const cancelMatch = /^\/api\/v1\/requests\/([^/]+)\/cancel$/.exec(requestUrl.pathname);
       if (request.method === "POST" && cancelMatch !== null) {
         this.HandleCancel(decodeURIComponent(cancelMatch[1]), response);
+        return;
+      }
+
+      if (
+        request.method === "GET"
+        && this.browserAssetsRoot !== undefined
+        && !requestUrl.pathname.startsWith("/api/")
+      ) {
+        await this.ServeBrowserAsset(requestUrl.pathname, response);
         return;
       }
 
@@ -273,12 +324,19 @@ export class GongpilLoopbackHttpHost {
             requestId: commandRequest.requestId,
             state: "cancelled",
           }
-        : this.CreateFailedResult(
-            commandRequest.requestId,
-            "COMMAND_HANDLER_FAILED",
-            "명령 처리에 실패했습니다.",
-            false,
-          );
+        : error instanceof GongpilLoopbackCommandError
+          ? this.CreateFailedResult(
+              commandRequest.requestId,
+              error.code,
+              error.userMessage,
+              error.retryable,
+            )
+          : this.CreateFailedResult(
+              commandRequest.requestId,
+              "COMMAND_HANDLER_FAILED",
+              "명령 처리에 실패했습니다.",
+              false,
+            );
       this.WriteJson(response, 200, result);
     }
     finally {
@@ -373,7 +431,92 @@ export class GongpilLoopbackHttpHost {
   private IsAuthorized(request: IncomingMessage): boolean {
     const actual = Buffer.from(request.headers.authorization ?? "", "utf8");
     const expected = Buffer.from(`Bearer ${this.sessionToken}`, "utf8");
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
+    if (actual.length === expected.length && timingSafeEqual(actual, expected)) {
+      return true;
+    }
+
+    const expectedCookie = `gongpil_session=${encodeURIComponent(this.sessionToken)}`;
+    return (request.headers.cookie ?? "")
+      .split(";")
+      .some((cookie) => cookie.trim() === expectedCookie);
+  }
+
+  private async ServeBrowserAsset(pathname: string, response: ServerResponse): Promise<void> {
+    const assetsRoot = this.browserAssetsRoot;
+    if (assetsRoot === undefined) {
+      this.WriteJson(response, 404, { error: { code: "UI_NOT_AVAILABLE" } });
+      return;
+    }
+
+    const logicalPath = pathname === "/" ? "index.html" : decodeURIComponent(pathname.slice(1));
+    const assetPath = logicalPath === "network-runtime.js" && this.browserNetworkRuntimePath !== undefined
+      ? this.browserNetworkRuntimePath
+      : resolve(assetsRoot, logicalPath);
+    const relativePath = relative(assetsRoot, assetPath);
+    const isNetworkRuntime = assetPath === this.browserNetworkRuntimePath;
+    if (
+      !isNetworkRuntime
+      && (relativePath.startsWith("..") || relativePath.length === 0 && logicalPath !== "index.html")
+    ) {
+      this.WriteJson(response, 404, { error: { code: "UI_ASSET_NOT_FOUND" } });
+      return;
+    }
+
+    try {
+      const content = await readFile(assetPath);
+      response.writeHead(200, {
+        "Content-Type": this.GetAssetContentType(assetPath),
+        "Cache-Control": "no-store",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+        "Referrer-Policy": "no-referrer",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+      });
+      response.end(content);
+    }
+    catch {
+      this.WriteJson(response, 404, { error: { code: "UI_ASSET_NOT_FOUND" } });
+    }
+  }
+
+  private TryHandleBrowserLaunch(requestUrl: URL, response: ServerResponse): boolean {
+    const launchMatch = /^\/launch\/([A-Za-z0-9_-]{20,128})$/.exec(requestUrl.pathname);
+    if (launchMatch === null) {
+      return false;
+    }
+
+    const launchToken = launchMatch[1];
+    if (!this.browserLaunchTokens.delete(launchToken)) {
+      this.WriteJson(response, 401, {
+        error: {
+          code: "BROWSER_LAUNCH_EXPIRED",
+          userMessage: "Browser 시작 링크가 만료됐습니다.",
+          retryable: false,
+        },
+      });
+      return true;
+    }
+
+    response.writeHead(303, {
+      "Location": "/",
+      "Set-Cookie": `gongpil_session=${encodeURIComponent(this.sessionToken)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`,
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer",
+    });
+    response.end();
+    return true;
+  }
+
+  private GetAssetContentType(assetPath: string): string {
+    switch (extname(assetPath).toLowerCase()) {
+      case ".html": return "text/html; charset=utf-8";
+      case ".css": return "text/css; charset=utf-8";
+      case ".js": return "text/javascript; charset=utf-8";
+      case ".json": return "application/json; charset=utf-8";
+      case ".svg": return "image/svg+xml";
+      case ".png": return "image/png";
+      default: return "application/octet-stream";
+    }
   }
 
   private async ReadJsonBody(request: IncomingMessage): Promise<unknown> {
@@ -405,8 +548,11 @@ export class GongpilLoopbackHttpHost {
   private readonly sessionToken: string;
   private readonly coreVersion: string;
   private readonly coreApiVersion: string;
+  private readonly browserAssetsRoot: string | undefined;
+  private readonly browserNetworkRuntimePath: string | undefined;
   private readonly commandHandlers = new Map<string, GongpilLoopbackCommandHandler>();
   private readonly activeRequestControllers = new Map<string, AbortController>();
+  private readonly browserLaunchTokens = new Set<string>();
   private server: Server | undefined;
   private origin: string | undefined;
   private eventStreamResponse: ServerResponse | undefined;

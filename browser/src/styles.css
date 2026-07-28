@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light;
+  font-family: "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
+  background: #f3f0e9;
+  color: #25231f;
+  --ink: #25231f;
+  --muted: #716d63;
+  --line: #d8d1c3;
+  --paper: #fffdf8;
+  --accent: #a5472a;
+  --accent-dark: #71301d;
+  --green: #2f725b;
+  --shadow: 0 12px 40px rgba(55, 45, 30, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 1040px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(192, 155, 94, 0.12), transparent 34rem),
+    #f3f0e9;
+}
+
+button, input, textarea { font: inherit; }
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:hover:not(:disabled) { background: var(--accent-dark); }
+button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.app-header {
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-header h1, .panel h2 { margin: 0; }
+.app-header h1 { font-family: Georgia, "Noto Serif KR", serif; font-size: 2rem; }
+.eyebrow, .section-label { margin: 0 0 4px; color: var(--accent); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
+
+.status-pill {
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.82rem;
+}
+
+.status-pill[data-state="ready"] { border-color: #a6c7b9; color: var(--green); background: #edf7f2; }
+.status-pill[data-state="offline"], .status-pill[data-state="degraded"] { color: #9a3429; background: #fff0ec; }
+.ghost-button { color: var(--ink); background: transparent; border: 1px solid var(--line); }
+.ghost-button:hover:not(:disabled) { background: white; }
+
+.workspace {
+  display: grid;
+  grid-template-columns: 250px 290px minmax(500px, 1fr);
+  gap: 14px;
+  height: calc(100vh - 92px);
+  padding: 14px;
+}
+
+.panel {
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.88);
+  box-shadow: var(--shadow);
+}
+
+.projects-panel, .documents-panel { display: flex; flex-direction: column; }
+.panel-heading, .editor-toolbar { padding: 20px; border-bottom: 1px solid var(--line); }
+.compact-form { padding: 16px; border-bottom: 1px solid var(--line); }
+.compact-form label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+.form-row { display: flex; gap: 7px; }
+.form-row input { min-width: 0; flex: 1; }
+
+input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.65rem 0.7rem;
+  background: white;
+  color: var(--ink);
+}
+
+input:focus, textarea:focus { outline: 2px solid rgba(165, 71, 42, 0.2); border-color: var(--accent); }
+.item-list { overflow: auto; padding: 9px; }
+.item-button { width: 100%; margin-bottom: 5px; padding: 12px; text-align: left; color: var(--ink); background: transparent; border: 1px solid transparent; }
+.item-button:hover, .item-button.is-active { color: var(--accent-dark); background: #f7ede5; border-color: #e8c9b7; }
+.item-button strong, .item-button span { display: block; }
+.item-button span { margin-top: 4px; color: var(--muted); font-size: 0.72rem; font-weight: 400; }
+.empty-state { padding: 22px; color: var(--muted); line-height: 1.65; }
+
+.editor-panel { display: flex; flex-direction: column; }
+.editor-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.editor-meta { margin: 5px 0 0; color: var(--muted); font-size: 0.8rem; }
+#editor { flex: 1; width: 100%; resize: none; border: 0; padding: 28px 34px; background: var(--paper); color: var(--ink); font: 16px/1.75 "D2Coding", Consolas, monospace; }
+#editor:disabled { background: #f4f1ea; }
+.editor-footer { display: flex; justify-content: space-between; padding: 10px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.78rem; }
+
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  max-width: 420px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #28251f;
+  color: white;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.24);
+}
+
+@media (max-width: 1200px) {
+  .workspace { grid-template-columns: 220px 250px minmax(480px, 1fr); }
+}
