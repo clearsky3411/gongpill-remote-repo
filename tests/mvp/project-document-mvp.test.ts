@@ -192,6 +192,7 @@ test("실제 Core API와 일회용 Browser 쿠키 세션으로 프로젝트·문
     assert.equal(shellResponse.status, 200);
     assert.match(shellResponse.headers.get("content-security-policy") ?? "", /default-src 'self'/);
     assert.match(shellHtml, /<title>공필<\/title>/);
+    assert.match(shellHtml, /공동 집필/);
     assert.match(shellHtml, /href="\/favicon\.svg"/);
     assert.doesNotMatch(shellHtml, /127\.0\.0\.1|gongpil_session|token|dataRoot|appRoot/i);
     const faviconResponse = await fetch(`${origin}/favicon.svg`, { headers: { Cookie: cookieHeader } });

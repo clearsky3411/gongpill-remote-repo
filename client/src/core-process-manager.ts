@@ -13,6 +13,7 @@ export interface GongpilCoreProcessManagerOptions {
   coreEntryPath: string;
   startTimeoutMs?: number;
   stopTimeoutMs?: number;
+  coreEnvironment?: NodeJS.ProcessEnv;
 }
 
 export class GongpilCoreProcessError extends Error {
@@ -116,6 +117,7 @@ export class GongpilCoreProcessManager {
     this.coreEntryPath = options.coreEntryPath;
     this.startTimeoutMs = options.startTimeoutMs ?? 5_000;
     this.stopTimeoutMs = options.stopTimeoutMs ?? 2_000;
+    this.coreEnvironment = options.coreEnvironment ?? {};
   }
 
   public async StartCore(
@@ -136,6 +138,7 @@ export class GongpilCoreProcessManager {
         cwd: config.paths.appRoot,
         env: {
           ...process.env,
+          ...this.coreEnvironment,
           [LOOPBACK_SESSION_TOKEN_ENV]: sessionToken,
         },
         stdio: ["pipe", "pipe", "pipe"],
@@ -266,5 +269,6 @@ export class GongpilCoreProcessManager {
   private readonly coreEntryPath: string;
   private readonly startTimeoutMs: number;
   private readonly stopTimeoutMs: number;
+  private readonly coreEnvironment: NodeJS.ProcessEnv;
   private readonly processes = new Set<GongpilManagedCoreProcess>();
 }

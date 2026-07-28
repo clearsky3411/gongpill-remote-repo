@@ -2,29 +2,29 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "client-connector-settings",
+    "activeWorkUnit": "openai-chat-proposal",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "branch": "codex/client-connector-settings",
+    "branch": "codex/openai-chat-proposal",
     "activeComponentIds": [
       "gongpil.client",
-      "gongpil.installer",
-      "gongpil.distribution",
+      "gongpil.core",
+      "gongpil.browser",
+      "gongpil.network-runtime",
       "gongpil.tests",
       "gongpil.architecture",
-      "gongpil.code-map-tooling",
-      "gongpil.browser"
+      "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
       "client.connector.settings",
-      "install.windows",
-      "distribution.portable",
-      "bootstrap.paths.resolve",
-      "bootstrap.core.lifecycle",
-      "ui.shell"
+      "ai.openai.responses",
+      "chat.session.persist",
+      "document.proposal.apply",
+      "ui.ai-collaboration",
+      "release.validation"
     ],
-    "summary": "Windows 클라이언트(접속기)에서 설치형 dataRoot와 시작 옵션을 선택·검증·원자 저장하고 인스턴스를 시작하며, 포터블 고정 경로, 설정 바로가기, favicon과 사용자 지정 경로 Installer E2E를 검증했다.",
+    "summary": "외부 env 파일의 OpenAI API 키를 Browser에 노출하지 않고 Core와 NetworkRuntime 경계에서 사용하며, Responses API 스트리밍 채팅, 영속 대화, 전체 문서 생성·교체 제안과 revision 기반 승인·거절을 구현했다.",
     "nextRecommendedWorkUnit": "existing-folder-read-only-lock"
   },
   "networkTracking": {
@@ -72,11 +72,11 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "permissions", "proposals"],
+      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
+      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
       "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -90,7 +90,7 @@
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
       "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/styles.css", "browser/src/favicon.svg"],
-      "tests": ["tests/mvp/project-document-mvp.test.ts"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
       "relatedDocs": ["browser/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -128,11 +128,11 @@
       "kind": "platform-runtime",
       "status": "CURRENT",
       "responsibility": "접속 교체, 명령 송신, 결과·이벤트 수신, 재연결과 네트워크 상태 관측의 유일한 소유점",
-      "owns": ["connection-profile", "runtime-facade", "network-status", "transport-adapter", "in-memory-transport", "loopback-http-host", "loopback-http-transport", "browser-same-origin-transport", "single-sse-stream", "reconnect-policy", "network-demo"],
+      "owns": ["connection-profile", "runtime-facade", "network-status", "transport-adapter", "in-memory-transport", "loopback-http-host", "loopback-http-transport", "browser-same-origin-transport", "openai-responses-adapter", "single-sse-stream", "reconnect-policy", "network-demo"],
       "dependsOn": ["gongpil.contracts"],
       "usedBy": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.tests"],
-      "publicInterfaces": ["packages/contracts/network/network-contracts.schema.json", "platform/network-runtime/src/contracts.ts", "platform/network-runtime/src/network-runtime.ts", "platform/network-runtime/browser/network-runtime.js"],
-      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1"],
+      "publicInterfaces": ["packages/contracts/network/network-contracts.schema.json", "platform/network-runtime/src/contracts.ts", "platform/network-runtime/src/network-runtime.ts", "platform/network-runtime/src/external/openai-responses-adapter.ts", "platform/network-runtime/browser/network-runtime.js"],
+      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1"],
       "relatedDocs": ["platform/network-runtime/README.md", "docs/architecture/network-runtime.md", "docs/architecture/network-map.md"]
     },
     {
@@ -362,12 +362,42 @@
     {
       "id": "document.proposal.apply",
       "name": "변경 제안 승인과 원자적 적용",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.core",
-      "path": "core",
-      "entrypoints": [],
-      "tests": [],
+      "path": "core/src/core-process.ts",
+      "entrypoints": ["proposal.apply", "proposal.reject", "GongpilChatStore.ResolveProposal", "GongpilDocumentStore.CreateDocument", "GongpilDocumentStore.SaveDocument"],
+      "tests": ["tests/ai/openai-chat-proposal.test.ts"],
       "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["proposal.apply"], "events": ["proposal.applied"] }
+    },
+    {
+      "id": "ai.openai.responses",
+      "name": "OpenAI Responses API 외부 어댑터",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.network-runtime",
+      "path": "platform/network-runtime/src/external/openai-responses-adapter.ts",
+      "entrypoints": ["GongpilOpenAiResponsesAdapter.CreateResponse"],
+      "tests": ["tests/ai/openai-chat-proposal.test.ts"],
+      "networkUsage": { "kind": "external", "ownerComponentId": "gongpil.network-runtime", "commands": ["responses.create"], "events": ["response.output_text.delta"] }
+    },
+    {
+      "id": "chat.session.persist",
+      "name": "프로젝트 공동 집필 채팅과 제안 저장",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/chat-store.ts",
+      "entrypoints": ["GongpilChatStore.ReadSession", "GongpilChatStore.AppendMessage", "GongpilChatStore.CreateProposal", "chat.session.read", "chat.message.send"],
+      "tests": ["tests/ai/openai-chat-proposal.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.message.send"], "events": ["chat.message.delta", "chat.message.completed", "proposal.created"] }
+    },
+    {
+      "id": "ui.ai-collaboration",
+      "name": "인스턴스 공동 집필 채팅과 변경 승인 UI",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.browser",
+      "path": "browser/src/index.html",
+      "entrypoints": ["browser/src/app.js", "RenderChat", "ResolveProposal"],
+      "tests": ["tests/ai/openai-chat-proposal.test.ts", "tests/mvp/project-document-mvp.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.message.send", "proposal.apply", "proposal.reject"], "events": ["chat.message.delta", "chat.message.completed", "proposal.created", "proposal.applied", "proposal.rejected"] }
     },
     {
       "id": "ui.shell",
@@ -505,8 +535,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.repository",
       "path": "package.json",
-      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.build:installer", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:mvp", "scripts.test:portable", "scripts.test:installer", "scripts.validate:architecture", "scripts.validate:release"],
-      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts", "scripts/validate-release.ps1"],
+      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.build:installer", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:ai", "scripts.test:mvp", "scripts.test:portable", "scripts.test:installer", "scripts.validate:architecture", "scripts.validate:release"],
+      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts", "scripts/validate-release.ps1"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

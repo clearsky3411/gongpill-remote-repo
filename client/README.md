@@ -7,8 +7,8 @@ Client는 인스턴스(브라우저 작업 화면)가 열리기 전에 데이터
 ## 책임
 
 - 설치형과 포터블 실행 모드 판정
-- 첫 실행·설정 바로가기에서 데이터 폴더와 접속기 표시 옵션 제공
-- 설정 경로 검증과 원자 저장, 포터블 `GongpilData` 고정
+- 첫 실행·설정 바로가기에서 데이터 폴더, OpenAI 환경파일·모델과 접속기 표시 옵션 제공
+- 설치 폴더 옆 `GongpilConfig` 설정 검증·원자 저장과 기존 LOCALAPPDATA 설정 이전, 포터블 `GongpilData` 고정
 - 프로그램·데이터·활성 버전·세션 임시 루트 결정
 - 포함 런타임 위치 결정
 - Core 프로세스 시작, health check, 종료와 잔류 프로세스 검사
@@ -22,6 +22,7 @@ Client는 인스턴스(브라우저 작업 화면)가 열리기 전에 데이터
 - Client는 사용자 문서를 직접 해석하거나 수정하지 않는다.
 - 확정한 경로는 Core에만 전달한다.
 - Browser에는 절대 경로와 NetworkConnectionProfile 대신 논리적인 세션 상태만 제공한다.
+- API 키 값은 설정 JSON이나 Browser에 전달하지 않고 Core가 외부 환경파일에서 직접 읽게 한다.
 - Client 기능은 주소나 HTTP client를 직접 다루지 않고 NetworkRuntime을 사용한다.
 - 후보 접속이 ready가 아니면 기존 NetworkRuntime 연결을 유지한다.
 - 실행 중인 Core 파일을 덮어쓰지 않고 버전 폴더를 나란히 유지한다.

@@ -1,6 +1,6 @@
 # Core
 
-상태: `CURRENT` (프로젝트·문서 저장 MVP)
+상태: `CURRENT` (프로젝트·문서 저장 + AI 공동 집필 제안)
 
 Core는 공필 데이터와 권한을 최종 집행하는 프로세스다.
 
@@ -28,4 +28,6 @@ Core는 공필 데이터와 권한을 최종 집행하는 프로세스다.
 
 `src/core-process.ts`는 stdin의 `ClientBootstrapConfig` 한 줄을 검증하고 실제 loopback host를 시작한다. `src/project-store.ts`는 machine 정보, 프로젝트 manifest와 workspace를 관리하며, `src/document-store.ts`는 논리 경로 경계, snapshot, SHA-256 revision, 동시 충돌 검사, history와 원자 저장을 집행한다.
 
-현재 명령은 health/readiness, Browser session, 프로젝트 목록·생성·열기, 문서 목록·읽기·생성·저장과 종료 요청이다. 읽기 전용 잠금, 기존 폴더 연결, rename/move/delete와 proposal 승인은 아직 목표 상태다.
+`src/chat-store.ts`는 프로젝트별 채팅과 문서 제안을 `dataRoot/chats`에 원자 저장한다. `chat.message.send`는 선택 문서 저장본을 컨텍스트로 사용하고, `proposal.apply`만 expected revision 검사 뒤 `document-store`를 통해 원본을 변경한다. `proposal.reject`는 원문을 건드리지 않는다.
+
+현재 명령은 health/readiness, Browser session, 프로젝트·문서 CRUD, 채팅 읽기·전송, proposal 적용·거절과 종료 요청이다. 읽기 전용 잠금, 기존 폴더 연결, rename/move/delete, 부분 diff 승인과 원복은 후속 목표다.

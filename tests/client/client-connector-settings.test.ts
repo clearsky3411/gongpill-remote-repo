@@ -22,8 +22,9 @@ test("설치형 첫 실행은 기본 dataRoot와 접속기 표시 옵션을 준�
     };
     const loaded = await LoadClientSettings(context);
     assert.equal(loaded.isFirstRun, true);
-    assert.equal(loaded.settings.dataRoot, join(context.localAppData, "Gongpil"));
+    assert.equal(loaded.settings.dataRoot, join(testRoot, "program", "GongpilData"));
     assert.equal(loaded.settings.showConnectorOnStartup, true);
+    assert.equal(loaded.settings.openAiModel, "gpt-5.6-terra");
     assert.equal(loaded.settingsPath, join(context.settingsRoot, "client-settings.json"));
   }
   finally {
@@ -45,18 +46,25 @@ test("설치형 사용자 경로와 시작 옵션을 원자 저장하고 다시 
       schemaVersion: 1,
       dataRoot,
       showConnectorOnStartup: false,
+      openAiModel: "gpt-5.6-terra",
     });
     await SaveClientSettings(context, {
       schemaVersion: 1,
       dataRoot,
       showConnectorOnStartup: true,
+      openAiModel: "gpt-5.6-terra",
     });
     const loaded = await LoadClientSettings(context);
     assert.equal(loaded.isFirstRun, false);
     assert.equal(loaded.settings.dataRoot, dataRoot);
     assert.equal(loaded.settings.showConnectorOnStartup, true);
     assert.deepEqual(await readdir(context.settingsRoot), ["client-settings.json"]);
-    assert.deepEqual(JSON.parse(await readFile(loaded.settingsPath, "utf8")), loaded.settings);
+    assert.deepEqual(JSON.parse(await readFile(loaded.settingsPath, "utf8")), {
+      schemaVersion: 1,
+      dataRoot,
+      showConnectorOnStartup: true,
+      openAiModel: "gpt-5.6-terra",
+    });
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });
@@ -77,6 +85,7 @@ test("드라이브 루트와 프로그램 폴더 내부를 설치형 dataRoot로
         schemaVersion: 1,
         dataRoot: parse(testRoot).root,
         showConnectorOnStartup: true,
+        openAiModel: "gpt-5.6-terra",
       }),
       /드라이브 루트/,
     );
@@ -85,6 +94,7 @@ test("드라이브 루트와 프로그램 폴더 내부를 설치형 dataRoot로
         schemaVersion: 1,
         dataRoot: join(context.appRoot, "data"),
         showConnectorOnStartup: true,
+        openAiModel: "gpt-5.6-terra",
       }),
       /설치 폴더 내부/,
     );
@@ -105,6 +115,7 @@ test("포터블은 저장된 값과 무관하게 앱 옆 GongpilData로 고정�
       schemaVersion: 1,
       dataRoot: join(testRoot, "ignored"),
       showConnectorOnStartup: false,
+      openAiModel: "gpt-5.6-terra",
     });
     assert.equal(saved.dataRoot, join(context.appRoot, "GongpilData"));
     const loaded = await LoadClientSettings(context);
@@ -129,6 +140,36 @@ test("손상된 설정 파일은 조용히 덮어쓰지 않고 사용자 오류�
     await mkdir(context.settingsRoot, { recursive: true });
     await writeFile(settingsPath, "{not-json", { encoding: "utf8", flush: true });
     await assert.rejects(LoadClientSettings(context), /설정 파일이 손상/);
+  }
+  finally {
+    await rm(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("설치 패키지는 기존 LOCALAPPDATA 설정을 앱 기준 설정 폴더로 검증 후 이동한다", async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), "gongpil-client-settings-migrate-"));
+  try {
+    const context = {
+      mode: "installed" as const,
+      appRoot: join(testRoot, "program", "Gongpil"),
+      localAppData: join(testRoot, "local-app-data"),
+      migrateLegacySettings: true,
+    };
+    const legacyPath = join(context.localAppData, "Gongpil", "client-settings.json");
+    const dataRoot = join(testRoot, "selected-data");
+    await mkdir(join(context.localAppData, "Gongpil"), { recursive: true });
+    await writeFile(legacyPath, JSON.stringify({
+      schemaVersion: 1,
+      dataRoot,
+      showConnectorOnStartup: true,
+    }), "utf8");
+
+    const loaded = await LoadClientSettings(context);
+    assert.equal(loaded.isFirstRun, false);
+    assert.equal(loaded.settings.dataRoot, dataRoot);
+    assert.equal(loaded.settingsPath, join(testRoot, "program", "GongpilConfig", "client-settings.json"));
+    await assert.rejects(readFile(legacyPath), /ENOENT/);
+    assert.equal(JSON.parse(await readFile(loaded.settingsPath, "utf8")).openAiModel, "gpt-5.6-terra");
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });
@@ -168,6 +209,8 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
       action: "start",
       dataRoot,
       showConnectorOnStartup: true,
+      openAiEnvFile: "",
+      openAiModel: "gpt-5.6-terra",
     });
   }
   finally {

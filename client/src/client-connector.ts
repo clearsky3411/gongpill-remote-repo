@@ -37,6 +37,8 @@ export async function ShowClientConnector(
         action?: unknown;
         dataRoot?: unknown;
         showConnectorOnStartup?: unknown;
+        openAiEnvFile?: unknown;
+        openAiModel?: unknown;
       };
       if (output.action === "cancel") {
         return { action: "cancel", settings: input.settings };
@@ -45,6 +47,8 @@ export async function ShowClientConnector(
         output.action !== "start"
         || typeof output.dataRoot !== "string"
         || typeof output.showConnectorOnStartup !== "boolean"
+        || (output.openAiEnvFile !== undefined && typeof output.openAiEnvFile !== "string")
+        || typeof output.openAiModel !== "string"
       ) {
         throw new Error("클라이언트 접속기의 응답 형식이 올바르지 않습니다.");
       }
@@ -54,6 +58,8 @@ export async function ShowClientConnector(
           schemaVersion: 1,
           dataRoot: output.dataRoot,
           showConnectorOnStartup: output.showConnectorOnStartup,
+          openAiEnvFile: output.openAiEnvFile === "" ? undefined : output.openAiEnvFile,
+          openAiModel: output.openAiModel,
         },
       };
     }

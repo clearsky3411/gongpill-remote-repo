@@ -1,6 +1,6 @@
 # Network Runtime
 
-상태: `CURRENT` facade·상태 머신·in-memory transport·loopback HTTP/SSE 수직 슬라이스
+상태: `CURRENT` facade·loopback HTTP/SSE·OpenAI Responses 외부 어댑터
 
 `NetworkRuntime`은 공필에서 접속 교체, 명령 송신, 결과 수신, 이벤트 구독과 네트워크 상태 관측을 소유하는 유일한 컴포넌트다.
 
@@ -36,6 +36,8 @@ Named Pipe와 WebSocket은 v1 런타임에 포함하지 않는다. 기능 코드
 - 모든 네트워크 사용 기능은 Code Map의 `networkUsage`에 등록한다.
 
 기계 판독 계약은 `packages/contracts/network/network-contracts.schema.json`, 사용 위치 정본은 `docs/architecture/component-registry.json`에 있다.
+
+`src/external/openai-responses-adapter.ts`는 Core의 유일한 외부 AI 네트워크 경계다. OpenAI 공식 HTTPS 주소와 테스트용 loopback 주소만 허용하고, Responses API SSE를 text delta와 function proposal 호출로 정규화한다.
 
 ## 지금 확인하기
 
