@@ -15,14 +15,15 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
   const installRoot = join(testRoot, "installed", "Gongpil");
   const localAppData = join(testRoot, "local-app-data");
   const dataRoot = join(testRoot, "selected-data-root");
-  const settingsPath = join(localAppData, "Gongpil", "client-settings.json");
+  const legacySettingsPath = join(localAppData, "Gongpil", "client-settings.json");
+  const settingsPath = join(testRoot, "installed", "GongpilConfig", "client-settings.json");
   const environment = CreateIsolatedEnvironment(localAppData);
 
   try {
     Install(installRoot, join(testRoot, "install-1.log"), environment);
     await AssertInstalledLayout(installRoot);
     await mkdir(join(localAppData, "Gongpil"), { recursive: true });
-    await writeFile(settingsPath, JSON.stringify({
+    await writeFile(legacySettingsPath, JSON.stringify({
       schemaVersion: 1,
       dataRoot,
       showConnectorOnStartup: false,
@@ -48,6 +49,7 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
     }
 
     const machineBeforeUninstall = JSON.parse(await readFile(join(dataRoot, "machine.json"), "utf8"));
+    await assert.rejects(readFile(legacySettingsPath), /ENOENT/);
     Uninstall(installRoot, join(testRoot, "uninstall-1.log"), environment);
     await WaitForMissing(installRoot);
     assert.equal(JSON.parse(await readFile(join(dataRoot, "machine.json"), "utf8")).machineId, machineBeforeUninstall.machineId);
@@ -111,6 +113,7 @@ async function AssertInstalledLayout(installRoot: string): Promise<void> {
     access(join(installRoot, "client", "windows", "GongpilConnector.ps1")),
     access(join(installRoot, "Gongpil.vbs")),
     access(join(installRoot, "Gongpil.cmd")),
+    access(join(installRoot, "installed.marker")),
     access(join(installRoot, "unins000.exe")),
   ]);
   assert.match(await readFile(join(installRoot, "Gongpil.vbs"), "utf8"), /WScript\.Arguments/);

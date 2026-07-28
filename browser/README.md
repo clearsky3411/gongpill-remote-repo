@@ -1,6 +1,6 @@
 # Browser 인스턴스
 
-상태: `CURRENT` (프로젝트·문서 작업 화면 MVP)
+상태: `CURRENT` (프로젝트·문서 편집 + AI 공동 집필 화면)
 
 Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebView와 개발용 웹 브라우저에서 사용하는 공통 사용자 인터페이스다.
 
@@ -26,9 +26,9 @@ Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebV
 
 ## 현재 구현
 
-- `src/index.html`: 프로젝트, 문서, 편집기와 종료 화면 구조
-- `src/styles.css`: 데스크톱·좁은 화면 대응 레이아웃과 상태 표시
-- `src/app.js`: 프로젝트·문서 생성/열기, revision 저장, 변경 경고와 종료 흐름
+- `src/index.html`: 프로젝트, 문서, 편집기, 공동 집필 채팅과 종료 화면 구조
+- `src/styles.css`: 4열 작업 레이아웃, 채팅 메시지와 proposal 변경 전후 표시
+- `src/app.js`: 프로젝트·문서 CRUD, AI delta 표시, proposal 적용·거절과 revision 저장
 - `platform/network-runtime/browser/network-runtime.js`: same-origin HTTP JSON/SSE 전용 facade
 
 `npm start`로 클라이언트(접속기)를 거쳐 실제 Core와 함께 기본 브라우저에서 열린다. 인스턴스 기능 코드는 파일 시스템과 endpoint를 직접 다루지 않는다.

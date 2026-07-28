@@ -69,6 +69,24 @@
           <span id="characterCount">0자</span>
         </div>
       </section>
+
+      <aside class="panel chat-panel">
+        <div class="panel-heading chat-heading">
+          <div>
+            <p class="section-label">CO-WRITER</p>
+            <h2>공동 집필</h2>
+          </div>
+          <span id="aiStatus" class="ai-status">설정 확인 중</span>
+        </div>
+        <div id="chatMessages" class="chat-messages empty-state" aria-live="polite">
+          프로젝트를 선택하면 AI와 함께 작성할 수 있습니다.
+        </div>
+        <form id="chatForm" class="chat-form">
+          <label for="chatInput">요청</label>
+          <textarea id="chatInput" maxlength="20000" placeholder="예: 이 장면의 긴장감을 높이는 수정안을 만들어줘" disabled></textarea>
+          <button id="chatSendButton" type="submit" disabled>AI에게 보내기</button>
+        </form>
+      </aside>
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>

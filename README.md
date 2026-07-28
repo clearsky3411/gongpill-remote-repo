@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` Windows Installer·포터블 ZIP으로 배포 가능한 프로젝트·문서 MVP 완성
-- 최근 작업 브랜치: `codex/client-connector-settings`
+- 상태: `CURRENT` 프로젝트·문서 MVP + OpenAI 공동 집필 채팅·승인형 변경 제안
+- 최근 작업 브랜치: `codex/openai-chat-proposal`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
@@ -20,7 +20,9 @@
 npm start
 ```
 
-처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더와 다음 실행 시 접속기 표시 여부를 정한 뒤 `인스턴스 시작`을 누른다. 열린 인스턴스에서 프로젝트 이름을 입력해 만든 뒤, 문서 경로(예: `draft/1장.md`)를 추가하고 편집하여 저장한다. 종료할 때는 인스턴스 오른쪽 위의 `공필 종료`를 누른다. 이 개발 명령은 시스템 Node를 사용한다.
+처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더, OpenAI API 환경파일과 모델을 정한 뒤 `인스턴스 시작`을 누른다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다.
+
+API 키는 Git 저장소나 Browser에 넣지 않는다. 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일만 선택한다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. 기존 `%LOCALAPPDATA%\Gongpil\client-settings.json`은 설치 패키지 첫 실행에서 새 위치 저장 검증 후 이동한다.
 
 Node 설치 없이 포터블로 사용:
 
@@ -49,6 +51,7 @@ npm run demo:network
 npm run demo:network:loopback
 npm run test:bootstrap
 npm run test:client
+npm run test:ai
 npm run test:network
 npm run test:mvp
 npm run validate:architecture
@@ -73,6 +76,9 @@ npm run validate:release
 - [x] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
 - [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
 - [x] Windows 클라이언트(접속기)의 데이터 폴더·시작 옵션 관리
+- [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
+- [x] OpenAI Responses API 스트리밍 공동 집필 채팅
+- [x] 전체 문서 생성·교체 제안, 변경 전후 확인, 승인·거절과 revision 충돌 방지
 - [ ] 기존 폴더 연결, 프로젝트 ID, 잠금과 읽기 전용 모드
 - [x] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
 - [ ] 청크 파싱, 증분 색인, 검색과 컨텍스트 조립
@@ -116,6 +122,27 @@ npm run validate:release
 - [x] 접속기 표시 여부를 저장하고 언제든 `Gongpil 설정`으로 다시 연다
 - [x] 인스턴스 favicon을 제공해 `/favicon.svg` 요청이 200을 반환한다
 - [x] 설정·PowerShell 응답 테스트 6개와 사용자 지정 경로 Installer E2E가 통과한다
+
+### 현재 완료 보고: OpenAI 공동 집필 수직 슬라이스
+
+- [x] 접속기에서 별도 `.env.local`과 `gpt-5.6` 계열 모델을 선택한다
+- [x] API 키 값은 Client 설정·Browser HTML·명령 payload에 저장하거나 전달하지 않는다
+- [x] 외부 HTTPS 호출은 NetworkRuntime의 OpenAI Responses 어댑터만 소유한다
+- [x] 선택 프로젝트·문서 저장본을 컨텍스트로 사용한다
+- [x] 응답 delta를 기존 단일 SSE로 인스턴스에 표시한다
+- [x] 채팅 message와 변경 proposal을 `dataRoot/chats`에 원자 저장한다
+- [x] AI는 원문을 직접 수정하지 않고 `pending` 제안만 생성한다
+- [x] 사용자가 변경 전후를 확인하고 적용하거나 거절한다
+- [x] 적용 직전 expected revision을 검사하고 기존 문서 history를 남긴다
+- [x] mock OpenAI 서버를 사용하는 실제 Client-Core E2E가 통과한다
+
+사용자가 직접 확인할 항목:
+
+- [ ] OpenAI Platform API 프로젝트에 크레딧 또는 사용 한도를 설정한다
+- [ ] `Gongpil 설정`에서 `OPENAI_API_KEY`가 든 `.env.local`을 선택한다
+- [ ] 프로젝트와 문서를 선택하고 공동 집필 패널에서 수정안을 요청한다
+- [ ] 변경 전후를 펼쳐 본 뒤 `적용`하고 편집기 내용이 바뀌는지 확인한다
+- [ ] 제안을 하나 더 만들어 `거절`하고 원문이 유지되는지 확인한다
 
 클라이언트(접속기)를 사용자가 직접 확인할 항목:
 
@@ -258,13 +285,13 @@ npm run validate:release
 
 ### Phase 6. 변경 제안과 승인
 
-- [ ] proposal 저장소와 기준 revision
+- [x] 전체 문서 생성·교체 proposal 저장소와 기준 revision
 - [ ] 전체·범위·다중 파일 patch 검증
-- [ ] diff, 변경 이유, 근거와 영향 범위 표시
+- [x] 전체 문서 변경 전후와 변경 이유 표시
 - [ ] 승인 전 수정, 부분 승인, 거절과 보관
-- [ ] 적용 직전 revision 재검사
+- [x] 적용 직전 revision 재검사
 - [ ] 충돌 경고와 안전한 재기반
-- [ ] 적용 뒤 재읽기·색인 갱신·감사 기록
+- [x] 적용 뒤 재읽기·문서 변경 이벤트·history 기록
 - [ ] 원복 proposal 생성
 
 ### Phase 7. 실행 Flow, Scope와 Trace
@@ -320,9 +347,9 @@ npm run validate:release
 
 ### Phase 12. 채팅·페르소나·컨텍스트
 
-- [ ] chat·branch·turn의 안정적인 ID
-- [ ] 턴 단위 JSON 저장과 과거 branch 재개
-- [ ] streaming 중단·재시도·대체 응답 처리
+- [x] 프로젝트별 chat message와 proposal의 안정적인 ID
+- [x] 프로젝트별 JSON 저장과 재실행 후 대화 표시
+- [x] Responses API text delta 스트리밍
 - [ ] persona 버전과 작업 profile 전환
 - [ ] 검색 청크 선택과 자동 추가 구분
 - [ ] 토큰 예산, 중복 제거와 누락 경고
@@ -339,13 +366,13 @@ npm run validate:release
 
 ### Phase 14. Codex와 AI 통합
 
-- [ ] provider plugin 계약
+- [x] NetworkRuntime 소유 OpenAI Responses API 어댑터
 - [ ] 공필 전용 Codex 작업 경로
 - [ ] process-local `CODEX_HOME`과 환경 격리
 - [ ] 도구 권한과 사용자 승인
-- [ ] 조립한 컨텍스트 handoff
+- [x] 선택 프로젝트·문서 저장본 컨텍스트 handoff
 - [ ] 응답·실제 사용 출처·옵션 저장
-- [ ] AI 결과를 원본 쓰기가 아닌 proposal로 전달
+- [x] AI 결과를 원본 쓰기가 아닌 proposal로 전달
 - [ ] offline·network 상태 표시
 
 ### Phase 15. 개발자 도구
@@ -389,7 +416,7 @@ npm run validate:release
 - [ ] SQLite 사용 범위
 - [ ] Unicode 내부 좌표와 chunk ID 안정성 범위
 - [ ] 공식·제3자 플러그인 서명과 신뢰 수준
-- [ ] AI 비밀정보 저장 방식
+- [x] 외부 `.env.local` 경로만 Client 설정에 보관하고 키는 Core 메모리에서만 사용
 - [ ] 업데이트 서버·채널·자동 다운로드 정책
 - [ ] 대용량 binary 자산과 외부 파일 참조 정책
 - [ ] Git 통합을 사용자 기능의 기본값으로 둘지 여부

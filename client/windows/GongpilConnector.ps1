@@ -22,7 +22,7 @@ $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
 $form.MinimizeBox = $false
-$form.ClientSize = New-Object System.Drawing.Size(660, 430)
+$form.ClientSize = New-Object System.Drawing.Size(660, 590)
 $form.Font = New-Object System.Drawing.Font('Malgun Gothic', 9)
 
 $titleLabel = New-Object System.Windows.Forms.Label
@@ -78,16 +78,59 @@ $warningLabel.ForeColor = [System.Drawing.Color]::DarkGoldenrod
 $warningLabel.Location = New-Object System.Drawing.Point(27, 160)
 $form.Controls.Add($warningLabel)
 
+$apiLabel = New-Object System.Windows.Forms.Label
+$apiLabel.Text = 'OpenAI API 환경파일 (.env.local)'
+$apiLabel.AutoSize = $true
+$apiLabel.Location = New-Object System.Drawing.Point(27, 195)
+$form.Controls.Add($apiLabel)
+
+$apiTextBox = New-Object System.Windows.Forms.TextBox
+$apiTextBox.Text = if ($null -eq $inputModel.settings.PSObject.Properties['openAiEnvFile']) { '' } else { [string]$inputModel.settings.openAiEnvFile }
+$apiTextBox.Location = New-Object System.Drawing.Point(30, 218)
+$apiTextBox.Size = New-Object System.Drawing.Size(500, 27)
+$form.Controls.Add($apiTextBox)
+
+$apiBrowseButton = New-Object System.Windows.Forms.Button
+$apiBrowseButton.Text = '파일 선택...'
+$apiBrowseButton.Location = New-Object System.Drawing.Point(540, 216)
+$apiBrowseButton.Size = New-Object System.Drawing.Size(94, 31)
+$apiBrowseButton.Add_Click({
+    $dialog = New-Object System.Windows.Forms.OpenFileDialog
+    $dialog.Title = 'OPENAI_API_KEY가 저장된 환경파일을 선택하세요.'
+    $dialog.Filter = '환경파일 (.env.local)|.env.local|모든 파일 (*.*)|*.*'
+    $dialog.CheckFileExists = $true
+    if ($dialog.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
+        $apiTextBox.Text = $dialog.FileName
+    }
+    $dialog.Dispose()
+})
+$form.Controls.Add($apiBrowseButton)
+
+$modelLabel = New-Object System.Windows.Forms.Label
+$modelLabel.Text = 'AI 모델'
+$modelLabel.AutoSize = $true
+$modelLabel.Location = New-Object System.Drawing.Point(27, 260)
+$form.Controls.Add($modelLabel)
+
+$modelComboBox = New-Object System.Windows.Forms.ComboBox
+$modelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDown
+$modelComboBox.Items.AddRange(@('gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-5.6-luna'))
+$configuredModel = if ($null -eq $inputModel.settings.PSObject.Properties['openAiModel']) { '' } else { [string]$inputModel.settings.openAiModel }
+$modelComboBox.Text = if ([string]::IsNullOrWhiteSpace($configuredModel)) { 'gpt-5.6-terra' } else { $configuredModel }
+$modelComboBox.Location = New-Object System.Drawing.Point(30, 283)
+$modelComboBox.Size = New-Object System.Drawing.Size(260, 27)
+$form.Controls.Add($modelComboBox)
+
 $startupCheckBox = New-Object System.Windows.Forms.CheckBox
 $startupCheckBox.Text = '다음 실행에도 이 접속기 창을 먼저 표시'
 $startupCheckBox.Checked = [bool]$inputModel.settings.showConnectorOnStartup
 $startupCheckBox.AutoSize = $true
-$startupCheckBox.Location = New-Object System.Drawing.Point(30, 197)
+$startupCheckBox.Location = New-Object System.Drawing.Point(30, 327)
 $form.Controls.Add($startupCheckBox)
 
 $detailsGroup = New-Object System.Windows.Forms.GroupBox
 $detailsGroup.Text = '실행 정보'
-$detailsGroup.Location = New-Object System.Drawing.Point(30, 235)
+$detailsGroup.Location = New-Object System.Drawing.Point(30, 365)
 $detailsGroup.Size = New-Object System.Drawing.Size(604, 105)
 $form.Controls.Add($detailsGroup)
 
@@ -101,7 +144,7 @@ $detailsGroup.Controls.Add($detailsLabel)
 
 $openFolderButton = New-Object System.Windows.Forms.Button
 $openFolderButton.Text = '데이터 폴더 열기'
-$openFolderButton.Location = New-Object System.Drawing.Point(30, 370)
+$openFolderButton.Location = New-Object System.Drawing.Point(30, 530)
 $openFolderButton.Size = New-Object System.Drawing.Size(140, 36)
 $openFolderButton.Add_Click({
     try {
@@ -116,7 +159,7 @@ $form.Controls.Add($openFolderButton)
 
 $cancelButton = New-Object System.Windows.Forms.Button
 $cancelButton.Text = '취소'
-$cancelButton.Location = New-Object System.Drawing.Point(438, 370)
+$cancelButton.Location = New-Object System.Drawing.Point(438, 530)
 $cancelButton.Size = New-Object System.Drawing.Size(90, 36)
 $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.CancelButton = $cancelButton
@@ -124,7 +167,7 @@ $form.Controls.Add($cancelButton)
 
 $startButton = New-Object System.Windows.Forms.Button
 $startButton.Text = '인스턴스 시작'
-$startButton.Location = New-Object System.Drawing.Point(538, 370)
+$startButton.Location = New-Object System.Drawing.Point(538, 530)
 $startButton.Size = New-Object System.Drawing.Size(96, 36)
 $startButton.Add_Click({
     try {
@@ -149,6 +192,16 @@ $startButton.Add_Click({
         [System.IO.File]::WriteAllText($probePath, 'gongpil')
         Remove-Item -LiteralPath $probePath -Force
         $dataTextBox.Text = $fullPath
+        $apiPath = $apiTextBox.Text.Trim()
+        if (-not [string]::IsNullOrWhiteSpace($apiPath)) {
+            if (-not [System.IO.Path]::IsPathRooted($apiPath) -or -not [System.IO.File]::Exists($apiPath)) {
+                throw 'OpenAI API 환경파일을 찾을 수 없습니다.'
+            }
+            $apiTextBox.Text = [System.IO.Path]::GetFullPath($apiPath)
+        }
+        if ($modelComboBox.Text -notmatch '^gpt-[A-Za-z0-9._-]+$') {
+            throw 'OpenAI 모델 이름이 올바르지 않습니다.'
+        }
         $script:resultAction = 'start'
         $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
         $form.Close()
@@ -170,6 +223,8 @@ $outputModel = [ordered]@{
     action = $resultAction
     dataRoot = $dataTextBox.Text
     showConnectorOnStartup = $startupCheckBox.Checked
+    openAiEnvFile = $apiTextBox.Text
+    openAiModel = $modelComboBox.Text
 }
 $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($OutputPath, ($outputModel | ConvertTo-Json), $utf8WithoutBom)

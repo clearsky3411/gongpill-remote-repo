@@ -35,8 +35,11 @@
 | `bootstrap.core.lifecycle` | `command` | `system.health.read` | - |
 | `bootstrap.core.version-activation` | `command` | `system.readiness.verify` | - |
 | `project.document.revision` | `both` | `document.read`, `document.save` | `document.changed` |
+| `ai.openai.responses` | `external` | `responses.create` | `response.output_text.delta` |
+| `chat.session.persist` | `both` | `chat.session.read`, `chat.message.send` | `chat.message.delta`, `chat.message.completed`, `proposal.created` |
 | `document.proposal.apply` | `both` | `proposal.apply` | `proposal.applied` |
 | `ui.shell` | `both` | `session.read` | `network.status.changed` |
+| `ui.ai-collaboration` | `both` | `chat.session.read`, `chat.message.send`, `proposal.apply`, `proposal.reject` | `chat.message.delta`, `chat.message.completed`, `proposal.created`, `proposal.applied`, `proposal.rejected` |
 | `plugin.runtime` | `both` | `plugin.invoke` | `plugin.event` |
 | `plugin.markdown-editor` | `both` | `document.read`, `document.save` | `document.changed` |
 | `network.runtime.facade` | `both` | `network.command.dispatch` | `network.event.dispatch` |

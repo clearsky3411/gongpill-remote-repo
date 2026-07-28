@@ -8,6 +8,8 @@ export interface GongpilClientSettings {
   schemaVersion: 1;
   dataRoot: string;
   showConnectorOnStartup: boolean;
+  openAiEnvFile?: string;
+  openAiModel: string;
 }
 
 export interface GongpilClientSettingsContext {
@@ -15,6 +17,7 @@ export interface GongpilClientSettingsContext {
   appRoot: string;
   localAppData?: string;
   settingsRoot?: string;
+  migrateLegacySettings?: boolean;
 }
 
 export interface GongpilLoadedClientSettings {
@@ -38,6 +41,10 @@ export async function LoadClientSettings(
   }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      const migrated = await TryMigrateLegacySettings(context, settingsPath);
+      if (migrated !== undefined) {
+        return migrated;
+      }
       return { settings: defaultSettings, settingsPath, isFirstRun: true };
     }
     if (error instanceof SyntaxError) {
@@ -109,25 +116,20 @@ export function ResolveClientSettingsPath(context: GongpilClientSettingsContext)
   if (context.mode === "portable") {
     return WindowsPath.join(appRoot, "GongpilData", "client-settings.json");
   }
-  const localAppData = RequireWindowsAbsolutePath(
-    context.localAppData ?? process.env.LOCALAPPDATA ?? "",
-    "LOCALAPPDATA",
-  );
-  return WindowsPath.join(localAppData, "Gongpil", "client-settings.json");
+  return WindowsPath.join(WindowsPath.dirname(appRoot), "GongpilConfig", "client-settings.json");
 }
 
 function CreateDefaultClientSettings(context: GongpilClientSettingsContext): GongpilClientSettings {
   const appRoot = RequireWindowsAbsolutePath(context.appRoot, "appRoot");
   const dataRoot = context.mode === "portable"
     ? WindowsPath.join(appRoot, "GongpilData")
-    : WindowsPath.join(
-      RequireWindowsAbsolutePath(
-        context.localAppData ?? process.env.LOCALAPPDATA ?? "",
-        "LOCALAPPDATA",
-      ),
-      "Gongpil",
-    );
-  return { schemaVersion: 1, dataRoot, showConnectorOnStartup: true };
+    : WindowsPath.join(WindowsPath.dirname(appRoot), "GongpilData");
+  return {
+    schemaVersion: 1,
+    dataRoot,
+    showConnectorOnStartup: true,
+    openAiModel: "gpt-5.6-terra",
+  };
 }
 
 function NormalizeClientSettings(
@@ -149,7 +151,64 @@ function NormalizeClientSettings(
     schemaVersion: 1,
     dataRoot,
     showConnectorOnStartup: candidate.showConnectorOnStartup,
+    openAiEnvFile: NormalizeOptionalAbsolutePath(candidate.openAiEnvFile),
+    openAiModel: NormalizeOpenAiModel(candidate.openAiModel),
   };
+}
+
+async function TryMigrateLegacySettings(
+  context: GongpilClientSettingsContext,
+  settingsPath: string,
+): Promise<GongpilLoadedClientSettings | undefined> {
+  if (context.mode !== "installed" || context.migrateLegacySettings !== true) {
+    return undefined;
+  }
+  const localAppData = context.localAppData ?? process.env.LOCALAPPDATA;
+  if (localAppData === undefined) {
+    return undefined;
+  }
+  const legacyPath = WindowsPath.join(
+    RequireWindowsAbsolutePath(localAppData, "LOCALAPPDATA"),
+    "Gongpil",
+    "client-settings.json",
+  );
+  try {
+    const settings = NormalizeClientSettings(
+      JSON.parse(RemoveByteOrderMark(await readFile(legacyPath, "utf8"))),
+      context,
+    );
+    await SaveClientSettings(context, settings);
+    const verified = NormalizeClientSettings(
+      JSON.parse(RemoveByteOrderMark(await readFile(settingsPath, "utf8"))),
+      context,
+    );
+    await rm(legacyPath, { force: true });
+    return { settings: verified, settingsPath, isFirstRun: false };
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+function NormalizeOptionalAbsolutePath(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    throw new Error("OpenAI API 환경파일 경로가 올바르지 않습니다.");
+  }
+  return RequireWindowsAbsolutePath(value, "openAiEnvFile");
+}
+
+function NormalizeOpenAiModel(value: unknown): string {
+  const model = value === undefined ? "gpt-5.6-terra" : value;
+  if (typeof model !== "string" || !/^gpt-[A-Za-z0-9._-]+$/.test(model)) {
+    throw new Error("OpenAI 모델 이름이 올바르지 않습니다.");
+  }
+  return model;
 }
 
 function RequireSafeDataRoot(value: string, appRoot: string, allowInsideAppRoot = false): string {

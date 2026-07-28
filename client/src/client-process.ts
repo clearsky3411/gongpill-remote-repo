@@ -30,6 +30,7 @@ async function RunClientProcess(): Promise<void> {
     appRoot,
     localAppData: process.env.LOCALAPPDATA,
     settingsRoot: process.env.GONGPIL_CLIENT_SETTINGS_ROOT,
+    migrateLegacySettings: await FileExists(join(appRoot, "installed.marker")),
   };
   const loadedSettings = await LoadClientSettings(settingsContext);
   let settings: GongpilClientSettings = loadedSettings.settings;
@@ -82,6 +83,10 @@ async function RunClientProcess(): Promise<void> {
 
   const manager = new GongpilCoreProcessManager({
     coreEntryPath: join(appRoot, "core", "src", "core-process.ts"),
+    coreEnvironment: {
+      GONGPIL_OPENAI_ENV_FILE: settings.openAiEnvFile,
+      GONGPIL_OPENAI_MODEL: settings.openAiModel,
+    },
   });
   const bootstrap = new GongpilClientBootstrap(manager);
   let stopping = false;
@@ -133,6 +138,16 @@ async function ResolveMode(appRoot: string): Promise<"installed" | "portable"> {
   }
   catch {
     return "installed";
+  }
+}
+
+async function FileExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  }
+  catch {
+    return false;
   }
 }
 

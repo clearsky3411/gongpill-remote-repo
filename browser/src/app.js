@@ -7,6 +7,11 @@ const state = {
   documents: [],
   activeDocument: undefined,
   dirty: false,
+  chatMessages: [],
+  proposals: [],
+  chatConfigured: false,
+  chatSending: false,
+  streamingText: "",
 };
 
 const elements = {
@@ -26,6 +31,11 @@ const elements = {
   saveButton: document.querySelector("#saveButton"),
   saveStatus: document.querySelector("#saveStatus"),
   characterCount: document.querySelector("#characterCount"),
+  aiStatus: document.querySelector("#aiStatus"),
+  chatMessages: document.querySelector("#chatMessages"),
+  chatForm: document.querySelector("#chatForm"),
+  chatInput: document.querySelector("#chatInput"),
+  chatSendButton: document.querySelector("#chatSendButton"),
   toast: document.querySelector("#toast"),
 };
 
@@ -54,6 +64,59 @@ async function OpenProject(projectId) {
   RenderProjects();
   RenderDocuments();
   RenderEditor();
+  await LoadChatSession();
+}
+
+async function LoadChatSession() {
+  if (state.activeProject === undefined) {
+    state.chatMessages = [];
+    state.proposals = [];
+    state.chatConfigured = false;
+    RenderChat();
+    return;
+  }
+  const payload = RequirePayload(await runtime.Send("chat.session.read", {
+    projectId: state.activeProject.projectId,
+  }));
+  state.chatMessages = payload.session?.messages ?? [];
+  state.proposals = payload.session?.proposals ?? [];
+  state.chatConfigured = payload.configured === true;
+  state.streamingText = "";
+  RenderChat();
+}
+
+async function SendChatMessage() {
+  if (state.activeProject === undefined || state.chatSending) {
+    return;
+  }
+  const message = elements.chatInput.value.trim();
+  if (message.length === 0) {
+    return;
+  }
+  if (state.dirty) {
+    await SaveDocument();
+    if (state.dirty) {
+      throw new Error("문서를 저장한 뒤 AI 요청을 다시 보내세요.");
+    }
+  }
+  state.chatSending = true;
+  state.streamingText = "";
+  state.chatMessages.push({ role: "user", content: message, messageId: `pending-${Date.now()}` });
+  elements.chatInput.value = "";
+  RenderChat();
+  try {
+    RequirePayload(await runtime.Send("chat.message.send", {
+      projectId: state.activeProject.projectId,
+      message,
+      documentPath: state.activeDocument?.path,
+    }));
+    await LoadChatSession();
+  }
+  finally {
+    state.chatSending = false;
+    state.streamingText = "";
+    RenderChat();
+  }
 }
 
 async function OpenDocument(path) {
@@ -174,6 +237,104 @@ function RenderEditor() {
   elements.characterCount.textContent = `${elements.editor.value.length.toLocaleString("ko-KR")}자`;
 }
 
+function RenderChat() {
+  const hasProject = state.activeProject !== undefined;
+  elements.aiStatus.textContent = state.chatConfigured ? "API 준비됨" : "API 설정 필요";
+  elements.aiStatus.dataset.ready = String(state.chatConfigured);
+  elements.chatInput.disabled = !hasProject || !state.chatConfigured || state.chatSending;
+  elements.chatSendButton.disabled = elements.chatInput.disabled;
+  elements.chatSendButton.textContent = state.chatSending ? "작성 중…" : "AI에게 보내기";
+  elements.chatMessages.replaceChildren();
+  if (!hasProject) {
+    elements.chatMessages.className = "chat-messages empty-state";
+    elements.chatMessages.textContent = "프로젝트를 선택하면 AI와 함께 작성할 수 있습니다.";
+    return;
+  }
+  if (!state.chatConfigured) {
+    elements.chatMessages.className = "chat-messages empty-state";
+    elements.chatMessages.textContent = "공필 설정에서 OPENAI_API_KEY가 든 .env.local 파일을 선택하세요.";
+    return;
+  }
+  elements.chatMessages.className = "chat-messages";
+  for (const message of state.chatMessages) {
+    elements.chatMessages.append(CreateChatMessage(message.role, message.content));
+  }
+  if (state.streamingText.length > 0) {
+    elements.chatMessages.append(CreateChatMessage("assistant", state.streamingText));
+  }
+  for (const proposal of state.proposals) {
+    elements.chatMessages.append(CreateProposalCard(proposal));
+  }
+  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+}
+
+function CreateChatMessage(role, content) {
+  const article = document.createElement("article");
+  article.className = "chat-message";
+  article.dataset.role = role;
+  const label = document.createElement("span");
+  label.className = "chat-role";
+  label.textContent = role === "user" ? "나" : "공필 AI";
+  const text = document.createElement("span");
+  text.textContent = content;
+  article.append(label, text);
+  return article;
+}
+
+function CreateProposalCard(proposal) {
+  const article = document.createElement("article");
+  article.className = "proposal-card";
+  const title = document.createElement("h3");
+  title.textContent = proposal.action === "create" ? "새 문서 제안" : "문서 수정 제안";
+  const summary = document.createElement("p");
+  summary.textContent = `${proposal.path} · ${proposal.summary}`;
+  const details = document.createElement("details");
+  const detailsSummary = document.createElement("summary");
+  detailsSummary.textContent = "변경 전후 확인";
+  const before = document.createElement("pre");
+  before.className = "proposal-diff";
+  before.textContent = `변경 전\n${proposal.beforeContent || "(새 문서)"}`;
+  const after = document.createElement("pre");
+  after.className = "proposal-diff";
+  after.textContent = `변경 후\n${proposal.proposedContent}`;
+  details.append(detailsSummary, before, after);
+  article.append(title, summary, details);
+  if (proposal.status !== "pending") {
+    const status = document.createElement("p");
+    status.className = "proposal-status";
+    status.textContent = proposal.status === "applied" ? "적용됨" : "거절됨";
+    article.append(status);
+    return article;
+  }
+  const actions = document.createElement("div");
+  actions.className = "proposal-actions";
+  const applyButton = document.createElement("button");
+  applyButton.type = "button";
+  applyButton.textContent = "적용";
+  applyButton.addEventListener("click", () => void RunAction(() => ResolveProposal(proposal, "apply")));
+  const rejectButton = document.createElement("button");
+  rejectButton.type = "button";
+  rejectButton.className = "reject-button";
+  rejectButton.textContent = "거절";
+  rejectButton.addEventListener("click", () => void RunAction(() => ResolveProposal(proposal, "reject")));
+  actions.append(applyButton, rejectButton);
+  article.append(actions);
+  return article;
+}
+
+async function ResolveProposal(proposal, action) {
+  const payload = RequirePayload(await runtime.Send(`proposal.${action}`, {
+    projectId: state.activeProject.projectId,
+    proposalId: proposal.proposalId,
+  }));
+  await RefreshDocuments();
+  await LoadChatSession();
+  if (action === "apply" && payload.document !== undefined) {
+    await OpenDocument(payload.document.path);
+  }
+  ShowToast(action === "apply" ? "AI 변경안을 문서에 적용했습니다." : "AI 변경안을 거절했습니다.");
+}
+
 function ShowToast(message) {
   elements.toast.textContent = message;
   elements.toast.hidden = false;
@@ -234,6 +395,10 @@ elements.editor.addEventListener("input", () => {
 });
 
 elements.saveButton.addEventListener("click", () => void SaveDocument());
+elements.chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void RunAction(SendChatMessage);
+});
 elements.shutdownButton.addEventListener("click", () => {
   if (!confirm("공필 Core를 종료하시겠습니까?")) {
     return;
@@ -263,6 +428,14 @@ runtime.Subscribe((event) => {
   }
   if (event.eventName === "document.changed" && event.payload.projectId === state.activeProject?.projectId) {
     void RunAction(RefreshDocuments);
+  }
+  if (event.eventName === "chat.message.delta" && event.payload.projectId === state.activeProject?.projectId) {
+    state.streamingText += event.payload.delta ?? "";
+    RenderChat();
+  }
+  if (["chat.message.completed", "proposal.created", "proposal.applied", "proposal.rejected"].includes(event.eventName)
+    && event.payload.projectId === state.activeProject?.projectId) {
+    void RunAction(LoadChatSession);
   }
 });
 

@@ -17,14 +17,14 @@
 
 body {
   margin: 0;
-  min-width: 1040px;
+  min-width: 1030px;
   min-height: 100vh;
   background:
     radial-gradient(circle at top left, rgba(192, 155, 94, 0.12), transparent 34rem),
     #f3f0e9;
 }
 
-button, input, textarea { font: inherit; }
+button, input, textarea, select { font: inherit; }
 
 button {
   border: 0;
@@ -69,8 +69,8 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 
 .workspace {
   display: grid;
-  grid-template-columns: 250px 290px minmax(500px, 1fr);
-  gap: 14px;
+  grid-template-columns: 210px 240px minmax(380px, 1fr) minmax(320px, 0.72fr);
+  gap: 12px;
   height: calc(100vh - 92px);
   padding: 14px;
 }
@@ -115,6 +115,30 @@ input:focus, textarea:focus { outline: 2px solid rgba(165, 71, 42, 0.2); border-
 #editor:disabled { background: #f4f1ea; }
 .editor-footer { display: flex; justify-content: space-between; padding: 10px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.78rem; }
 
+.chat-panel { display: flex; flex-direction: column; }
+.chat-heading { display: flex; align-items: center; justify-content: space-between; }
+.ai-status { color: var(--muted); font-size: 0.75rem; }
+.ai-status[data-ready="true"] { color: var(--green); }
+.chat-messages { flex: 1; overflow: auto; padding: 14px; }
+.chat-message { margin: 0 0 10px; padding: 11px 13px; border-radius: 10px; white-space: pre-wrap; line-height: 1.55; font-size: 0.88rem; }
+.chat-message[data-role="user"] { margin-left: 28px; background: #f3e7dd; }
+.chat-message[data-role="assistant"] { margin-right: 28px; background: white; border: 1px solid var(--line); }
+.chat-role { display: block; margin-bottom: 5px; color: var(--muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; }
+.chat-form { padding: 13px; border-top: 1px solid var(--line); }
+.chat-form label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+.chat-form textarea { width: 100%; min-height: 82px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: white; }
+.chat-form button { width: 100%; margin-top: 8px; }
+.proposal-card { margin: 12px 0; padding: 12px; border: 1px solid #ddb99f; border-radius: 10px; background: #fff8f1; }
+.proposal-card h3 { margin: 0 0 5px; font-size: 0.92rem; }
+.proposal-card p { margin: 4px 0 8px; color: var(--muted); font-size: 0.78rem; }
+.proposal-card details { margin: 8px 0; }
+.proposal-card summary { cursor: pointer; color: var(--accent-dark); font-size: 0.78rem; font-weight: 700; }
+.proposal-diff { max-height: 220px; overflow: auto; padding: 9px; border-radius: 7px; background: #27241f; color: #f8f4ec; white-space: pre-wrap; font: 12px/1.5 Consolas, monospace; }
+.proposal-actions { display: flex; gap: 7px; }
+.proposal-actions button { flex: 1; }
+.proposal-actions .reject-button { color: var(--ink); background: transparent; border: 1px solid var(--line); }
+.proposal-status { color: var(--green); font-weight: 700; }
+
 .toast {
   position: fixed;
   right: 24px;
@@ -128,5 +152,5 @@ input:focus, textarea:focus { outline: 2px solid rgba(165, 71, 42, 0.2); border-
 }
 
 @media (max-width: 1200px) {
-  .workspace { grid-template-columns: 220px 250px minmax(480px, 1fr); }
+  .workspace { grid-template-columns: 180px 210px minmax(320px, 1fr) 280px; gap: 8px; padding: 8px; }
 }

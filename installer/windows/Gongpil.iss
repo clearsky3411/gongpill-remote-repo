@@ -39,6 +39,7 @@ Name: "desktopicon"; Description: "바탕 화면 바로가기 만들기"; GroupD
 
 [Files]
 Source: "{#AppSourceRoot}\*"; DestDir: "{app}"; Excludes: "portable.marker,GongpilData\*"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#AppSourceRoot}\portable.marker"; DestDir: "{app}"; DestName: "installed.marker"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Gongpil"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\Gongpil.vbs"""; WorkingDir: "{app}"
