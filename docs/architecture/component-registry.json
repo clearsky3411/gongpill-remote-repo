@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "openai-chat-proposal",
+    "activeWorkUnit": "codex-provider-usage-observability",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "branch": "codex/openai-chat-proposal",
+    "branch": "codex/codex-provider-usage-observability",
     "activeComponentIds": [
       "gongpil.client",
       "gongpil.core",
@@ -19,13 +19,15 @@
     "activeFeatureIds": [
       "client.connector.settings",
       "ai.openai.responses",
-      "chat.session.persist",
-      "document.proposal.apply",
+      "ai.provider.codex",
+      "ai.usage.observe",
+      "diagnostics.logs",
       "ui.ai-collaboration",
+      "ui.observability",
       "release.validation"
     ],
-    "summary": "외부 env 파일의 OpenAI API 키를 Browser에 노출하지 않고 Core와 NetworkRuntime 경계에서 사용하며, Responses API 스트리밍 채팅, 영속 대화, 전체 문서 생성·교체 제안과 revision 기반 승인·거절을 구현했다.",
-    "nextRecommendedWorkUnit": "existing-folder-read-only-lock"
+    "summary": "ChatGPT 구독으로 인증하는 격리된 Codex App Server 공급자를 기본 경로로 추가하고, OpenAI API를 선택형 과금 경로로 유지하며, 공급자 사용량·예상 비용·구조화 개발 로그를 인스턴스에서 확인한다.",
+    "nextRecommendedWorkUnit": "chunk-coordinate-index-search"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -72,11 +74,11 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals"],
+      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals", "ai-provider", "diagnostic-logs"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts"],
       "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -380,6 +382,36 @@
       "networkUsage": { "kind": "external", "ownerComponentId": "gongpil.network-runtime", "commands": ["responses.create"], "events": ["response.output_text.delta"] }
     },
     {
+      "id": "ai.provider.codex",
+      "name": "ChatGPT 구독 Codex App Server 공급자",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/codex-app-server-client.ts",
+      "entrypoints": ["GongpilCodexAppServerClient"],
+      "tests": ["tests/ai/codex-provider-usage.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["ai.provider.status", "ai.provider.login.start", "ai.usage.read"], "events": [] }
+    },
+    {
+      "id": "ai.usage.observe",
+      "name": "공급자별 토큰·구독 한도·API 예상 비용 관측",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/core-process.ts",
+      "entrypoints": ["ai.provider.status", "ai.usage.read"],
+      "tests": ["tests/ai/codex-provider-usage.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["ai.provider.status", "ai.usage.read"], "events": [] }
+    },
+    {
+      "id": "diagnostics.logs",
+      "name": "민감정보 제거 구조화 개발 로그",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/diagnostic-log-store.ts",
+      "entrypoints": ["diagnostics.logs.read", "GongpilDiagnosticLogStore.Append"],
+      "tests": ["tests/diagnostics/developer-log.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["diagnostics.logs.read"], "events": [] }
+    },
+    {
       "id": "chat.session.persist",
       "name": "프로젝트 공동 집필 채팅과 제안 저장",
       "status": "CURRENT",
@@ -398,6 +430,16 @@
       "entrypoints": ["browser/src/app.js", "RenderChat", "ResolveProposal"],
       "tests": ["tests/ai/openai-chat-proposal.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.message.send", "proposal.apply", "proposal.reject"], "events": ["chat.message.delta", "chat.message.completed", "proposal.created", "proposal.applied", "proposal.rejected"] }
+    },
+    {
+      "id": "ui.observability",
+      "name": "인스턴스 작업 정보·사용량·개발 로그 UI",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.browser",
+      "path": "browser/src/index.html",
+      "entrypoints": ["LoadProviderStatus", "ShowUsage", "ShowLogs"],
+      "tests": ["tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/mvp/project-document-mvp.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["ai.provider.status", "ai.usage.read", "diagnostics.logs.read"], "events": [] }
     },
     {
       "id": "ui.shell",

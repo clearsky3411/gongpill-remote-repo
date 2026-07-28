@@ -151,6 +151,38 @@ input:focus, textarea:focus { outline: 2px solid rgba(165, 71, 42, 0.2); border-
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.24);
 }
 
+.observability-dialog {
+  width: min(760px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 80px rgba(20, 16, 10, 0.3);
+}
+.observability-dialog::backdrop { background: rgba(24, 20, 15, 0.46); }
+.dialog-heading { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.dialog-heading h2 { margin: 0; }
+.dialog-content { max-height: calc(100vh - 150px); overflow: auto; padding: 22px 24px; }
+.dialog-notice { padding: 11px 13px; border-radius: 8px; background: #f7ede5; color: var(--accent-dark); font-size: 0.84rem; }
+.info-grid { display: grid; grid-template-columns: 140px 1fr; margin: 0 0 18px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.info-grid dt, .info-grid dd { margin: 0; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.info-grid dt { color: var(--muted); background: #f5f1e9; font-size: 0.78rem; font-weight: 700; }
+.info-grid dd { font-family: Consolas, monospace; font-size: 0.82rem; }
+.usage-section { margin-top: 22px; }
+.usage-section h3 { margin: 0 0 10px; }
+.cost-summary { padding: 11px 13px; border-left: 4px solid var(--accent); background: #fff8f1; font-weight: 700; }
+.dialog-content details { margin-top: 14px; }
+.dialog-content details pre { overflow: auto; padding: 12px; border-radius: 8px; background: #27241f; color: #f8f4ec; font: 12px/1.5 Consolas, monospace; }
+.log-list { display: grid; gap: 8px; }
+.log-entry { display: grid; gap: 5px; padding: 10px 12px; border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 8px; background: white; }
+.log-entry[data-level="warning"] { border-left-color: #b0801d; }
+.log-entry[data-level="error"] { border-left-color: #aa392d; }
+.log-entry strong { font-size: 0.76rem; }
+.log-entry span { font-size: 0.84rem; }
+.log-entry code { color: var(--muted); white-space: pre-wrap; }
+
 @media (max-width: 1200px) {
   .workspace { grid-template-columns: 180px 210px minmax(320px, 1fr) 280px; gap: 8px; padding: 8px; }
 }

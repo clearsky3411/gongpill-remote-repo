@@ -39,6 +39,7 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
     response.writeHead(200, {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache",
+      "x-request-id": "req-provider-test",
     });
     const frames = [
       { type: "response.created", response: { id: "resp-test" } },
@@ -56,6 +57,18 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
             content: "긴장감이 높아진 수정 본문",
             summary: "장면의 긴장감을 높였습니다.",
           }),
+        },
+      },
+      {
+        type: "response.completed",
+        response: {
+          id: "resp-test",
+          usage: {
+            input_tokens: 1000,
+            input_tokens_details: { cached_tokens: 200 },
+            output_tokens: 100,
+            output_tokens_details: { reasoning_tokens: 20 },
+          },
         },
       },
     ];
@@ -149,6 +162,16 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
     assert.equal(sessionResult.payload?.configured, true);
     assert.equal(sessionResult.payload?.session.messages.length, 2);
     assert.equal(sessionResult.payload?.session.proposals[0].status, "applied");
+    const usageResult = await runtime.Send("ai.usage.read", {});
+    assert.deepEqual(usageResult.payload?.latest, {
+      inputTokens: 1000,
+      cachedInputTokens: 200,
+      outputTokens: 100,
+      reasoningOutputTokens: 20,
+      estimatedCostUsd: 0.00355,
+      pricingLabel: "openai-standard-estimate",
+      pricingSource: "https://developers.openai.com/api/docs/models/compare",
+    });
   }
   finally {
     await bootstrap.Stop();

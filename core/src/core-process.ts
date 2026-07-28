@@ -30,9 +30,22 @@ import {
   GongpilProjectStoreError,
 } from "./project-store.ts";
 import { LoadOpenAiConfig } from "./openai-config.ts";
+import {
+  GongpilCodexAppServerClient,
+  GongpilCodexAppServerError,
+  type GongpilCodexUsage,
+} from "./codex-app-server-client.ts";
+import { GongpilDiagnosticLogStore } from "./diagnostic-log-store.ts";
 
 const LOOPBACK_SESSION_TOKEN_ENV = "GONGPIL_LOOPBACK_SESSION_TOKEN";
 const CORE_API_VERSION = "1.0.0";
+const OPENAI_PRICING_SOURCE = "https://developers.openai.com/api/docs/models/compare";
+
+interface GongpilObservedUsage extends GongpilCodexUsage {
+  estimatedCostUsd?: number;
+  pricingLabel: "chatgpt-subscription" | "openai-standard-estimate" | "pricing-unavailable";
+  pricingSource?: string;
+}
 
 async function RunCoreProcess(): Promise<void> {
   const config = await ReadBootstrapConfig();
@@ -43,7 +56,26 @@ async function RunCoreProcess(): Promise<void> {
   const chatStore = new GongpilChatStore(config.paths.dataRoot);
   const openAiConfig = await LoadOpenAiConfig();
   const openAiAdapter = new GongpilOpenAiResponsesAdapter();
+  const providerKind = ResolveProviderKind(openAiConfig !== undefined);
+  const diagnosticLogs = new GongpilDiagnosticLogStore(config.paths.dataRoot);
+  const codexExecutable = process.env.GONGPIL_CODEX_EXECUTABLE;
+  const codexClient = codexExecutable === undefined || codexExecutable.trim().length === 0
+    ? undefined
+    : new GongpilCodexAppServerClient({
+      executablePath: codexExecutable,
+      codexHome: join(config.paths.dataRoot, "integrations", "codex"),
+      workspaceRoot: join(config.paths.dataRoot, "integrations", "codex", "workspace"),
+      model: process.env.GONGPIL_CODEX_MODEL ?? "gpt-5.6-terra",
+    });
+  let latestUsage: GongpilObservedUsage | undefined;
   await projectStore.Initialize();
+  await diagnosticLogs.Append({
+    level: "info",
+    source: "core",
+    code: "CORE_STARTED",
+    message: "Core가 시작되었습니다.",
+    details: { provider: providerKind },
+  });
 
   const host = new GongpilLoopbackHttpHost({
     profileId: `core.${config.launchId}`,
@@ -71,6 +103,26 @@ async function RunCoreProcess(): Promise<void> {
   }));
   host.RegisterCommand("browser.session.create", () => ({
     launchPath: host.CreateBrowserLaunchPath(),
+  }));
+  host.RegisterCommand("ai.provider.status", async () => ({
+    status: await ReadProviderStatus(providerKind, codexClient, openAiConfig),
+  }));
+  host.RegisterCommand("ai.provider.login.start", async () => {
+    if (providerKind !== "codex" || codexClient === undefined) {
+      throw new GongpilLoopbackCommandError(
+        "CODEX_NOT_CONFIGURED",
+        "클라이언트 설정에서 Codex 실행 파일을 선택하세요.",
+      );
+    }
+    return await codexClient.StartLogin();
+  });
+  host.RegisterCommand("ai.usage.read", async () => ({
+    provider: providerKind,
+    latest: latestUsage,
+    status: await ReadProviderStatus(providerKind, codexClient, openAiConfig),
+  }));
+  host.RegisterCommand("diagnostics.logs.read", async (payload) => ({
+    entries: await diagnosticLogs.Read(OptionalNumber(payload, "limit") ?? 200),
   }));
   host.RegisterCommand("project.list", async () => ({
     projects: await projectStore.ListProjects(),
@@ -166,7 +218,13 @@ async function RunCoreProcess(): Promise<void> {
     try {
       const projectId = RequireString(payload, "projectId");
       await projectStore.GetProject(projectId);
-      return { session: await chatStore.ReadSession(projectId), configured: openAiConfig !== undefined };
+      const status = await ReadProviderStatus(providerKind, codexClient, openAiConfig);
+      return {
+        session: await chatStore.ReadSession(projectId),
+        configured: status.configured,
+        provider: status,
+        usage: latestUsage,
+      };
     }
     catch (error) {
       throw NormalizeDomainError(error);
@@ -174,7 +232,7 @@ async function RunCoreProcess(): Promise<void> {
   });
   host.RegisterCommand("chat.message.send", async (payload, context) => {
     try {
-      if (openAiConfig === undefined) {
+      if (providerKind === "openai-api" && openAiConfig === undefined) {
         throw new GongpilLoopbackCommandError(
           "AI_NOT_CONFIGURED",
           "클라이언트 설정에서 OpenAI API 환경파일을 선택하세요.",
@@ -191,17 +249,32 @@ async function RunCoreProcess(): Promise<void> {
         ? undefined
         : await documentStore.ReadDocument(projectId, documentPath);
       const userMessage = await chatStore.AppendMessage(projectId, "user", userText);
-      const response = await openAiAdapter.CreateResponse({
-        ...openAiConfig,
-        instructions: CreateWritingInstructions(),
-        input: CreateWritingInput(project.name, userText, document),
-        signal: context.signal,
-        onTextDelta: (delta) => host.Publish("chat.message.delta", {
-          projectId,
-          requestId: context.requestId,
-          delta,
-        }, context.requestId),
-      });
+      const startedAt = Date.now();
+      const response = providerKind === "codex"
+        ? await GenerateWithCodex(
+          codexClient,
+          CreateWritingInstructions(),
+          CreateWritingInput(project.name, userText, document),
+          context.signal,
+        )
+        : await openAiAdapter.CreateResponse({
+          ...openAiConfig!,
+          instructions: CreateWritingInstructions(),
+          input: CreateWritingInput(project.name, userText, document),
+          signal: context.signal,
+          onTextDelta: (delta) => host.Publish("chat.message.delta", {
+            projectId,
+            requestId: context.requestId,
+            delta,
+          }, context.requestId),
+        });
+      latestUsage = ObserveUsage(
+        providerKind,
+        providerKind === "codex"
+          ? process.env.GONGPIL_CODEX_MODEL ?? "gpt-5.6-terra"
+          : openAiConfig!.model,
+        response.usage,
+      );
       const proposal = await CreateProposalFromToolCall(
         chatStore,
         documentStore,
@@ -212,6 +285,31 @@ async function RunCoreProcess(): Promise<void> {
       const assistantText = response.text.trim()
         || (proposal === undefined ? "요청을 검토했지만 답변을 만들지 못했습니다." : proposal.summary);
       const assistantMessage = await chatStore.AppendMessage(projectId, "assistant", assistantText);
+      if (providerKind === "codex") {
+        host.Publish("chat.message.delta", {
+          projectId,
+          requestId: context.requestId,
+          delta: assistantText,
+        }, context.requestId);
+      }
+      await diagnosticLogs.Append({
+        level: "info",
+        source: providerKind === "codex" ? "codex" : "openai-api",
+        code: "AI_REQUEST_COMPLETED",
+        message: "AI 공동 집필 요청을 완료했습니다.",
+        requestId: context.requestId,
+        details: {
+          provider: providerKind,
+          model: providerKind === "codex"
+            ? process.env.GONGPIL_CODEX_MODEL ?? "gpt-5.6-terra"
+            : openAiConfig!.model,
+          durationMs: Date.now() - startedAt,
+          inputTokens: latestUsage?.inputTokens ?? 0,
+          cachedInputTokens: latestUsage?.cachedInputTokens ?? 0,
+          outputTokens: latestUsage?.outputTokens ?? 0,
+          reasoningOutputTokens: latestUsage?.reasoningOutputTokens ?? 0,
+        },
+      });
       if (proposal !== undefined) {
         host.Publish("proposal.created", { projectId, proposal }, context.requestId);
       }
@@ -223,6 +321,14 @@ async function RunCoreProcess(): Promise<void> {
       return { userMessage, message: assistantMessage, proposal };
     }
     catch (error) {
+      await diagnosticLogs.Append({
+        level: "error",
+        source: providerKind === "codex" ? "codex" : "openai-api",
+        code: ReadErrorCode(error),
+        message: error instanceof Error ? error.message : "AI 요청이 실패했습니다.",
+        requestId: context.requestId,
+        details: { provider: providerKind },
+      });
       throw NormalizeDomainError(error);
     }
   });
@@ -290,6 +396,10 @@ async function RunCoreProcess(): Promise<void> {
       "system.health.read",
       "system.readiness.verify",
       "browser.session.create",
+      "ai.provider.status",
+      "ai.provider.login.start",
+      "ai.usage.read",
+      "diagnostics.logs.read",
       "project.list",
       "project.create",
       "project.open",
@@ -306,7 +416,9 @@ async function RunCoreProcess(): Promise<void> {
   };
 
   await WriteReadyInfo(readyInfo);
-  InstallShutdownHandlers(host);
+  InstallShutdownHandlers(host, async () => {
+    await codexClient?.Stop();
+  });
 }
 
 async function ReadBootstrapConfig(): Promise<GongpilClientBootstrapConfig> {
@@ -369,6 +481,20 @@ function OptionalString(
   return value;
 }
 
+function OptionalNumber(
+  payload: Readonly<Record<string, unknown>>,
+  fieldName: string,
+): number | undefined {
+  const value = payload[fieldName];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new GongpilLoopbackCommandError("INVALID_COMMAND_PAYLOAD", `${fieldName} 값이 올바르지 않습니다.`);
+  }
+  return value;
+}
+
 function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
   if (error instanceof GongpilLoopbackCommandError) {
     return error;
@@ -385,6 +511,9 @@ function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
   if (error instanceof GongpilOpenAiResponsesError) {
     return new GongpilLoopbackCommandError(error.code, error.message, error.retryable);
   }
+  if (error instanceof GongpilCodexAppServerError) {
+    return new GongpilLoopbackCommandError(error.code, error.message);
+  }
   return new GongpilLoopbackCommandError(
     "CORE_OPERATION_FAILED",
     "Core가 요청을 처리하지 못했습니다.",
@@ -396,12 +525,117 @@ function CreateWritingInstructions(): string {
   return [
     "당신은 공필의 한국어 공동 집필 파트너다.",
     "사용자의 질문에는 자연스러운 한국어로 답한다.",
-    "문서를 실제로 추가하거나 고치라는 요청이면 propose_document 도구로 변경안을 만든다.",
+    "문서를 실제로 추가하거나 고치라는 요청이면 제공된 proposal 구조 또는 propose_document 도구로 변경안을 만든다.",
     "도구는 사용자 승인을 위한 제안일 뿐이며 적용됐다고 말하지 않는다.",
     "선택 문서를 고칠 때 action은 replace이고 path는 선택 문서 경로를 그대로 사용한다.",
     "새 문서를 만들 때 action은 create이고 지원 확장자 md, markdown, txt, json 중 하나를 사용한다.",
   ].join("\n");
 }
+
+function ResolveProviderKind(hasOpenAiConfig: boolean): "codex" | "openai-api" {
+  const configured = process.env.GONGPIL_AI_PROVIDER;
+  if (configured === "codex" || configured === "openai-api") {
+    return configured;
+  }
+  return hasOpenAiConfig ? "openai-api" : "codex";
+}
+
+async function ReadProviderStatus(
+  providerKind: "codex" | "openai-api",
+  codexClient: GongpilCodexAppServerClient | undefined,
+  openAiConfig: { model: string } | undefined,
+): Promise<Record<string, unknown>> {
+  if (providerKind === "openai-api") {
+    return {
+      provider: "openai-api",
+      configured: openAiConfig !== undefined,
+      model: openAiConfig?.model ?? process.env.GONGPIL_OPENAI_MODEL ?? "gpt-5.6-terra",
+      billing: "separate-api",
+      message: openAiConfig === undefined ? "OpenAI API 환경파일을 선택하세요." : undefined,
+    };
+  }
+  if (codexClient === undefined) {
+    return {
+      provider: "codex",
+      configured: false,
+      model: process.env.GONGPIL_CODEX_MODEL ?? "gpt-5.6-terra",
+      billing: "chatgpt-subscription",
+      message: "Codex 실행 파일을 찾지 못했습니다. 접속기 설정에서 선택하세요.",
+    };
+  }
+  return { ...(await codexClient.GetStatus()), billing: "chatgpt-subscription" };
+}
+
+async function GenerateWithCodex(
+  codexClient: GongpilCodexAppServerClient | undefined,
+  instructions: string,
+  input: string,
+  signal: AbortSignal,
+): Promise<{
+  text: string;
+  toolCalls: Array<{ name: string; arguments: string }>;
+  usage?: GongpilCodexUsage;
+}> {
+  if (codexClient === undefined) {
+    throw new GongpilLoopbackCommandError(
+      "CODEX_NOT_CONFIGURED",
+      "Codex 실행 파일을 찾지 못했습니다. 접속기 설정에서 선택하세요.",
+    );
+  }
+  const response = await codexClient.Generate({ instructions, input, signal });
+  return {
+    text: response.text,
+    usage: response.usage,
+    toolCalls: response.proposal === undefined
+      ? []
+      : [{ name: "propose_document", arguments: JSON.stringify(response.proposal) }],
+  };
+}
+
+function ReadErrorCode(error: unknown): string {
+  if (typeof error === "object" && error !== null && "code" in error && typeof error.code === "string") {
+    return error.code;
+  }
+  return "AI_REQUEST_FAILED";
+}
+
+function ObserveUsage(
+  providerKind: "codex" | "openai-api",
+  model: string,
+  usage: GongpilCodexUsage | undefined,
+): GongpilObservedUsage | undefined {
+  if (usage === undefined) {
+    return undefined;
+  }
+  if (providerKind === "codex") {
+    return { ...usage, pricingLabel: "chatgpt-subscription" };
+  }
+  const rates = OPENAI_STANDARD_RATES[model];
+  if (rates === undefined) {
+    return { ...usage, pricingLabel: "pricing-unavailable", pricingSource: OPENAI_PRICING_SOURCE };
+  }
+  const longContext = usage.inputTokens > 272_000;
+  const cachedTokens = Math.min(usage.cachedInputTokens, usage.inputTokens);
+  const uncachedTokens = usage.inputTokens - cachedTokens;
+  const inputMultiplier = longContext ? 2 : 1;
+  const outputMultiplier = longContext ? 1.5 : 1;
+  const estimatedCostUsd = (
+    ((uncachedTokens * rates.input) + (cachedTokens * rates.cached)) * inputMultiplier
+    + (usage.outputTokens * rates.output * outputMultiplier)
+  ) / 1_000_000;
+  return {
+    ...usage,
+    estimatedCostUsd: Number(estimatedCostUsd.toFixed(8)),
+    pricingLabel: "openai-standard-estimate",
+    pricingSource: OPENAI_PRICING_SOURCE,
+  };
+}
+
+const OPENAI_STANDARD_RATES: Record<string, { input: number; cached: number; output: number }> = {
+  "gpt-5.6-sol": { input: 5, cached: 0.5, output: 30 },
+  "gpt-5.6-terra": { input: 2.5, cached: 0.25, output: 15 },
+  "gpt-5.6-luna": { input: 1, cached: 0.1, output: 6 },
+};
 
 function CreateWritingInput(
   projectName: string,
@@ -491,7 +725,10 @@ function WriteReadyInfo(readyInfo: GongpilCoreReadyInfo): Promise<void> {
   });
 }
 
-function InstallShutdownHandlers(host: GongpilLoopbackHttpHost): void {
+function InstallShutdownHandlers(
+  host: GongpilLoopbackHttpHost,
+  cleanup?: () => Promise<void>,
+): void {
   let stopping = false;
   const parentProcessId = process.ppid;
   const stop = async (): Promise<void> => {
@@ -501,6 +738,7 @@ function InstallShutdownHandlers(host: GongpilLoopbackHttpHost): void {
     stopping = true;
     clearInterval(parentMonitor);
     try {
+      await cleanup?.();
       await host.Stop();
     }
     finally {

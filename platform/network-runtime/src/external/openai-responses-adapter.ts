@@ -6,8 +6,17 @@ export interface GongpilOpenAiToolCall {
 
 export interface GongpilOpenAiResponse {
   responseId?: string;
+  providerRequestId?: string;
   text: string;
   toolCalls: GongpilOpenAiToolCall[];
+  usage?: GongpilOpenAiUsage;
+}
+
+export interface GongpilOpenAiUsage {
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  reasoningOutputTokens: number;
 }
 
 export interface GongpilOpenAiResponsesRequest {
@@ -105,7 +114,11 @@ export class GongpilOpenAiResponsesAdapter {
       );
     }
 
-    return await ReadEventStream(response.body, request.onTextDelta);
+    const result = await ReadEventStream(response.body, request.onTextDelta);
+    return {
+      ...result,
+      providerRequestId: response.headers.get("x-request-id") ?? undefined,
+    };
   }
 }
 
@@ -133,6 +146,7 @@ async function ReadEventStream(
   let buffer = "";
   let text = "";
   let responseId: string | undefined;
+  let usage: GongpilOpenAiUsage | undefined;
 
   const handleFrame = (frame: string): void => {
     const data = frame.split(/\r?\n/)
@@ -167,6 +181,11 @@ async function ReadEventStream(
         });
       }
     }
+    if (event.type === "response.completed") {
+      const completedResponse = event.response as Record<string, unknown> | undefined;
+      responseId = typeof completedResponse?.id === "string" ? completedResponse.id : responseId;
+      usage = ParseUsage(completedResponse?.usage);
+    }
     if (event.type === "error") {
       const error = event.error as Record<string, unknown> | undefined;
       const code = typeof error?.code === "string"
@@ -199,7 +218,30 @@ async function ReadEventStream(
   if (buffer.trim().length > 0) {
     handleFrame(buffer);
   }
-  return { responseId, text, toolCalls };
+  return { responseId, text, toolCalls, usage };
+}
+
+function ParseUsage(value: unknown): GongpilOpenAiUsage | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+  const usage = value as Record<string, unknown>;
+  const inputDetails = typeof usage.input_tokens_details === "object" && usage.input_tokens_details !== null
+    ? usage.input_tokens_details as Record<string, unknown>
+    : undefined;
+  const outputDetails = typeof usage.output_tokens_details === "object" && usage.output_tokens_details !== null
+    ? usage.output_tokens_details as Record<string, unknown>
+    : undefined;
+  return {
+    inputTokens: ReadTokenCount(usage.input_tokens),
+    cachedInputTokens: ReadTokenCount(inputDetails?.cached_tokens),
+    outputTokens: ReadTokenCount(usage.output_tokens),
+    reasoningOutputTokens: ReadTokenCount(outputDetails?.reasoning_tokens),
+  };
+}
+
+function ReadTokenCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.trunc(value) : 0;
 }
 
 async function ReadApiError(response: Response): Promise<{ code?: string }> {

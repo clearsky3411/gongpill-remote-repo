@@ -24,6 +24,8 @@ test("설치형 첫 실행은 기본 dataRoot와 접속기 표시 옵션을 준�
     assert.equal(loaded.isFirstRun, true);
     assert.equal(loaded.settings.dataRoot, join(testRoot, "program", "GongpilData"));
     assert.equal(loaded.settings.showConnectorOnStartup, true);
+    assert.equal(loaded.settings.aiProvider, "codex");
+    assert.equal(loaded.settings.codexModel, "gpt-5.6-terra");
     assert.equal(loaded.settings.openAiModel, "gpt-5.6-terra");
     assert.equal(loaded.settingsPath, join(context.settingsRoot, "client-settings.json"));
   }
@@ -52,6 +54,8 @@ test("설치형 사용자 경로와 시작 옵션을 원자 저장하고 다시 
       schemaVersion: 1,
       dataRoot,
       showConnectorOnStartup: true,
+      aiProvider: "codex",
+      codexModel: "gpt-5.6-terra",
       openAiModel: "gpt-5.6-terra",
     });
     const loaded = await LoadClientSettings(context);
@@ -63,6 +67,8 @@ test("설치형 사용자 경로와 시작 옵션을 원자 저장하고 다시 
       schemaVersion: 1,
       dataRoot,
       showConnectorOnStartup: true,
+      aiProvider: "codex",
+      codexModel: "gpt-5.6-terra",
       openAiModel: "gpt-5.6-terra",
     });
   }
@@ -209,6 +215,9 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
       action: "start",
       dataRoot,
       showConnectorOnStartup: true,
+      aiProvider: "codex",
+      codexExecutable: "",
+      codexModel: "gpt-5.6-terra",
       openAiEnvFile: "",
       openAiModel: "gpt-5.6-terra",
     });

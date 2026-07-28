@@ -22,7 +22,7 @@ $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
 $form.MinimizeBox = $false
-$form.ClientSize = New-Object System.Drawing.Size(660, 590)
+$form.ClientSize = New-Object System.Drawing.Size(660, 770)
 $form.Font = New-Object System.Drawing.Font('Malgun Gothic', 9)
 
 $titleLabel = New-Object System.Windows.Forms.Label
@@ -78,21 +78,80 @@ $warningLabel.ForeColor = [System.Drawing.Color]::DarkGoldenrod
 $warningLabel.Location = New-Object System.Drawing.Point(27, 160)
 $form.Controls.Add($warningLabel)
 
+$providerLabel = New-Object System.Windows.Forms.Label
+$providerLabel.Text = 'AI 연결 방식'
+$providerLabel.AutoSize = $true
+$providerLabel.Location = New-Object System.Drawing.Point(27, 195)
+$form.Controls.Add($providerLabel)
+
+$providerComboBox = New-Object System.Windows.Forms.ComboBox
+$providerComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$null = $providerComboBox.Items.Add('Codex Pro (ChatGPT 로그인)')
+$null = $providerComboBox.Items.Add('OpenAI API (별도 과금)')
+$configuredProvider = if ($null -eq $inputModel.settings.PSObject.Properties['aiProvider']) { 'codex' } else { [string]$inputModel.settings.aiProvider }
+$providerComboBox.SelectedIndex = if ($configuredProvider -eq 'openai-api') { 1 } else { 0 }
+$providerComboBox.Location = New-Object System.Drawing.Point(30, 218)
+$providerComboBox.Size = New-Object System.Drawing.Size(300, 27)
+$form.Controls.Add($providerComboBox)
+
+$codexLabel = New-Object System.Windows.Forms.Label
+$codexLabel.Text = 'Codex 실행 파일 (비우면 자동 검색)'
+$codexLabel.AutoSize = $true
+$codexLabel.Location = New-Object System.Drawing.Point(27, 260)
+$form.Controls.Add($codexLabel)
+
+$codexTextBox = New-Object System.Windows.Forms.TextBox
+$codexTextBox.Text = if ($null -eq $inputModel.settings.PSObject.Properties['codexExecutable']) { '' } else { [string]$inputModel.settings.codexExecutable }
+$codexTextBox.Location = New-Object System.Drawing.Point(30, 283)
+$codexTextBox.Size = New-Object System.Drawing.Size(500, 27)
+$form.Controls.Add($codexTextBox)
+
+$codexBrowseButton = New-Object System.Windows.Forms.Button
+$codexBrowseButton.Text = '파일 선택...'
+$codexBrowseButton.Location = New-Object System.Drawing.Point(540, 281)
+$codexBrowseButton.Size = New-Object System.Drawing.Size(94, 31)
+$codexBrowseButton.Add_Click({
+    $dialog = New-Object System.Windows.Forms.OpenFileDialog
+    $dialog.Title = 'Codex 실행 파일을 선택하세요.'
+    $dialog.Filter = '실행 파일 (codex.exe)|codex.exe|모든 파일 (*.*)|*.*'
+    $dialog.CheckFileExists = $true
+    if ($dialog.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
+        $codexTextBox.Text = $dialog.FileName
+    }
+    $dialog.Dispose()
+})
+$form.Controls.Add($codexBrowseButton)
+
+$codexModelLabel = New-Object System.Windows.Forms.Label
+$codexModelLabel.Text = 'Codex 모델'
+$codexModelLabel.AutoSize = $true
+$codexModelLabel.Location = New-Object System.Drawing.Point(27, 325)
+$form.Controls.Add($codexModelLabel)
+
+$codexModelComboBox = New-Object System.Windows.Forms.ComboBox
+$codexModelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDown
+$codexModelComboBox.Items.AddRange(@('gpt-5.6-terra', 'gpt-5.6-sol'))
+$configuredCodexModel = if ($null -eq $inputModel.settings.PSObject.Properties['codexModel']) { '' } else { [string]$inputModel.settings.codexModel }
+$codexModelComboBox.Text = if ([string]::IsNullOrWhiteSpace($configuredCodexModel)) { 'gpt-5.6-terra' } else { $configuredCodexModel }
+$codexModelComboBox.Location = New-Object System.Drawing.Point(30, 348)
+$codexModelComboBox.Size = New-Object System.Drawing.Size(260, 27)
+$form.Controls.Add($codexModelComboBox)
+
 $apiLabel = New-Object System.Windows.Forms.Label
-$apiLabel.Text = 'OpenAI API 환경파일 (.env.local)'
+$apiLabel.Text = 'OpenAI API 환경파일 (.env.local, 별도 과금)'
 $apiLabel.AutoSize = $true
-$apiLabel.Location = New-Object System.Drawing.Point(27, 195)
+$apiLabel.Location = New-Object System.Drawing.Point(27, 390)
 $form.Controls.Add($apiLabel)
 
 $apiTextBox = New-Object System.Windows.Forms.TextBox
 $apiTextBox.Text = if ($null -eq $inputModel.settings.PSObject.Properties['openAiEnvFile']) { '' } else { [string]$inputModel.settings.openAiEnvFile }
-$apiTextBox.Location = New-Object System.Drawing.Point(30, 218)
+$apiTextBox.Location = New-Object System.Drawing.Point(30, 413)
 $apiTextBox.Size = New-Object System.Drawing.Size(500, 27)
 $form.Controls.Add($apiTextBox)
 
 $apiBrowseButton = New-Object System.Windows.Forms.Button
 $apiBrowseButton.Text = '파일 선택...'
-$apiBrowseButton.Location = New-Object System.Drawing.Point(540, 216)
+$apiBrowseButton.Location = New-Object System.Drawing.Point(540, 411)
 $apiBrowseButton.Size = New-Object System.Drawing.Size(94, 31)
 $apiBrowseButton.Add_Click({
     $dialog = New-Object System.Windows.Forms.OpenFileDialog
@@ -107,9 +166,9 @@ $apiBrowseButton.Add_Click({
 $form.Controls.Add($apiBrowseButton)
 
 $modelLabel = New-Object System.Windows.Forms.Label
-$modelLabel.Text = 'AI 모델'
+$modelLabel.Text = 'OpenAI API 모델'
 $modelLabel.AutoSize = $true
-$modelLabel.Location = New-Object System.Drawing.Point(27, 260)
+$modelLabel.Location = New-Object System.Drawing.Point(27, 455)
 $form.Controls.Add($modelLabel)
 
 $modelComboBox = New-Object System.Windows.Forms.ComboBox
@@ -117,7 +176,7 @@ $modelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDown
 $modelComboBox.Items.AddRange(@('gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-5.6-luna'))
 $configuredModel = if ($null -eq $inputModel.settings.PSObject.Properties['openAiModel']) { '' } else { [string]$inputModel.settings.openAiModel }
 $modelComboBox.Text = if ([string]::IsNullOrWhiteSpace($configuredModel)) { 'gpt-5.6-terra' } else { $configuredModel }
-$modelComboBox.Location = New-Object System.Drawing.Point(30, 283)
+$modelComboBox.Location = New-Object System.Drawing.Point(30, 478)
 $modelComboBox.Size = New-Object System.Drawing.Size(260, 27)
 $form.Controls.Add($modelComboBox)
 
@@ -125,12 +184,12 @@ $startupCheckBox = New-Object System.Windows.Forms.CheckBox
 $startupCheckBox.Text = '다음 실행에도 이 접속기 창을 먼저 표시'
 $startupCheckBox.Checked = [bool]$inputModel.settings.showConnectorOnStartup
 $startupCheckBox.AutoSize = $true
-$startupCheckBox.Location = New-Object System.Drawing.Point(30, 327)
+$startupCheckBox.Location = New-Object System.Drawing.Point(30, 522)
 $form.Controls.Add($startupCheckBox)
 
 $detailsGroup = New-Object System.Windows.Forms.GroupBox
 $detailsGroup.Text = '실행 정보'
-$detailsGroup.Location = New-Object System.Drawing.Point(30, 365)
+$detailsGroup.Location = New-Object System.Drawing.Point(30, 560)
 $detailsGroup.Size = New-Object System.Drawing.Size(604, 105)
 $form.Controls.Add($detailsGroup)
 
@@ -144,7 +203,7 @@ $detailsGroup.Controls.Add($detailsLabel)
 
 $openFolderButton = New-Object System.Windows.Forms.Button
 $openFolderButton.Text = '데이터 폴더 열기'
-$openFolderButton.Location = New-Object System.Drawing.Point(30, 530)
+$openFolderButton.Location = New-Object System.Drawing.Point(30, 710)
 $openFolderButton.Size = New-Object System.Drawing.Size(140, 36)
 $openFolderButton.Add_Click({
     try {
@@ -159,7 +218,7 @@ $form.Controls.Add($openFolderButton)
 
 $cancelButton = New-Object System.Windows.Forms.Button
 $cancelButton.Text = '취소'
-$cancelButton.Location = New-Object System.Drawing.Point(438, 530)
+$cancelButton.Location = New-Object System.Drawing.Point(438, 710)
 $cancelButton.Size = New-Object System.Drawing.Size(90, 36)
 $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.CancelButton = $cancelButton
@@ -167,7 +226,7 @@ $form.Controls.Add($cancelButton)
 
 $startButton = New-Object System.Windows.Forms.Button
 $startButton.Text = '인스턴스 시작'
-$startButton.Location = New-Object System.Drawing.Point(538, 530)
+$startButton.Location = New-Object System.Drawing.Point(538, 710)
 $startButton.Size = New-Object System.Drawing.Size(96, 36)
 $startButton.Add_Click({
     try {
@@ -199,6 +258,16 @@ $startButton.Add_Click({
             }
             $apiTextBox.Text = [System.IO.Path]::GetFullPath($apiPath)
         }
+        $codexPath = $codexTextBox.Text.Trim()
+        if (-not [string]::IsNullOrWhiteSpace($codexPath)) {
+            if (-not [System.IO.Path]::IsPathRooted($codexPath) -or -not [System.IO.File]::Exists($codexPath)) {
+                throw 'Codex 실행 파일을 찾을 수 없습니다.'
+            }
+            $codexTextBox.Text = [System.IO.Path]::GetFullPath($codexPath)
+        }
+        if ($codexModelComboBox.Text -notmatch '^gpt-[A-Za-z0-9._-]+$') {
+            throw 'Codex 모델 이름이 올바르지 않습니다.'
+        }
         if ($modelComboBox.Text -notmatch '^gpt-[A-Za-z0-9._-]+$') {
             throw 'OpenAI 모델 이름이 올바르지 않습니다.'
         }
@@ -223,6 +292,9 @@ $outputModel = [ordered]@{
     action = $resultAction
     dataRoot = $dataTextBox.Text
     showConnectorOnStartup = $startupCheckBox.Checked
+    aiProvider = if ($providerComboBox.SelectedIndex -eq 1) { 'openai-api' } else { 'codex' }
+    codexExecutable = $codexTextBox.Text
+    codexModel = $codexModelComboBox.Text
     openAiEnvFile = $apiTextBox.Text
     openAiModel = $modelComboBox.Text
 }

@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `openai-chat-proposal` |
+| 작업 단위 | `codex-provider-usage-observability` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
-| 브랜치 | `codex/openai-chat-proposal` |
+| 브랜치 | `codex/codex-provider-usage-observability` |
 | 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.connector.settings`, `ai.openai.responses`, `chat.session.persist`, `document.proposal.apply`, `ui.ai-collaboration`, `release.validation` |
-| 완료 결과 | 외부 API 키 파일, Responses API 스트리밍 채팅, 영속 대화, 승인형 전체 문서 생성·교체 제안, mock E2E와 배포 회귀 검증 |
-| 다음 작업 | `existing-folder-read-only-lock` |
+| 활성 기능 | `client.connector.settings`, `ai.openai.responses`, `ai.provider.codex`, `ai.usage.observe`, `diagnostics.logs`, `ui.ai-collaboration`, `ui.observability`, `release.validation` |
+| 완료 결과 | ChatGPT 구독 Codex 공급자, API 선택·비용 표시, 공급자 사용량과 구조화 개발 로그 UI |
+| 다음 작업 | `chunk-coordinate-index-search` |
 
 ## 상태 라벨
 
@@ -83,10 +83,14 @@ flowchart TD
 | 프로젝트 생성·목록·열기 | Core | `core/src/project-store.ts` | `CURRENT` |
 | 문서 snapshot과 revision | Core | `core/src/document-store.ts` | `CURRENT` |
 | OpenAI Responses API 외부 어댑터 | Network Runtime | `platform/network-runtime/src/external/openai-responses-adapter.ts` | `CURRENT` |
+| ChatGPT 구독 Codex App Server 공급자 | Core | `core/src/codex-app-server-client.ts` | `CURRENT` |
+| 공급자 토큰·한도·API 예상 비용 관측 | Core | `core/src/core-process.ts` | `CURRENT` |
+| 민감정보 제거 구조화 개발 로그 | Core | `core/src/diagnostic-log-store.ts` | `CURRENT` |
 | 프로젝트 공동 집필 채팅과 제안 저장 | Core | `core/src/chat-store.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
+| 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |
 | 자기완결 Windows 포터블 ZIP | Installer | `scripts/build-portable.ps1` | `CURRENT` |

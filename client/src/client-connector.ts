@@ -37,6 +37,9 @@ export async function ShowClientConnector(
         action?: unknown;
         dataRoot?: unknown;
         showConnectorOnStartup?: unknown;
+        aiProvider?: unknown;
+        codexExecutable?: unknown;
+        codexModel?: unknown;
         openAiEnvFile?: unknown;
         openAiModel?: unknown;
       };
@@ -47,6 +50,9 @@ export async function ShowClientConnector(
         output.action !== "start"
         || typeof output.dataRoot !== "string"
         || typeof output.showConnectorOnStartup !== "boolean"
+        || (output.aiProvider !== "codex" && output.aiProvider !== "openai-api")
+        || (output.codexExecutable !== undefined && typeof output.codexExecutable !== "string")
+        || typeof output.codexModel !== "string"
         || (output.openAiEnvFile !== undefined && typeof output.openAiEnvFile !== "string")
         || typeof output.openAiModel !== "string"
       ) {
@@ -58,6 +64,9 @@ export async function ShowClientConnector(
           schemaVersion: 1,
           dataRoot: output.dataRoot,
           showConnectorOnStartup: output.showConnectorOnStartup,
+          aiProvider: output.aiProvider,
+          codexExecutable: output.codexExecutable === "" ? undefined : output.codexExecutable,
+          codexModel: output.codexModel,
           openAiEnvFile: output.openAiEnvFile === "" ? undefined : output.openAiEnvFile,
           openAiModel: output.openAiModel,
         },
