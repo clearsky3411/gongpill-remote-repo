@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "bundled-runtime-portable",
+    "activeWorkUnit": "windows-installer",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "branch": "codex/bundled-runtime-portable",
+    "branch": "codex/windows-installer",
     "activeComponentIds": [
       "gongpil.client",
       "gongpil.installer",
@@ -16,13 +16,14 @@
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
+      "install.windows",
       "distribution.portable",
       "bootstrap.paths.resolve",
       "bootstrap.core.lifecycle",
       "toolchain.node.typescript-runtime"
     ],
-    "summary": "Node 24.18.0 LTS runtime을 공식 SHA-256으로 검증해 포함하고, 시스템 Node와 PATH 없이 실행·재실행되는 Windows 포터블 ZIP을 만들었다.",
-    "nextRecommendedWorkUnit": "windows-installer"
+    "summary": "사용자 권한 Windows Setup.exe, 시작 메뉴·선택 바탕 화면 바로가기와 사용자 데이터 보존 제거를 구현하고 설치·실행·제거·재설치를 검증했다.",
+    "nextRecommendedWorkUnit": "release-validation"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -100,8 +101,8 @@
       "owns": ["installed-package", "portable-package", "uninstall-policy"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.platform"],
       "usedBy": ["gongpil.tests", "gongpil.distribution"],
-      "publicInterfaces": ["scripts/build-portable.ps1", "installer/launcher/Gongpil.cmd", "installer/launcher/Gongpil.vbs"],
-      "tests": ["scripts/test-portable.ps1", "tests/distribution/portable-package.test.ts"],
+      "publicInterfaces": ["scripts/build-portable.ps1", "scripts/build-installer.ps1", "installer/windows/Gongpil.iss", "installer/launcher/Gongpil.cmd", "installer/launcher/Gongpil.vbs"],
+      "tests": ["scripts/test-portable.ps1", "scripts/test-installer.ps1", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "relatedDocs": ["installer/README.md"]
     },
     {
@@ -241,7 +242,7 @@
       "dependsOn": ["gongpil.installer"],
       "usedBy": [],
       "publicInterfaces": ["distribution/README.md", "distribution/.gitignore"],
-      "tests": ["scripts/test-portable.ps1", "tests/distribution/portable-package.test.ts"],
+      "tests": ["scripts/test-portable.ps1", "scripts/test-installer.ps1", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "relatedDocs": ["distribution/README.md"]
     }
   ],
@@ -389,11 +390,11 @@
     {
       "id": "install.windows",
       "name": "Windows 설치형 패키지",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.installer",
-      "path": "installer",
-      "entrypoints": [],
-      "tests": [],
+      "path": "installer/windows/Gongpil.iss",
+      "entrypoints": ["npm run build:installer", "scripts/build-installer.ps1", "Gongpil-0.1.0-setup.exe"],
+      "tests": ["scripts/test-installer.ps1", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
@@ -482,8 +483,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.repository",
       "path": "package.json",
-      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:mvp", "scripts.test:portable", "scripts.validate:architecture"],
-      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts"],
+      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.build:installer", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:mvp", "scripts.test:portable", "scripts.test:installer", "scripts.validate:architecture"],
+      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
