@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + OpenAI 공동 집필 채팅·승인형 변경 제안
-- 최근 작업 브랜치: `codex/openai-chat-proposal`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex Pro/OpenAI API 선택형 공동 집필 + 사용량·개발 로그
+- 최근 작업 브랜치: `codex/codex-provider-usage-observability`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
@@ -20,9 +20,9 @@
 npm start
 ```
 
-처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더, OpenAI API 환경파일과 모델을 정한 뒤 `인스턴스 시작`을 누른다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다.
+처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다.
 
-API 키는 Git 저장소나 Browser에 넣지 않는다. 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일만 선택한다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. 기존 `%LOCALAPPDATA%\Gongpil\client-settings.json`은 설치 패키지 첫 실행에서 새 위치 저장 검증 후 이동한다.
+OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 API 키를 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일을 선택한다. 키는 Git 저장소나 Browser에 넣지 않는다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. Codex 인증은 선택한 `dataRoot/integrations/codex` 아래의 공필 전용 `CODEX_HOME`에 격리된다.
 
 Node 설치 없이 포터블로 사용:
 
@@ -52,6 +52,7 @@ npm run demo:network:loopback
 npm run test:bootstrap
 npm run test:client
 npm run test:ai
+npm run test:diagnostics
 npm run test:network
 npm run test:mvp
 npm run validate:architecture
@@ -78,6 +79,9 @@ npm run validate:release
 - [x] Windows 클라이언트(접속기)의 데이터 폴더·시작 옵션 관리
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
+- [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필
+- [x] 인스턴스에서 제공자·구독 한도·토큰·API 예상 비용 확인
+- [x] 민감정보 제거 구조화 개발 로그 조회
 - [x] 전체 문서 생성·교체 제안, 변경 전후 확인, 승인·거절과 revision 충돌 방지
 - [ ] 기존 폴더 연결, 프로젝트 ID, 잠금과 읽기 전용 모드
 - [x] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
@@ -89,8 +93,8 @@ npm run validate:release
 - [ ] 지도 뷰어 검증 플러그인
 - [ ] 채팅, 브랜치, 페르소나, 장기 기억과 출처 추적
 - [ ] Markdown 편집기와 검색 플러그인
-- [ ] 공필 전용 Codex/AI 통합과 개인 환경 격리
-- [ ] 개발자 도구와 플러그인 패키지 검증
+- [x] 공필 전용 Codex/AI 통합과 개인 환경 격리
+- [ ] 플러그인 개발자 도구와 패키지 검증
 - [x] Windows 사용자 권한 설치·바로가기·프로그램 제거
 - [ ] 자동 업데이트·실패 롤백·사용자 선택 전체 삭제
 - [x] Windows x64 포터블 ZIP 배포
@@ -135,6 +139,26 @@ npm run validate:release
 - [x] 사용자가 변경 전후를 확인하고 적용하거나 거절한다
 - [x] 적용 직전 expected revision을 검사하고 기존 문서 history를 남긴다
 - [x] mock OpenAI 서버를 사용하는 실제 Client-Core E2E가 통과한다
+
+### 현재 완료 보고: Codex 제공자·사용량·개발 로그
+
+- [x] 접속기 기본 제공자를 `Codex Pro (ChatGPT 로그인)`로 두고 OpenAI API를 선택형 별도 과금 경로로 유지한다
+- [x] 공필 전용 `dataRoot/integrations/codex`에만 process-local `CODEX_HOME`을 전달한다
+- [x] Codex App Server의 초기화, 계정 조회, 로그인 시작, thread/turn, 구조화 출력과 종료를 구현한다
+- [x] Codex는 읽기 전용 sandbox에서 응답·proposal만 만들고 원본 적용은 기존 사용자 승인 명령만 수행한다
+- [x] 인스턴스 `AI 사용 정보`에서 모델·인증·플랜·구독 한도·최근 토큰을 확인한다
+- [x] OpenAI API는 공식 표준 단가와 실제 usage로 요청별 예상 달러 비용을 표시한다
+- [x] 인스턴스 `개발 로그`에서 Core·Codex·API 실행 결과를 확인한다
+- [x] 로그 허용목록 테스트로 키·인증 URL·문서 경로·문서 내용을 제외한다
+- [x] 실제 Codex 0.145 App Server 스키마 생성과 격리 계정 상태 조회를 확인한다
+
+사용자가 직접 확인할 항목:
+
+- [ ] 새 설치본의 접속기에서 `Codex Pro (ChatGPT 로그인)`를 선택하고 인스턴스를 시작한다
+- [ ] `AI 사용 정보` → `ChatGPT로 Codex 로그인`을 눌러 공필 전용 로그인을 완료한다
+- [ ] 프로젝트·문서를 선택하고 공동 집필 요청 뒤 토큰 정보가 갱신되는지 확인한다
+- [ ] `개발 로그`에서 키·문서 내용 없이 실행 상태만 보이는지 확인한다
+- [ ] 접속기에서 `OpenAI API (별도 과금)`로 바꾸면 예상 비용 문구가 표시되는지 확인한다
 
 사용자가 직접 확인할 항목:
 
@@ -300,9 +324,9 @@ npm run validate:release
 - [ ] 부모·자식 scope와 async context 전달
 - [ ] timeout, 취소와 진행률
 - [ ] 프로세스 경계를 넘는 trace 전파
-- [ ] 구조화 JSONL 로그와 trace 조회
+- [x] 구조화 JSONL 실행 로그 조회
 - [ ] 사용자 행동부터 저장까지 하나의 trace로 연결
-- [ ] 로그 비밀정보 제거
+- [x] 로그 비밀정보 제거
 
 ### Phase 8. 플러그인 계약과 SDK
 
@@ -367,11 +391,11 @@ npm run validate:release
 ### Phase 14. Codex와 AI 통합
 
 - [x] NetworkRuntime 소유 OpenAI Responses API 어댑터
-- [ ] 공필 전용 Codex 작업 경로
-- [ ] process-local `CODEX_HOME`과 환경 격리
-- [ ] 도구 권한과 사용자 승인
+- [x] 공필 전용 Codex 작업 경로
+- [x] process-local `CODEX_HOME`과 환경 격리
+- [x] 읽기 전용 Codex 실행과 원본 적용 사용자 승인
 - [x] 선택 프로젝트·문서 저장본 컨텍스트 handoff
-- [ ] 응답·실제 사용 출처·옵션 저장
+- [x] 응답·토큰 사용량·제공자 옵션 관측
 - [x] AI 결과를 원본 쓰기가 아닌 proposal로 전달
 - [ ] offline·network 상태 표시
 

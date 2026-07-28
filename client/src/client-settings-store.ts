@@ -8,6 +8,9 @@ export interface GongpilClientSettings {
   schemaVersion: 1;
   dataRoot: string;
   showConnectorOnStartup: boolean;
+  aiProvider: "codex" | "openai-api";
+  codexExecutable?: string;
+  codexModel: string;
   openAiEnvFile?: string;
   openAiModel: string;
 }
@@ -128,6 +131,8 @@ function CreateDefaultClientSettings(context: GongpilClientSettingsContext): Gon
     schemaVersion: 1,
     dataRoot,
     showConnectorOnStartup: true,
+    aiProvider: "codex",
+    codexModel: "gpt-5.6-terra",
     openAiModel: "gpt-5.6-terra",
   };
 }
@@ -151,8 +156,11 @@ function NormalizeClientSettings(
     schemaVersion: 1,
     dataRoot,
     showConnectorOnStartup: candidate.showConnectorOnStartup,
+    aiProvider: NormalizeAiProvider(candidate.aiProvider),
+    codexExecutable: NormalizeOptionalAbsolutePath(candidate.codexExecutable),
+    codexModel: NormalizeModel(candidate.codexModel, "Codex"),
     openAiEnvFile: NormalizeOptionalAbsolutePath(candidate.openAiEnvFile),
-    openAiModel: NormalizeOpenAiModel(candidate.openAiModel),
+    openAiModel: NormalizeModel(candidate.openAiModel, "OpenAI"),
   };
 }
 
@@ -203,10 +211,20 @@ function NormalizeOptionalAbsolutePath(value: unknown): string | undefined {
   return RequireWindowsAbsolutePath(value, "openAiEnvFile");
 }
 
-function NormalizeOpenAiModel(value: unknown): string {
+function NormalizeAiProvider(value: unknown): GongpilClientSettings["aiProvider"] {
+  if (value === undefined) {
+    return "codex";
+  }
+  if (value !== "codex" && value !== "openai-api") {
+    throw new Error("AI 제공자 설정이 올바르지 않습니다.");
+  }
+  return value;
+}
+
+function NormalizeModel(value: unknown, label: string): string {
   const model = value === undefined ? "gpt-5.6-terra" : value;
   if (typeof model !== "string" || !/^gpt-[A-Za-z0-9._-]+$/.test(model)) {
-    throw new Error("OpenAI 모델 이름이 올바르지 않습니다.");
+    throw new Error(`${label} 모델 이름이 올바르지 않습니다.`);
   }
   return model;
 }

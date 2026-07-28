@@ -15,6 +15,8 @@
       </div>
       <div class="header-actions">
         <span id="networkStatus" class="status-pill" data-state="starting">시작 중</span>
+        <button id="usageButton" class="ghost-button" type="button">AI 사용 정보</button>
+        <button id="logsButton" class="ghost-button" type="button">개발 로그</button>
         <button id="shutdownButton" class="ghost-button" type="button">공필 종료</button>
       </div>
     </header>
@@ -90,6 +92,16 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <dialog id="observabilityDialog" class="observability-dialog">
+      <div class="dialog-heading">
+        <div>
+          <p id="dialogEyebrow" class="section-label">AI</p>
+          <h2 id="dialogTitle">사용 정보</h2>
+        </div>
+        <button id="dialogCloseButton" class="ghost-button" type="button">닫기</button>
+      </div>
+      <div id="dialogContent" class="dialog-content"></div>
+    </dialog>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

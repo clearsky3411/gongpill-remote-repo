@@ -84,6 +84,9 @@ async function RunClientProcess(): Promise<void> {
   const manager = new GongpilCoreProcessManager({
     coreEntryPath: join(appRoot, "core", "src", "core-process.ts"),
     coreEnvironment: {
+      GONGPIL_AI_PROVIDER: settings.aiProvider,
+      GONGPIL_CODEX_EXECUTABLE: settings.codexExecutable ?? await ResolveCodexExecutable(),
+      GONGPIL_CODEX_MODEL: settings.codexModel,
       GONGPIL_OPENAI_ENV_FILE: settings.openAiEnvFile,
       GONGPIL_OPENAI_MODEL: settings.openAiModel,
     },
@@ -149,6 +152,36 @@ async function FileExists(path: string): Promise<boolean> {
   catch {
     return false;
   }
+}
+
+async function ResolveCodexExecutable(): Promise<string | undefined> {
+  const appData = process.env.APPDATA;
+  if (appData === undefined) {
+    return undefined;
+  }
+  const candidates = [
+    join(
+      appData,
+      "npm",
+      "node_modules",
+      "@openai",
+      "codex",
+      "node_modules",
+      "@openai",
+      "codex-win32-x64",
+      "vendor",
+      "x86_64-pc-windows-msvc",
+      "bin",
+      "codex.exe",
+    ),
+    join(appData, "npm", "codex.exe"),
+  ];
+  for (const candidate of candidates) {
+    if (await FileExists(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
 }
 
 function OpenDefaultBrowser(launchUrl: string): void {

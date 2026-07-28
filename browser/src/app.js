@@ -10,12 +10,16 @@ const state = {
   chatMessages: [],
   proposals: [],
   chatConfigured: false,
+  providerStatus: undefined,
+  usage: undefined,
   chatSending: false,
   streamingText: "",
 };
 
 const elements = {
   networkStatus: document.querySelector("#networkStatus"),
+  usageButton: document.querySelector("#usageButton"),
+  logsButton: document.querySelector("#logsButton"),
   shutdownButton: document.querySelector("#shutdownButton"),
   projectForm: document.querySelector("#projectForm"),
   projectName: document.querySelector("#projectName"),
@@ -36,6 +40,11 @@ const elements = {
   chatForm: document.querySelector("#chatForm"),
   chatInput: document.querySelector("#chatInput"),
   chatSendButton: document.querySelector("#chatSendButton"),
+  observabilityDialog: document.querySelector("#observabilityDialog"),
+  dialogEyebrow: document.querySelector("#dialogEyebrow"),
+  dialogTitle: document.querySelector("#dialogTitle"),
+  dialogContent: document.querySelector("#dialogContent"),
+  dialogCloseButton: document.querySelector("#dialogCloseButton"),
   toast: document.querySelector("#toast"),
 };
 
@@ -72,6 +81,8 @@ async function LoadChatSession() {
     state.chatMessages = [];
     state.proposals = [];
     state.chatConfigured = false;
+    state.providerStatus = undefined;
+    state.usage = undefined;
     RenderChat();
     return;
   }
@@ -81,6 +92,8 @@ async function LoadChatSession() {
   state.chatMessages = payload.session?.messages ?? [];
   state.proposals = payload.session?.proposals ?? [];
   state.chatConfigured = payload.configured === true;
+  state.providerStatus = payload.provider;
+  state.usage = payload.usage;
   state.streamingText = "";
   RenderChat();
 }
@@ -239,7 +252,10 @@ function RenderEditor() {
 
 function RenderChat() {
   const hasProject = state.activeProject !== undefined;
-  elements.aiStatus.textContent = state.chatConfigured ? "API 준비됨" : "API 설정 필요";
+  const isCodex = state.providerStatus?.provider === "codex";
+  elements.aiStatus.textContent = state.chatConfigured
+    ? (isCodex ? "Codex Pro 준비됨" : "API 준비됨 · 별도 과금")
+    : (isCodex ? "Codex 로그인 필요" : "API 설정 필요");
   elements.aiStatus.dataset.ready = String(state.chatConfigured);
   elements.chatInput.disabled = !hasProject || !state.chatConfigured || state.chatSending;
   elements.chatSendButton.disabled = elements.chatInput.disabled;
@@ -252,7 +268,10 @@ function RenderChat() {
   }
   if (!state.chatConfigured) {
     elements.chatMessages.className = "chat-messages empty-state";
-    elements.chatMessages.textContent = "공필 설정에서 OPENAI_API_KEY가 든 .env.local 파일을 선택하세요.";
+    elements.chatMessages.textContent = state.providerStatus?.message
+      ?? (isCodex
+        ? "AI 사용 정보에서 Codex 로그인을 시작하세요."
+        : "공필 설정에서 OPENAI_API_KEY가 든 .env.local 파일을 선택하세요.");
     return;
   }
   elements.chatMessages.className = "chat-messages";
@@ -266,6 +285,157 @@ function RenderChat() {
     elements.chatMessages.append(CreateProposalCard(proposal));
   }
   elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+}
+
+async function LoadProviderStatus() {
+  const payload = RequirePayload(await runtime.Send("ai.provider.status", {}));
+  state.providerStatus = payload.status;
+  state.chatConfigured = payload.status?.configured === true;
+  RenderChat();
+}
+
+async function ShowUsage() {
+  const payload = RequirePayload(await runtime.Send("ai.usage.read", {}));
+  state.providerStatus = payload.status;
+  state.usage = payload.latest;
+  elements.dialogEyebrow.textContent = "AI PROVIDER";
+  elements.dialogTitle.textContent = "AI 사용 정보";
+  elements.dialogContent.replaceChildren();
+  const status = payload.status ?? {};
+  const providerName = status.provider === "codex" ? "Codex Pro / ChatGPT" : "OpenAI API";
+  elements.dialogContent.append(CreateInfoGrid([
+    ["연결 방식", providerName],
+    ["상태", status.configured ? "사용 가능" : "설정 필요"],
+    ["모델", status.model ?? "확인 불가"],
+    ["인증", status.authMode ?? (status.provider === "openai-api" ? "API 키" : "로그인 필요")],
+    ["플랜", status.planType ?? (status.provider === "codex" ? "ChatGPT 구독" : "API 별도 과금")],
+  ]));
+  if (status.message) {
+    const message = document.createElement("p");
+    message.className = "dialog-notice";
+    message.textContent = status.message;
+    elements.dialogContent.append(message);
+  }
+  if (status.provider === "codex" && !status.configured) {
+    const loginButton = document.createElement("button");
+    loginButton.type = "button";
+    loginButton.textContent = "ChatGPT로 Codex 로그인";
+    loginButton.addEventListener("click", () => void RunAction(StartCodexLogin));
+    elements.dialogContent.append(loginButton);
+  }
+  elements.dialogContent.append(CreateUsageSection(payload.latest, status.provider));
+  if (status.rateLimits) {
+    elements.dialogContent.append(CreateJsonDetails("구독 사용 한도 원본", status.rateLimits));
+  }
+  if (status.accountUsage) {
+    elements.dialogContent.append(CreateJsonDetails("계정 사용량 원본", status.accountUsage));
+  }
+  elements.observabilityDialog.showModal();
+}
+
+async function StartCodexLogin() {
+  const payload = RequirePayload(await runtime.Send("ai.provider.login.start", {}));
+  if (typeof payload.authUrl === "string") {
+    window.open(payload.authUrl, "_blank", "noopener,noreferrer");
+    ShowToast("브라우저에서 로그인한 뒤 AI 사용 정보를 다시 여세요.");
+  }
+  else {
+    ShowToast("Codex 로그인 요청을 시작했습니다.");
+  }
+}
+
+async function ShowLogs() {
+  const payload = RequirePayload(await runtime.Send("diagnostics.logs.read", { limit: 300 }));
+  elements.dialogEyebrow.textContent = "DEVELOPER";
+  elements.dialogTitle.textContent = "개발 로그";
+  elements.dialogContent.replaceChildren();
+  const description = document.createElement("p");
+  description.className = "dialog-notice";
+  description.textContent = "키·인증 URL·문서 내용·문서 경로는 이 로그에 기록하지 않습니다.";
+  elements.dialogContent.append(description);
+  const list = document.createElement("div");
+  list.className = "log-list";
+  for (const entry of payload.entries ?? []) {
+    const row = document.createElement("article");
+    row.className = "log-entry";
+    row.dataset.level = entry.level;
+    const heading = document.createElement("strong");
+    heading.textContent = `${new Date(entry.timestamp).toLocaleString("ko-KR")} · ${entry.source} · ${entry.code}`;
+    const message = document.createElement("span");
+    message.textContent = entry.message;
+    row.append(heading, message);
+    if (entry.details) {
+      const details = document.createElement("code");
+      details.textContent = JSON.stringify(entry.details);
+      row.append(details);
+    }
+    list.append(row);
+  }
+  if (list.childElementCount === 0) {
+    list.textContent = "기록된 로그가 없습니다.";
+  }
+  elements.dialogContent.append(list);
+  elements.observabilityDialog.showModal();
+}
+
+function CreateUsageSection(usage, provider) {
+  const section = document.createElement("section");
+  section.className = "usage-section";
+  const title = document.createElement("h3");
+  title.textContent = "최근 요청 토큰";
+  section.append(title);
+  if (!usage) {
+    const empty = document.createElement("p");
+    empty.textContent = "아직 이 실행에서 완료된 AI 요청이 없습니다.";
+    section.append(empty);
+    return section;
+  }
+  section.append(CreateInfoGrid([
+    ["입력", FormatTokens(usage.inputTokens)],
+    ["캐시 입력", FormatTokens(usage.cachedInputTokens)],
+    ["출력", FormatTokens(usage.outputTokens)],
+    ["추론 출력", FormatTokens(usage.reasoningOutputTokens)],
+  ]));
+  const cost = document.createElement("p");
+  cost.className = "cost-summary";
+  if (provider === "codex") {
+    cost.textContent = "ChatGPT 구독 한도 사용 · API 달러 비용 없음";
+  }
+  else if (typeof usage.estimatedCostUsd === "number") {
+    cost.textContent = `OpenAI API 예상 비용: $${usage.estimatedCostUsd.toFixed(6)} (표준 토큰 단가 기준)`;
+  }
+  else {
+    cost.textContent = "OpenAI API 별도 과금 · 이 모델의 가격표를 찾지 못해 비용 추정 불가";
+  }
+  section.append(cost);
+  return section;
+}
+
+function CreateInfoGrid(rows) {
+  const grid = document.createElement("dl");
+  grid.className = "info-grid";
+  for (const [label, value] of rows) {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const description = document.createElement("dd");
+    description.textContent = String(value);
+    grid.append(term, description);
+  }
+  return grid;
+}
+
+function CreateJsonDetails(label, value) {
+  const details = document.createElement("details");
+  const summary = document.createElement("summary");
+  summary.textContent = label;
+  const pre = document.createElement("pre");
+  pre.textContent = JSON.stringify(value, null, 2);
+  details.append(summary, pre);
+  return details;
+}
+
+function FormatTokens(value) {
+  return `${Number(value ?? 0).toLocaleString("ko-KR")} tokens`;
 }
 
 function CreateChatMessage(role, content) {
@@ -395,6 +565,9 @@ elements.editor.addEventListener("input", () => {
 });
 
 elements.saveButton.addEventListener("click", () => void SaveDocument());
+elements.usageButton.addEventListener("click", () => void RunAction(ShowUsage));
+elements.logsButton.addEventListener("click", () => void RunAction(ShowLogs));
+elements.dialogCloseButton.addEventListener("click", () => elements.observabilityDialog.close());
 elements.chatForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void RunAction(SendChatMessage);
@@ -445,4 +618,6 @@ window.addEventListener("beforeunload", (event) => {
   }
 });
 
-void RunAction(LoadProjects);
+void RunAction(async () => {
+  await Promise.all([LoadProjects(), LoadProviderStatus()]);
+});
