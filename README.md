@@ -19,7 +19,15 @@
 npm start
 ```
 
-화면에서 프로젝트 이름을 입력해 만든 뒤, 문서 경로(예: `draft/1장.md`)를 추가하고 편집하여 저장한다. 종료할 때는 화면 오른쪽 위의 `공필 종료`를 누른다. 현재 이 명령은 시스템에 설치된 Node를 사용하며, Node 없이 실행되는 포터블 ZIP과 Windows Installer는 다음 작업에서 만든다.
+화면에서 프로젝트 이름을 입력해 만든 뒤, 문서 경로(예: `draft/1장.md`)를 추가하고 편집하여 저장한다. 종료할 때는 화면 오른쪽 위의 `공필 종료`를 누른다. 이 개발 명령은 시스템 Node를 사용한다.
+
+Node 설치 없이 포터블로 사용:
+
+1. `distribution/Gongpil-0.1.0-portable.zip`을 원하는 폴더에 푼다.
+2. 압축을 푼 폴더의 `Gongpil.vbs`를 더블클릭한다.
+3. `GongpilData`가 사용자 데이터이므로 이동·백업할 때 함께 보관한다.
+
+포터블 ZIP은 `npm run build:portable`로 다시 만들고 `npm run test:portable`로 실제 압축 해제·재실행을 검증할 수 있다. Windows Installer는 다음 작업 단위에서 이어서 제작한다.
 
 개발 검증:
 
@@ -48,7 +56,7 @@ npm run validate:architecture
 - [x] 저장소 구조, 작업 규칙, Code Map과 자동 검증 기반
 - [x] Client-Core 부트스트랩 및 NetworkRuntime 공개 계약
 - [x] 실제 loopback HTTP JSON/SSE NetworkRuntime 수직 슬라이스
-- [ ] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
+- [x] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
 - [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
 - [ ] 기존 폴더 연결, 프로젝트 ID, 잠금과 읽기 전용 모드
 - [x] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
@@ -62,7 +70,8 @@ npm run validate:architecture
 - [ ] Markdown 편집기와 검색 플러그인
 - [ ] 공필 전용 Codex/AI 통합과 개인 환경 격리
 - [ ] 개발자 도구와 플러그인 패키지 검증
-- [ ] Windows 설치·업데이트·롤백·삭제와 포터블 배포
+- [ ] Windows 설치·업데이트·롤백·삭제
+- [x] Windows x64 포터블 ZIP 배포
 - [ ] 보안·성능·장애 복구·E2E 검증 후 `0.1.0` 출시
 
 ### 현재 완료 보고: 실제 프로젝트·문서 MVP
@@ -165,9 +174,9 @@ npm run validate:architecture
 - [x] 실제 동적 loopback endpoint 실험
 - [x] 세션 토큰 인증과 health/readiness route
 - [x] 후보 접속 검증 뒤 원자적 교체와 실패 롤백
-- [ ] 포함 Node 버전 고정·검증·패키징
+- [x] 포함 Node 24.18.0 LTS 버전 고정·공식 SHA-256 검증·패키징
 - [x] Client가 설치형·포터블 경로 결정
-- [ ] Client가 포함 Node로 Core 프로세스 시작
+- [x] Client가 포함 Node로 Core 프로세스 시작
 - [x] Client가 지정된 `bundledRuntimePath`로 Core 프로세스 시작
 - [x] CoreReadyInfo 표준 출력 handoff
 - [x] 경로·연결 비밀정보 없는 Browser 논리 세션 공개
@@ -314,8 +323,9 @@ npm run validate:architecture
 
 ### Phase 16. 설치·업데이트·삭제
 
-- [ ] Windows 설치 패키지와 포터블 ZIP
-- [ ] 포함 런타임과 Core 버전 패키지
+- [ ] Windows 설치 패키지
+- [x] Windows 포터블 ZIP
+- [x] 포함 런타임과 Core 버전 패키지
 - [ ] update manifest와 checksum
 - [ ] 실행 중 파일을 덮어쓰지 않는 원자 활성 버전 전환
 - [ ] 실패 업데이트 rollback
@@ -362,8 +372,8 @@ npm run validate:architecture
 ### 다음 작업: bundled runtime packaging
 
 - [ ] 배포할 Node 버전과 무결성 검증 기준 확정
-- [ ] 설치형·포터블 패키지에 runtime 배치
-- [ ] `bundledRuntimePath`가 시스템 Node 없이 실행되는지 검증
+- [x] 설치형·포터블 공용 패키지에 runtime 배치
+- [x] `bundledRuntimePath`가 시스템 Node와 PATH 없이 실행되는지 검증
 - [ ] runtime 누락·손상 시 사용자 오류와 복구 경로 검증
 
 ## 최상위 책임

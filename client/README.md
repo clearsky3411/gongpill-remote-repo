@@ -33,4 +33,4 @@ Client는 Browser가 열리기 전에 존재하는 공필의 부트스트랩 인
 - `src/client-process.ts`: `npm start` 사용자 진입점, Core 활성화, 일회용 Browser 세션 생성, 기본 Browser 실행과 종료 대기
 - `demo/client-core-loopback-bootstrap-demo.ts`: 실제 자식 프로세스, HTTP/SSE 접속, 롤백과 잔류 프로세스 0개 확인
 
-현재 `npm start`는 시스템 Node를 runtime으로 사용한다. Node runtime을 포함한 포터블·설치형 패키지와 네이티브 데스크톱 창은 후속 작업이다.
+개발용 `npm start`는 시스템 Node를 사용한다. 포터블 ZIP은 공식 checksum을 검증한 Node 24.18.0 LTS를 포함하며 `process.execPath`로 같은 runtime의 Core를 시작한다. Windows Installer와 네이티브 데스크톱 창은 후속 작업이다.
