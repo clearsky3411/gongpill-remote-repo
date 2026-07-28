@@ -8,14 +8,14 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `release-validation` |
+| 작업 단위 | `client-connector-settings` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
-| 브랜치 | `codex/release-validation` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.distribution`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `release.validation`, `install.windows`, `distribution.portable`, `bootstrap.paths.resolve`, `bootstrap.core.lifecycle`, `toolchain.node.typescript-runtime` |
-| 완료 결과 | 전체 기능 테스트 23개, 포터블·Installer 실제 E2E, 아키텍처 검증과 산출물 checksum 단일 게이트 통과 |
+| 브랜치 | `codex/client-connector-settings` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.distribution`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling`, `gongpil.browser` |
+| 활성 기능 | `client.connector.settings`, `install.windows`, `distribution.portable`, `bootstrap.paths.resolve`, `bootstrap.core.lifecycle`, `ui.shell` |
+| 완료 결과 | 접속기 설정 6개, 전체 기능 테스트 27개, 포터블·사용자 지정 경로 Installer E2E, 설정 진입점과 favicon 검증 통과 |
 | 다음 작업 | `existing-folder-read-only-lock` |
 
 ## 상태 라벨
@@ -62,6 +62,7 @@ flowchart TD
 | 기능·작업 위치 추적 | Architecture | `docs/architecture/component-registry.json` | `CURRENT` |
 | Code Map 검증 | Code Map Tooling | `scripts/validate-code-map.ps1` | `CURRENT` |
 | 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
+| Windows 클라이언트 접속기와 설정 | Client | `client/src/client-connector.ts` | `CURRENT` |
 | Core 프로세스 수명 관리 | Client | `client/src/core-process-manager.ts` | `CURRENT` |
 | Core 버전 선택·활성화·롤백 | Client | `client/src/client-bootstrap.ts` | `CURRENT` |
 | Client-Core 부트스트랩 계약 | Contracts | `packages/contracts/bootstrap/bootstrap-contracts.schema.json` | `CURRENT` |
@@ -95,6 +96,8 @@ flowchart TD
 Client
 ├─ appRoot
 ├─ dataRoot
+├─ client settings
+├─ Windows connector UI
 ├─ versionRoot
 ├─ sessionTemp
 ├─ bundledRuntimePath

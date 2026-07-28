@@ -2,27 +2,29 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "release-validation",
+    "activeWorkUnit": "client-connector-settings",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "branch": "codex/release-validation",
+    "branch": "codex/client-connector-settings",
     "activeComponentIds": [
+      "gongpil.client",
       "gongpil.installer",
       "gongpil.distribution",
       "gongpil.tests",
       "gongpil.architecture",
-      "gongpil.code-map-tooling"
+      "gongpil.code-map-tooling",
+      "gongpil.browser"
     ],
     "activeFeatureIds": [
-      "release.validation",
+      "client.connector.settings",
       "install.windows",
       "distribution.portable",
       "bootstrap.paths.resolve",
       "bootstrap.core.lifecycle",
-      "toolchain.node.typescript-runtime"
+      "ui.shell"
     ],
-    "summary": "전체 회귀 23개와 포터블·Installer 실제 E2E, 아키텍처 검증, 최종 산출물 checksum을 단일 릴리스 게이트로 통과하고 사용자 릴리스 노트를 작성했다.",
+    "summary": "Windows 클라이언트(접속기)에서 설치형 dataRoot와 시작 옵션을 선택·검증·원자 저장하고 인스턴스를 시작하며, 포터블 고정 경로, 설정 바로가기, favicon과 사용자 지정 경로 Installer E2E를 검증했다.",
     "nextRecommendedWorkUnit": "existing-folder-read-only-lock"
   },
   "networkTracking": {
@@ -55,12 +57,12 @@
       "path": "client",
       "kind": "process",
       "status": "CURRENT",
-      "responsibility": "Browser 실행 전 모드·경로·런타임·세션 기준 결정과 Core 수명 관리",
-      "owns": ["bootstrap-paths", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch", "desktop-window"],
+      "responsibility": "인스턴스 실행 전 모드·경로·옵션·런타임·세션 기준 결정과 Core 수명 관리",
+      "owns": ["bootstrap-paths", "client-settings", "connector-ui", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": ["client/src/client-process.ts", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
+      "publicInterfaces": ["client/src/client-process.ts", "client/src/client-settings-store.ts", "client/src/client-connector.ts", "client/windows/GongpilConnector.ps1", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["client/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -87,7 +89,7 @@
       "owns": ["ui-state", "project-navigation", "document-editor", "connection-status", "approval-view"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/styles.css"],
+      "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/styles.css", "browser/src/favicon.svg"],
       "tests": ["tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["browser/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
     },
@@ -98,7 +100,7 @@
       "kind": "distribution",
       "status": "CURRENT",
       "responsibility": "설치형·포터블 패키지, 제거 선택지와 배포 자원 관리",
-      "owns": ["installed-package", "portable-package", "uninstall-policy"],
+      "owns": ["installed-package", "portable-package", "client-settings-shortcut", "uninstall-policy"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.platform"],
       "usedBy": ["gongpil.tests", "gongpil.distribution"],
       "publicInterfaces": ["scripts/build-portable.ps1", "scripts/build-installer.ps1", "installer/windows/Gongpil.iss", "installer/launcher/Gongpil.cmd", "installer/launcher/Gongpil.vbs"],
@@ -275,6 +277,16 @@
       "path": "client/src/bootstrap-paths.ts",
       "entrypoints": ["ResolveBootstrapPaths"],
       "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.connector.settings",
+      "name": "Windows 클라이언트 접속기와 설정",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/src/client-connector.ts",
+      "entrypoints": ["client/src/client-process.ts", "ShowClientConnector", "LoadClientSettings", "SaveClientSettings", "client/windows/GongpilConnector.ps1"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

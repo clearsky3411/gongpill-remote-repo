@@ -10,6 +10,13 @@ import {
 } from "../../packages/contracts/bootstrap/contracts.ts";
 import { ResolveBootstrapPaths } from "./bootstrap-paths.ts";
 import { GongpilClientBootstrap } from "./client-bootstrap.ts";
+import { ShowClientConnector } from "./client-connector.ts";
+import {
+  EnsureClientDataRootWritable,
+  LoadClientSettings,
+  SaveClientSettings,
+  type GongpilClientSettings,
+} from "./client-settings-store.ts";
 import { GongpilCoreProcessManager } from "./core-process-manager.ts";
 
 const CLIENT_VERSION = "0.1.0";
@@ -18,13 +25,47 @@ const CORE_VERSION = "0.1.0";
 async function RunClientProcess(): Promise<void> {
   const appRoot = fileURLToPath(new URL("../..", import.meta.url));
   const mode = await ResolveMode(appRoot);
+  const settingsContext = {
+    mode,
+    appRoot,
+    localAppData: process.env.LOCALAPPDATA,
+    settingsRoot: process.env.GONGPIL_CLIENT_SETTINGS_ROOT,
+  };
+  const loadedSettings = await LoadClientSettings(settingsContext);
+  let settings: GongpilClientSettings = loadedSettings.settings;
+  const dataRootOverride = process.env.GONGPIL_DATA_ROOT;
+  const headless = process.argv.includes("--no-open");
+  const showConnector = !headless
+    && dataRootOverride === undefined
+    && (
+      process.argv.includes("--settings")
+      || loadedSettings.isFirstRun
+      || settings.showConnectorOnStartup
+    );
+  if (showConnector) {
+    const connectorResult = await ShowClientConnector({
+      mode,
+      settings,
+      isFirstRun: loadedSettings.isFirstRun,
+      appRoot,
+      settingsPath: loadedSettings.settingsPath,
+    });
+    if (connectorResult.action === "cancel") {
+      process.stdout.write("공필 클라이언트에서 시작을 취소했습니다.\n");
+      return;
+    }
+    settings = await SaveClientSettings(settingsContext, connectorResult.settings);
+  }
+  const selectedDataRoot = dataRootOverride === undefined
+    ? settings.dataRoot
+    : await EnsureClientDataRootWritable(dataRootOverride, appRoot);
   const launchId = `launch-${randomUUID()}`;
   const sessionId = `session-${randomUUID()}`;
   const paths = ResolveBootstrapPaths({
     mode,
     sessionId,
     appRoot,
-    installedDataRoot: mode === "installed" ? process.env.GONGPIL_DATA_ROOT : undefined,
+    installedDataRoot: mode === "installed" ? selectedDataRoot : undefined,
     bundledRuntimePath: process.execPath,
   });
   const config: GongpilClientBootstrapConfig = {
@@ -68,11 +109,11 @@ async function RunClientProcess(): Promise<void> {
       `공필 ${CLIENT_VERSION} · ${result.browserSession.mode} · Core ${result.activationResult.activeCoreVersion}\n`,
     );
     if (process.argv.includes("--no-open")) {
-      process.stdout.write(`Browser 시작 주소: ${launchUrl}\n`);
+      process.stdout.write(`인스턴스 시작 주소: ${launchUrl}\n`);
     }
     else {
       OpenDefaultBrowser(launchUrl);
-      process.stdout.write("기본 Browser에서 공필을 열었습니다. 종료는 화면의 '공필 종료'를 누르세요.\n");
+      process.stdout.write("기본 브라우저에서 공필 인스턴스를 열었습니다. 종료는 화면의 '공필 종료'를 누르세요.\n");
     }
 
     await bootstrap.WaitForActiveCoreExit();

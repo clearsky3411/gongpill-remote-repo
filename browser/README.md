@@ -1,8 +1,8 @@
-# Browser
+# Browser 인스턴스
 
 상태: `CURRENT` (프로젝트·문서 작업 화면 MVP)
 
-Browser는 WebView와 개발용 웹 브라우저에서 사용하는 공통 사용자 인터페이스다.
+Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebView와 개발용 웹 브라우저에서 사용하는 공통 사용자 인터페이스다.
 
 ## 책임
 
@@ -31,4 +31,4 @@ Browser는 WebView와 개발용 웹 브라우저에서 사용하는 공통 사�
 - `src/app.js`: 프로젝트·문서 생성/열기, revision 저장, 변경 경고와 종료 흐름
 - `platform/network-runtime/browser/network-runtime.js`: same-origin HTTP JSON/SSE 전용 facade
 
-`npm start`로 실제 Core와 함께 기본 Browser에서 열린다. Browser 기능 코드는 파일 시스템과 endpoint를 직접 다루지 않는다.
+`npm start`로 클라이언트(접속기)를 거쳐 실제 Core와 함께 기본 브라우저에서 열린다. 인스턴스 기능 코드는 파일 시스템과 endpoint를 직접 다루지 않는다.

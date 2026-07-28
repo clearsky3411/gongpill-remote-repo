@@ -5,7 +5,7 @@
 ## 현재 단계
 
 - 상태: `CURRENT` Windows Installer·포터블 ZIP으로 배포 가능한 프로젝트·문서 MVP 완성
-- 최근 완료 작업 브랜치: `codex/release-validation`
+- 최근 작업 브랜치: `codex/client-connector-settings`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
@@ -20,13 +20,14 @@
 npm start
 ```
 
-화면에서 프로젝트 이름을 입력해 만든 뒤, 문서 경로(예: `draft/1장.md`)를 추가하고 편집하여 저장한다. 종료할 때는 화면 오른쪽 위의 `공필 종료`를 누른다. 이 개발 명령은 시스템 Node를 사용한다.
+처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더와 다음 실행 시 접속기 표시 여부를 정한 뒤 `인스턴스 시작`을 누른다. 열린 인스턴스에서 프로젝트 이름을 입력해 만든 뒤, 문서 경로(예: `draft/1장.md`)를 추가하고 편집하여 저장한다. 종료할 때는 인스턴스 오른쪽 위의 `공필 종료`를 누른다. 이 개발 명령은 시스템 Node를 사용한다.
 
 Node 설치 없이 포터블로 사용:
 
 1. `distribution/Gongpil-0.1.0-portable.zip`을 원하는 폴더에 푼다.
 2. 압축을 푼 폴더의 `Gongpil.vbs`를 더블클릭한다.
-3. `GongpilData`가 사용자 데이터이므로 이동·백업할 때 함께 보관한다.
+3. 클라이언트(접속기)에서 고정된 `GongpilData` 위치를 확인하고 인스턴스를 시작한다.
+4. `GongpilData`가 사용자 데이터이므로 이동·백업할 때 함께 보관한다.
 
 포터블 ZIP은 `npm run build:portable`로 다시 만들고 `npm run test:portable`로 실제 압축 해제·재실행을 검증할 수 있다.
 
@@ -34,7 +35,9 @@ Node 설치 없이 포터블로 사용:
 
 1. `distribution/Gongpil-0.1.0-setup.exe`를 실행한다.
 2. 설치 후 시작 메뉴의 `Gongpil`을 실행한다.
-3. 제거해도 `%LOCALAPPDATA%\Gongpil`의 프로젝트·문서는 유지되며, 재설치하면 그대로 다시 사용한다.
+3. 처음 뜨는 클라이언트(접속기)에서 데이터 폴더를 정하고 `인스턴스 시작`을 누른다.
+4. 나중에 바꾸려면 시작 메뉴의 `Gongpil 설정`을 실행한다. 경로 변경은 기존 데이터를 자동 이동하지 않는다.
+5. 제거해도 클라이언트 설정과 선택한 프로젝트·문서는 유지되며, 재설치하면 그대로 다시 사용한다.
 
 설치 프로그램은 `npm run build:installer`로 만들고 `npm run test:installer`로 실제 설치·실행·제거·재설치를 검증한다.
 
@@ -45,6 +48,7 @@ npm run demo:bootstrap
 npm run demo:network
 npm run demo:network:loopback
 npm run test:bootstrap
+npm run test:client
 npm run test:network
 npm run test:mvp
 npm run validate:architecture
@@ -68,6 +72,7 @@ npm run validate:release
 - [x] 실제 loopback HTTP JSON/SSE NetworkRuntime 수직 슬라이스
 - [x] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
 - [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
+- [x] Windows 클라이언트(접속기)의 데이터 폴더·시작 옵션 관리
 - [ ] 기존 폴더 연결, 프로젝트 ID, 잠금과 읽기 전용 모드
 - [x] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
 - [ ] 청크 파싱, 증분 색인, 검색과 컨텍스트 조립
@@ -99,7 +104,27 @@ npm run validate:release
 - [x] 화면 종료 요청 뒤 Client와 Core가 잔류 프로세스 없이 끝난다
 - [x] 실제 Core API와 실제 Client 진입점을 사용하는 MVP 테스트 5개가 통과한다
 
-사용자가 직접 확인할 항목:
+### 현재 완료 보고: Windows 클라이언트(접속기)
+
+- [x] 웹 작업 화면을 `인스턴스`, 실행·설정 UI를 `클라이언트(접속기)`로 구분한다
+- [x] 첫 실행과 시작 메뉴의 `Gongpil 설정`에서 접속기를 연다
+- [x] 설치형 데이터 폴더를 찾아보기로 선택하고 절대경로·드라이브 루트·설치 폴더 내부·쓰기 가능 여부를 검사한다
+- [x] `client-settings.json`을 flush 후 원자 rename으로 저장하고 손상된 설정을 조용히 덮어쓰지 않는다
+- [x] 포터블 데이터 폴더는 앱 옆 `GongpilData`로 고정한다
+- [x] 경로 변경 시 기존 데이터를 자동으로 이동하지 않는다고 화면에 표시한다
+- [x] 접속기에서 현재 데이터 폴더를 탐색기로 열 수 있다
+- [x] 접속기 표시 여부를 저장하고 언제든 `Gongpil 설정`으로 다시 연다
+- [x] 인스턴스 favicon을 제공해 `/favicon.svg` 요청이 200을 반환한다
+- [x] 설정·PowerShell 응답 테스트 6개와 사용자 지정 경로 Installer E2E가 통과한다
+
+클라이언트(접속기)를 사용자가 직접 확인할 항목:
+
+- [ ] 시작 메뉴의 `Gongpil`에서 접속기 창이 먼저 보이는지 확인
+- [ ] `찾아보기...`로 새 데이터 폴더를 선택하고 `인스턴스 시작`을 누른다
+- [ ] 프로젝트와 문서를 만든 뒤 종료하고, 다시 실행해 같은 내용이 보이는지 확인
+- [ ] 시작 메뉴의 `Gongpil 설정`에서 경로와 접속기 표시 옵션을 다시 바꿔본다
+
+프로젝트·문서 기능을 사용자가 직접 확인할 항목:
 
 - [ ] `npm start`로 공필 화면이 열리는지 확인
 - [ ] 프로젝트와 `draft/1장.md` 문서를 만들고 내용을 저장
@@ -191,7 +216,7 @@ npm run validate:release
 - [x] Client가 지정된 `bundledRuntimePath`로 Core 프로세스 시작
 - [x] CoreReadyInfo 표준 출력 handoff
 - [x] 경로·연결 비밀정보 없는 Browser 논리 세션 공개
-- [ ] Browser/Shell 창 시작
+- [x] 기본 브라우저에서 인스턴스 시작
 - [x] 정상 종료·시작 실패·잔류 프로세스 정리
 - [ ] 비정상 종료 감지와 고아 프로세스 복구
 - [x] 시스템 PATH와 전역 `CODEX_HOME` 무변경 검증
@@ -199,6 +224,7 @@ npm run validate:release
 ### Phase 3. 프로젝트와 데이터 루트
 
 - [x] `machine.json`과 `dataRoot` 생성·검증
+- [x] 클라이언트에서 설치형 `dataRoot` 선택·검증·설정 저장
 - [x] 새 프로젝트 생성
 - [ ] 기존 폴더 연결
 - [x] project manifest와 안정적인 project ID
@@ -342,7 +368,7 @@ npm run validate:release
 - [ ] 실패 업데이트 rollback
 - [ ] 프로그램만·캐시 포함·전체 삭제 선택지
 - [ ] 삭제 전 실제 경로와 예상 용량 표시
-- [ ] 재설치 뒤 기존 데이터 재사용
+- [x] 재설치 뒤 기존 설정과 사용자 지정 데이터 재사용
 
 ### Phase 17. 안정화와 `0.1.0` 출시
 
@@ -391,9 +417,9 @@ npm run validate:release
 
 | 경로 | 책임 |
 |---|---|
-| `client/` | Browser 실행 전에 모드·경로·버전·세션 기준을 결정하고 Core 수명을 관리한다. |
+| `client/` | Windows 클라이언트(접속기)에서 모드·경로·옵션을 정하고 Core와 인스턴스 수명을 관리한다. |
 | `core/` | 프로젝트·문서·자산·revision·권한·승인·저장을 최종 집행한다. |
-| `browser/` | 실제 저장 경로를 알지 않고 Core의 논리 API를 사용하는 사용자 인터페이스다. |
+| `browser/` | 실제 저장 경로를 알지 않고 Core의 논리 API를 사용하는 작업 인스턴스다. |
 | `installer/` | 설치형·포터블 패키지와 제거·배포 자원을 관리한다. |
 | `platform/` | 단일 Network Runtime, 실행 추적, 플러그인 호스트·런타임, 업데이트 기반을 제공한다. |
 | `packages/` | 공통 계약과 재사용 가능한 도메인 패키지를 제공한다. |

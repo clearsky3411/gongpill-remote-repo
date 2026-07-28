@@ -192,7 +192,11 @@ test("실제 Core API와 일회용 Browser 쿠키 세션으로 프로젝트·문
     assert.equal(shellResponse.status, 200);
     assert.match(shellResponse.headers.get("content-security-policy") ?? "", /default-src 'self'/);
     assert.match(shellHtml, /<title>공필<\/title>/);
+    assert.match(shellHtml, /href="\/favicon\.svg"/);
     assert.doesNotMatch(shellHtml, /127\.0\.0\.1|gongpil_session|token|dataRoot|appRoot/i);
+    const faviconResponse = await fetch(`${origin}/favicon.svg`, { headers: { Cookie: cookieHeader } });
+    assert.equal(faviconResponse.status, 200);
+    assert.equal(faviconResponse.headers.get("content-type"), "image/svg+xml");
     assert.equal((await fetch(`${origin}/`)).status, 401);
 
     const browserCommandResult = await SendBrowserCommand(
@@ -282,7 +286,7 @@ async function SendBrowserCommand(
 async function WaitForLaunchUrl(readOutput: () => string): Promise<string> {
   const deadline = Date.now() + 8_000;
   while (Date.now() < deadline) {
-    const match = /Browser 시작 주소: (http:\/\/127\.0\.0\.1:\d+\/launch\/[A-Za-z0-9_-]+)/.exec(
+    const match = /인스턴스 시작 주소: (http:\/\/127\.0\.0\.1:\d+\/launch\/[A-Za-z0-9_-]+)/.exec(
       readOutput(),
     );
     if (match !== null) {
@@ -290,7 +294,7 @@ async function WaitForLaunchUrl(readOutput: () => string): Promise<string> {
     }
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
-  throw new Error(`Client Browser 시작 주소 대기 시간 초과: ${readOutput()}`);
+  throw new Error(`클라이언트 인스턴스 시작 주소 대기 시간 초과: ${readOutput()}`);
 }
 
 function WaitForChildExit(childProcess: ReturnType<typeof spawn>): Promise<number | null> {
