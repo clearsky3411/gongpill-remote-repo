@@ -2,13 +2,12 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "codex-provider-usage-observability",
+    "activeWorkUnit": "chunk-coordinate-index-search",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "branch": "codex/codex-provider-usage-observability",
+    "branch": "codex/chunk-coordinate-index-search",
     "activeComponentIds": [
-      "gongpil.client",
       "gongpil.core",
       "gongpil.browser",
       "gongpil.network-runtime",
@@ -17,17 +16,14 @@
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "client.connector.settings",
-      "ai.openai.responses",
-      "ai.provider.codex",
-      "ai.usage.observe",
-      "diagnostics.logs",
+      "document.chunk.parse",
+      "document.index.search",
       "ui.ai-collaboration",
-      "ui.observability",
+      "ui.context-selection",
       "release.validation"
     ],
-    "summary": "ChatGPT 구독으로 인증하는 격리된 Codex App Server 공급자를 기본 경로로 추가하고, OpenAI API를 선택형 과금 경로로 유지하며, 공급자 사용량·예상 비용·구조화 개발 로그를 인스턴스에서 확인한다.",
-    "nextRecommendedWorkUnit": "chunk-coordinate-index-search"
+    "summary": "revision과 결합된 UTF-8 byte 좌표로 Markdown, JSON, text 문서를 청크화하고 변경 문서만 증분 색인하며 검색·문서/청크 선택을 공동 집필 컨텍스트로 전달한다.",
+    "nextRecommendedWorkUnit": "persona-context-source-snapshots"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -74,11 +70,11 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals", "ai-provider", "diagnostic-logs"],
+      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals", "ai-provider", "diagnostic-logs", "chunk-parser", "chunk-index"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts"],
+      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts", "core/src/chunk-parser.ts", "core/src/chunk-index-store.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/chunks/chunk-index-search.test.ts"],
       "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -372,6 +368,26 @@
       "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["proposal.apply"], "events": ["proposal.applied"] }
     },
     {
+      "id": "document.chunk.parse",
+      "name": "UTF-8 byte 좌표 기반 Markdown·JSON·text 청크 파싱",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/chunk-parser.ts",
+      "entrypoints": ["ParseDocumentChunks", "GongpilChunkDescriptor"],
+      "tests": ["tests/chunks/chunk-index-search.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "document.index.search",
+      "name": "revision 기반 증분 청크 색인과 키워드 검색",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/chunk-index-store.ts",
+      "entrypoints": ["GongpilChunkIndexStore.EnsureProject", "GongpilChunkIndexStore.UpdateDocument", "GongpilChunkIndexStore.Search", "chunk.list", "chunk.search"],
+      "tests": ["tests/chunks/chunk-index-search.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["chunk.list", "chunk.search"], "events": [] }
+    },
+    {
       "id": "ai.openai.responses",
       "name": "OpenAI Responses API 외부 어댑터",
       "status": "CURRENT",
@@ -440,6 +456,16 @@
       "entrypoints": ["LoadProviderStatus", "ShowUsage", "ShowLogs"],
       "tests": ["tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["ai.provider.status", "ai.usage.read", "diagnostics.logs.read"], "events": [] }
+    },
+    {
+      "id": "ui.context-selection",
+      "name": "공동 집필 문서·청크 검색과 명시 선택 UI",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.browser",
+      "path": "browser/src/index.html",
+      "entrypoints": ["LoadChunks", "SearchChunks", "RenderContextSelection"],
+      "tests": ["tests/chunks/chunk-index-search.test.ts", "tests/diagnostics/developer-log.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["chunk.list", "chunk.search", "chat.message.send"], "events": [] }
     },
     {
       "id": "ui.shell",

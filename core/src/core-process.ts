@@ -36,6 +36,11 @@ import {
   type GongpilCodexUsage,
 } from "./codex-app-server-client.ts";
 import { GongpilDiagnosticLogStore } from "./diagnostic-log-store.ts";
+import {
+  GongpilChunkIndexStore,
+  GongpilChunkIndexStoreError,
+} from "./chunk-index-store.ts";
+import type { GongpilChunkDescriptor } from "./chunk-parser.ts";
 
 const LOOPBACK_SESSION_TOKEN_ENV = "GONGPIL_LOOPBACK_SESSION_TOKEN";
 const CORE_API_VERSION = "1.0.0";
@@ -53,6 +58,7 @@ async function RunCoreProcess(): Promise<void> {
   await PrepareSessionDirectories(config);
   const projectStore = new GongpilProjectStore(config.paths.dataRoot);
   const documentStore = new GongpilDocumentStore(projectStore);
+  const chunkIndexStore = new GongpilChunkIndexStore(config.paths.dataRoot, documentStore);
   const chatStore = new GongpilChatStore(config.paths.dataRoot);
   const openAiConfig = await LoadOpenAiConfig();
   const openAiAdapter = new GongpilOpenAiResponsesAdapter();
@@ -181,6 +187,7 @@ async function RunCoreProcess(): Promise<void> {
         RequireString(payload, "path"),
         OptionalString(payload, "content") ?? "",
       );
+      await chunkIndexStore.UpdateDocument(projectId, document);
       host.Publish("document.changed", {
         projectId,
         path: document.path,
@@ -202,6 +209,7 @@ async function RunCoreProcess(): Promise<void> {
         RequireString(payload, "expectedRevision"),
         RequireString(payload, "content", true),
       );
+      await chunkIndexStore.UpdateDocument(projectId, document);
       host.Publish("document.changed", {
         projectId,
         path: document.path,
@@ -209,6 +217,36 @@ async function RunCoreProcess(): Promise<void> {
         change: "saved",
       });
       return { document };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("chunk.list", async (payload) => {
+    try {
+      return {
+        chunks: await chunkIndexStore.List(
+          RequireString(payload, "projectId"),
+          OptionalString(payload, "documentPath"),
+        ),
+      };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("chunk.search", async (payload) => {
+    try {
+      return {
+        results: await chunkIndexStore.Search(
+          RequireString(payload, "projectId"),
+          RequireString(payload, "query", true),
+          {
+            documentPaths: OptionalStringArray(payload, "documentPaths", 100),
+            limit: OptionalNumber(payload, "limit"),
+          },
+        ),
+      };
     }
     catch (error) {
       throw NormalizeDomainError(error);
@@ -248,19 +286,34 @@ async function RunCoreProcess(): Promise<void> {
       const document = documentPath === undefined
         ? undefined
         : await documentStore.ReadDocument(projectId, documentPath);
+      const chunkIds = OptionalStringArray(payload, "chunkIds", 50) ?? [];
+      const selectedChunks = chunkIds.length === 0
+        ? []
+        : await chunkIndexStore.Resolve(projectId, chunkIds);
+      const selectedBytes = selectedChunks.reduce(
+        (total, chunk) => total + Buffer.byteLength(chunk.content, "utf8"),
+        0,
+      );
+      if (selectedBytes > 1024 * 1024) {
+        throw new GongpilLoopbackCommandError(
+          "CHUNK_CONTEXT_TOO_LARGE",
+          "선택한 청크는 합계 1MB 이하여야 합니다.",
+        );
+      }
       const userMessage = await chatStore.AppendMessage(projectId, "user", userText);
+      const writingInput = CreateWritingInput(project.name, userText, document, selectedChunks);
       const startedAt = Date.now();
       const response = providerKind === "codex"
         ? await GenerateWithCodex(
           codexClient,
           CreateWritingInstructions(),
-          CreateWritingInput(project.name, userText, document),
+          writingInput,
           context.signal,
         )
         : await openAiAdapter.CreateResponse({
           ...openAiConfig!,
           instructions: CreateWritingInstructions(),
-          input: CreateWritingInput(project.name, userText, document),
+          input: writingInput,
           signal: context.signal,
           onTextDelta: (delta) => host.Publish("chat.message.delta", {
             projectId,
@@ -348,6 +401,7 @@ async function RunCoreProcess(): Promise<void> {
           proposal.expectedRevision ?? "",
           proposal.proposedContent,
         );
+      await chunkIndexStore.UpdateDocument(projectId, document);
       const resolvedProposal = await chatStore.ResolveProposal(projectId, proposalId, "applied");
       host.Publish("document.changed", {
         projectId,
@@ -407,6 +461,8 @@ async function RunCoreProcess(): Promise<void> {
       "document.read",
       "document.create",
       "document.save",
+      "chunk.list",
+      "chunk.search",
       "chat.session.read",
       "chat.message.send",
       "proposal.apply",
@@ -495,6 +551,23 @@ function OptionalNumber(
   return value;
 }
 
+function OptionalStringArray(
+  payload: Readonly<Record<string, unknown>>,
+  fieldName: string,
+  maxItems: number,
+): string[] | undefined {
+  const value = payload[fieldName];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value) || value.length > maxItems || value.some((item) => (
+    typeof item !== "string" || item.length < 1 || item.length > 512
+  ))) {
+    throw new GongpilLoopbackCommandError("INVALID_COMMAND_PAYLOAD", `${fieldName} 값이 올바르지 않습니다.`);
+  }
+  return [...new Set(value)];
+}
+
 function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
   if (error instanceof GongpilLoopbackCommandError) {
     return error;
@@ -512,6 +585,9 @@ function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
     return new GongpilLoopbackCommandError(error.code, error.message, error.retryable);
   }
   if (error instanceof GongpilCodexAppServerError) {
+    return new GongpilLoopbackCommandError(error.code, error.message);
+  }
+  if (error instanceof GongpilChunkIndexStoreError) {
     return new GongpilLoopbackCommandError(error.code, error.message);
   }
   return new GongpilLoopbackCommandError(
@@ -641,10 +717,21 @@ function CreateWritingInput(
   projectName: string,
   userText: string,
   document?: { path: string; revision: string; content: string },
+  selectedChunks: readonly GongpilChunkDescriptor[] = [],
 ): string {
-  const context = document === undefined
-    ? "선택된 문서 없음"
-    : `선택 문서: ${document.path}\nrevision: ${document.revision}\n--- 문서 시작 ---\n${document.content}\n--- 문서 끝 ---`;
+  const context = selectedChunks.length > 0
+    ? selectedChunks.map((chunk, index) => [
+      `--- 선택 청크 ${index + 1} ---`,
+      `문서: ${chunk.path}`,
+      `revision: ${chunk.revision}`,
+      `UTF-8 bytes: [${chunk.coordinate.byteStart}, ${chunk.coordinate.byteEnd})`,
+      `제목: ${chunk.title}`,
+      chunk.content,
+      `--- 선택 청크 ${index + 1} 끝 ---`,
+    ].join("\n")).join("\n\n")
+    : document === undefined
+      ? "선택된 문서 없음"
+      : `선택 문서: ${document.path}\nrevision: ${document.revision}\n--- 문서 시작 ---\n${document.content}\n--- 문서 끝 ---`;
   return `프로젝트: ${projectName}\n${context}\n\n사용자 요청:\n${userText}`;
 }
 

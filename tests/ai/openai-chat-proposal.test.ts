@@ -120,13 +120,19 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
     const documentResult = await runtime.Send("document.create", {
       projectId: project.projectId,
       path: "draft/scene.md",
-      content: "기존 본문",
+      content: "# 선택 장면\n기존 본문\n\n# 제외 장면\n전달하지 않을 내용",
     });
     const original = documentResult.payload?.document as { revision: string };
+    const chunkListResult = await runtime.Send("chunk.list", {
+      projectId: project.projectId,
+      documentPath: "draft/scene.md",
+    });
+    const selectedChunk = chunkListResult.payload?.chunks[0] as { chunkId: string };
 
     const chatResult = await runtime.Send("chat.message.send", {
       projectId: project.projectId,
       documentPath: "draft/scene.md",
+      chunkIds: [selectedChunk.chunkId],
       message: "긴장감을 높여줘",
     });
     assert.equal(chatResult.state, "succeeded", JSON.stringify(chatResult.error));
@@ -142,6 +148,8 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
     assert.equal(receivedAuthorization, `Bearer ${TEST_API_KEY}`);
     assert.equal(receivedBody?.model, "gpt-5.6-terra");
     assert.equal(receivedBody?.stream, true);
+    assert.match(String(receivedBody?.input), /선택 장면/);
+    assert.doesNotMatch(String(receivedBody?.input), /전달하지 않을 내용/);
     await WaitFor(() => events.some((event) => event.eventName === "proposal.created"));
     assert.ok(events.some((event) => event.eventName === "chat.message.delta"));
     assert.ok(events.some((event) => event.eventName === "proposal.created"));
@@ -150,7 +158,7 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
       projectId: project.projectId,
       path: "draft/scene.md",
     });
-    assert.equal(beforeApply.payload?.document.content, "기존 본문");
+    assert.equal(beforeApply.payload?.document.content, "# 선택 장면\n기존 본문\n\n# 제외 장면\n전달하지 않을 내용");
 
     const applyResult = await runtime.Send("proposal.apply", {
       projectId: project.projectId,
