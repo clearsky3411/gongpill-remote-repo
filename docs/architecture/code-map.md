@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `client-core-loopback-bootstrap-slice` |
+| 작업 단위 | `code-map-completed-main-validation-fix` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
 | 다음 권장 작업 | `bundled-runtime-packaging-slice` |
-| 브랜치 | `codex/client-core-loopback-bootstrap` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.contracts`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `bootstrap.paths.resolve`, `bootstrap.core.lifecycle`, `bootstrap.core.version-activation`, `bootstrap.contract.client-core`, `bootstrap.contract.browser-session`, `network.runtime.facade`, `network.host.loopback-http`, `network.transport.loopback-http` |
-| 목적 | Client가 Core 프로세스와 실제 loopback 접속을 검증해 활성화 또는 롤백하는 수직 슬라이스 완성 |
+| 브랜치 | `codex/code-map-completed-main-validation` |
+| 활성 컴포넌트 | `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `architecture.code-map.validate` |
+| 목적 | 완료 작업 기록의 feature 브랜치와 병합 후 `main`이 다른 정상 상태 허용 |
 
 ## 상태 라벨
 
@@ -25,6 +25,8 @@
 | `CURRENT` | 파일과 검증 근거가 현재 존재함 |
 | `TARGET` | 목표가 정해졌으나 구현되지 않음 |
 | `TBD` | 구현 전 결정 필요 |
+
+`IN_PROGRESS` 작업은 실제 Git 브랜치가 `workTracking.branch`와 일치해야 한다. `COMPLETED` 작업은 병합 뒤에도 원래 source 브랜치를 이력으로 유지하므로 `main`에서 검증할 수 있다.
 
 ## 컴포넌트 관계
 

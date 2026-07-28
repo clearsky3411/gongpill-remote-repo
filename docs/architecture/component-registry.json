@@ -2,32 +2,20 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "client-core-loopback-bootstrap-slice",
+    "activeWorkUnit": "code-map-completed-main-validation-fix",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
     "nextSuggestedWorkUnit": "bundled-runtime-packaging-slice",
-    "branch": "codex/client-core-loopback-bootstrap",
+    "branch": "codex/code-map-completed-main-validation",
     "activeComponentIds": [
-      "gongpil.client",
-      "gongpil.core",
-      "gongpil.contracts",
-      "gongpil.network-runtime",
-      "gongpil.tests",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "bootstrap.paths.resolve",
-      "bootstrap.core.lifecycle",
-      "bootstrap.core.version-activation",
-      "bootstrap.contract.client-core",
-      "bootstrap.contract.browser-session",
-      "network.runtime.facade",
-      "network.host.loopback-http",
-      "network.transport.loopback-http"
+      "architecture.code-map.validate"
     ],
-    "summary": "Client가 설치형·포터블 경로를 결정하고 Core 자식 프로세스의 stdout 준비 계약과 실제 loopback 접속을 검증해 활성화 또는 롤백하는 수직 슬라이스를 완성했다."
+    "summary": "진행 중 작업의 브랜치 일치는 계속 강제하면서 완료 작업은 source 브랜치 이력을 유지한 채 병합 후 main에서도 검증되도록 수정했다."
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
