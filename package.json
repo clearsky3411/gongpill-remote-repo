@@ -18,6 +18,7 @@
     "test:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-installer.ps1",
     "test:portable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-portable.ps1",
     "test:network": "node --test platform/network-runtime/test/network-runtime.test.ts platform/network-runtime/test/loopback-network-runtime.test.ts",
-    "validate:architecture": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-code-map.ps1"
+    "validate:architecture": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-code-map.ps1",
+    "validate:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-release.ps1"
   }
 }
