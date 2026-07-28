@@ -27,7 +27,15 @@ Node 설치 없이 포터블로 사용:
 2. 압축을 푼 폴더의 `Gongpil.vbs`를 더블클릭한다.
 3. `GongpilData`가 사용자 데이터이므로 이동·백업할 때 함께 보관한다.
 
-포터블 ZIP은 `npm run build:portable`로 다시 만들고 `npm run test:portable`로 실제 압축 해제·재실행을 검증할 수 있다. Windows Installer는 다음 작업 단위에서 이어서 제작한다.
+포터블 ZIP은 `npm run build:portable`로 다시 만들고 `npm run test:portable`로 실제 압축 해제·재실행을 검증할 수 있다.
+
+일반 Windows 설치:
+
+1. `distribution/Gongpil-0.1.0-setup.exe`를 실행한다.
+2. 설치 후 시작 메뉴의 `Gongpil`을 실행한다.
+3. 제거해도 `%LOCALAPPDATA%\Gongpil`의 프로젝트·문서는 유지되며, 재설치하면 그대로 다시 사용한다.
+
+설치 프로그램은 `npm run build:installer`로 만들고 `npm run test:installer`로 실제 설치·실행·제거·재설치를 검증한다.
 
 개발 검증:
 
@@ -70,7 +78,8 @@ npm run validate:architecture
 - [ ] Markdown 편집기와 검색 플러그인
 - [ ] 공필 전용 Codex/AI 통합과 개인 환경 격리
 - [ ] 개발자 도구와 플러그인 패키지 검증
-- [ ] Windows 설치·업데이트·롤백·삭제
+- [x] Windows 사용자 권한 설치·바로가기·프로그램 제거
+- [ ] 자동 업데이트·실패 롤백·사용자 선택 전체 삭제
 - [x] Windows x64 포터블 ZIP 배포
 - [ ] 보안·성능·장애 복구·E2E 검증 후 `0.1.0` 출시
 
@@ -323,7 +332,7 @@ npm run validate:architecture
 
 ### Phase 16. 설치·업데이트·삭제
 
-- [ ] Windows 설치 패키지
+- [x] Windows 설치 패키지
 - [x] Windows 포터블 ZIP
 - [x] 포함 런타임과 Core 버전 패키지
 - [ ] update manifest와 checksum
