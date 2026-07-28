@@ -32,6 +32,8 @@ Client, Core, Browser와 향후 플러그인 프로세스 사이에 전달되는
 
 기계 정본: `bootstrap/bootstrap-contracts.schema.json`
 
+실행 타입과 경계 파서: `bootstrap/contracts.ts`
+
 네트워크 기계 정본: `network/network-contracts.schema.json`
 
 검증: `scripts/validate-bootstrap-contract.ps1`

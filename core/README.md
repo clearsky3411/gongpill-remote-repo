@@ -1,6 +1,6 @@
 # Core
 
-상태: `TARGET`
+상태: `CURRENT` (부트스트랩 수직 슬라이스)
 
 Core는 공필 데이터와 권한을 최종 집행하는 프로세스다.
 
@@ -23,3 +23,9 @@ Core는 공필 데이터와 권한을 최종 집행하는 프로세스다.
 - Browser 자산과 API를 같은 origin에서 제공한다.
 - 플러그인이 원본 파일에 직접 접근하지 못하게 한다.
 - Core는 자신의 버전 폴더나 활성 버전 포인터를 직접 변경하지 않는다.
+
+## 현재 구현
+
+`src/core-process.ts`는 stdin의 `ClientBootstrapConfig` 한 줄을 검증하고 필요한 session 디렉터리를 준비한다. 세션 토큰은 자식 프로세스 환경에서만 읽으며, 실제 loopback host를 시작한 뒤 stdout에 `CoreReadyInfo` JSON 한 줄만 기록한다. `system.health.read`와 `system.readiness.verify`가 현재 최소 명령이다.
+
+프로젝트 문서·revision·권한·제안 저장 기능은 아직 목표 상태다.
