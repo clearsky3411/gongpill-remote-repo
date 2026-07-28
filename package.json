@@ -7,12 +7,14 @@
     "node": ">=24.12.0"
   },
   "scripts": {
+    "build:portable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-portable.ps1",
     "start": "node client/src/client-process.ts",
     "demo:bootstrap": "node client/demo/client-core-loopback-bootstrap-demo.ts",
     "demo:network": "node platform/network-runtime/demo/network-runtime-demo.ts",
     "demo:network:loopback": "node platform/network-runtime/demo/loopback-network-runtime-demo.ts",
     "test:bootstrap": "node --test tests/bootstrap/client-core-loopback-bootstrap.test.ts",
     "test:mvp": "node --test tests/mvp/project-document-mvp.test.ts",
+    "test:portable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-portable.ps1",
     "test:network": "node --test platform/network-runtime/test/network-runtime.test.ts platform/network-runtime/test/loopback-network-runtime.test.ts",
     "validate:architecture": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-code-map.ps1"
   }

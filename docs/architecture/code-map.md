@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `usable-project-document-mvp` |
+| 작업 단위 | `bundled-runtime-portable` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
-| 브랜치 | `codex/usable-project-document-mvp` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.contracts`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `project.workspace.manage`, `project.document.revision`, `ui.shell`, `bootstrap.core.lifecycle`, `network.runtime.facade`, `network.transport.browser-same-origin` |
-| 완료 결과 | 실제 화면에서 프로젝트 생성과 문서 읽기·편집·revision 충돌 방지·원자 저장이 가능한 MVP 통합 검증 |
-| 다음 작업 | `bundled-runtime-portable` |
+| 브랜치 | `codex/bundled-runtime-portable` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.distribution`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `distribution.portable`, `bootstrap.paths.resolve`, `bootstrap.core.lifecycle`, `toolchain.node.typescript-runtime` |
+| 완료 결과 | 공식 SHA-256을 검증한 Node 24.18.0 LTS 포함, 시스템 Node·PATH 없이 ZIP 실행과 데이터 재사용 검증 |
+| 다음 작업 | `windows-installer` |
 
 ## 상태 라벨
 
@@ -85,6 +85,7 @@ flowchart TD
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/` | `TARGET` |
+| 자기완결 Windows 포터블 ZIP | Installer | `scripts/build-portable.ps1` | `CURRENT` |
 | Markdown 편집기 | Built-in Plugins | `builtin-plugins/` | `TARGET` |
 
 ## Client와 Browser 경계
