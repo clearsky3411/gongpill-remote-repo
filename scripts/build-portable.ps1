@@ -131,6 +131,7 @@ New-Item -ItemType Directory -Path $packageRoot | Out-Null
 
 Copy-ProjectTree -RelativePath 'browser\src'
 Copy-ProjectTree -RelativePath 'client\src'
+Copy-ProjectTree -RelativePath 'client\windows'
 Copy-ProjectTree -RelativePath 'core\src'
 Copy-ProjectTree -RelativePath 'packages\contracts'
 Copy-ProjectTree -RelativePath 'platform\network-runtime\browser'

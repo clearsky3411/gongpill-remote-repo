@@ -25,7 +25,7 @@ npm run validate:release
 
 부트스트랩 통합 테스트는 실제 Core 자식 프로세스와 loopback HTTP/SSE 연결, 후보 롤백, 시작 실패, 잔류 프로세스 정리를 검증한다.
 
-MVP 통합 테스트는 프로젝트·문서 생성, 경로 경계, revision 충돌, 원자 저장과 history, 일회용 Browser 쿠키 세션, 실제 Client 진입점과 종료 정리를 검증한다.
+MVP 통합 테스트는 프로젝트·문서 생성, 경로 경계, revision 충돌, 원자 저장과 history, 일회용 Browser 쿠키 세션, favicon, 실제 Client 진입점과 종료 정리를 검증한다. `tests/client`는 클라이언트(접속기)의 설치형·포터블 설정, 원자 덮어쓰기, 경로 경계와 실제 PowerShell 응답을 검증한다.
 
 포터블 테스트는 실제 ZIP을 새 임시 폴더에 풀고 시스템 `PATH` 없이 포함 Node로 두 번 실행하여 데이터 재사용과 포터블 데이터 루트를 검증한다.
 

@@ -248,13 +248,15 @@ GongpilPortable/
 ├─ app/
 ├─ runtime/
 ├─ plugins/
-└─ data/
+└─ GongpilData/
 ```
 
-- [ ] `portable.marker`가 있으면 데이터 루트를 무조건 `./data`로 사용한다.
-- [ ] AppData, PATH, 레지스트리에 공필 설정을 쓰지 않는다.
-- [ ] ZIP 해제 → 실행 → 폴더 삭제로 사용을 끝낼 수 있다.
-- [ ] 포터블과 설치형의 프로젝트 형식은 동일하다.
+- [x] `portable.marker`가 있으면 데이터 루트를 무조건 `./GongpilData`로 사용한다.
+- [x] AppData, PATH, 레지스트리에 공필 설정을 쓰지 않는다.
+- [x] ZIP 해제 → 실행 → 폴더 삭제로 사용을 끝낼 수 있다.
+- [x] 포터블과 설치형의 프로젝트 형식은 동일하다.
+
+현재 MVP는 단일 `GongpilClient.exe` 대신 `Gongpil.vbs` → 포함 Node → WinForms 접속기를 사용한다. 네이티브 exe 통합은 후속 작업이다.
 
 ---
 
@@ -1550,14 +1552,14 @@ interface GongpilError {
 
 ## Phase 3. 프로젝트와 데이터 루트
 
-- [ ] machine.json
-- [ ] dataRoot 선택/검증
-- [ ] 프로젝트 생성
+- [x] machine.json
+- [x] dataRoot 선택/검증
+- [x] 프로젝트 생성
 - [ ] 기존 폴더 연결
-- [ ] project manifest
+- [x] project manifest
 - [ ] 읽기 전용
 - [ ] lock
-- [ ] path boundary
+- [x] path boundary
 - [ ] 데이터 분류
 - [ ] 백업 기본
 
@@ -1786,24 +1788,24 @@ interface GongpilError {
 
 ## Phase 16. 설치·업데이트·삭제
 
-- [ ] 설치 패키지
-- [ ] dataRoot 선택
-- [ ] optional shortcuts
-- [ ] bundled runtime
-- [ ] core version package
+- [x] 설치 패키지
+- [x] dataRoot 선택
+- [x] optional shortcuts
+- [x] bundled runtime
+- [x] core version package
 - [ ] update manifest
-- [ ] checksum
+- [x] checksum
 - [ ] atomic active switch
 - [ ] rollback
 - [ ] uninstall choices
-- [ ] portable ZIP
+- [x] portable ZIP
 
 완료 조건:
 
-- [ ] 깨끗한 Windows에서 외부 런타임 없이 설치
-- [ ] 프로그램만 제거 후 데이터 재사용
+- [x] 격리된 Windows 환경에서 외부 런타임 없이 설치·실행
+- [x] 프로그램만 제거 후 설정과 사용자 지정 데이터 재사용
 - [ ] 완전 삭제 대상 사전 표시
-- [ ] 포터블 폴더 삭제로 종료
+- [x] 포터블 폴더 삭제로 종료
 
 ## Phase 17. 안정화와 0.1.0 출시
 

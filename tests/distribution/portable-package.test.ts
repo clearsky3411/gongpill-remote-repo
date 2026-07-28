@@ -35,6 +35,7 @@ test("포터블 패키지가 포함 Node만으로 실행되고 앱 옆에 데이
     access(join(packageRoot, "portable.marker")),
     access(join(packageRoot, "Gongpil.cmd")),
     access(join(packageRoot, "Gongpil.vbs")),
+    access(join(packageRoot, "client", "windows", "GongpilConnector.ps1")),
     access(join(packageRoot, "runtime", "NODE_LICENSE.txt")),
   ]);
 
@@ -109,14 +110,14 @@ async function OpenBrowserSession(readOutput: () => string) {
   const deadline = Date.now() + 10_000;
   let launchUrl: string | undefined;
   while (Date.now() < deadline) {
-    const match = /Browser 시작 주소: (http:\/\/127\.0\.0\.1:\d+\/launch\/[A-Za-z0-9_-]+)/.exec(readOutput());
+    const match = /인스턴스 시작 주소: (http:\/\/127\.0\.0\.1:\d+\/launch\/[A-Za-z0-9_-]+)/.exec(readOutput());
     if (match !== null) {
       launchUrl = match[1];
       break;
     }
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
-  assert.ok(launchUrl, `Browser 시작 주소 대기 시간 초과: ${readOutput()}`);
+  assert.ok(launchUrl, `인스턴스 시작 주소 대기 시간 초과: ${readOutput()}`);
   const launchResponse = await fetch(launchUrl, { redirect: "manual" });
   assert.equal(launchResponse.status, 303);
   return {

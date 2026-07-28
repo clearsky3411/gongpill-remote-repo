@@ -42,7 +42,7 @@ Source: "{#AppSourceRoot}\*"; DestDir: "{app}"; Excludes: "portable.marker,Gongp
 
 [Icons]
 Name: "{group}\Gongpil"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\Gongpil.vbs"""; WorkingDir: "{app}"
-Name: "{group}\공필 데이터 폴더"; Filename: "{localappdata}\Gongpil"
+Name: "{group}\Gongpil 설정"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\Gongpil.vbs"" --settings"; WorkingDir: "{app}"
 Name: "{group}\Gongpil 제거"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Gongpil"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\Gongpil.vbs"""; WorkingDir: "{app}"; Tasks: desktopicon
 

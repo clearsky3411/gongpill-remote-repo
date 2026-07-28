@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -10,16 +10,23 @@ if (setupPath === undefined) {
   throw new Error("GONGPIL_SETUP_PATH가 필요합니다.");
 }
 
-test("Windows Installer가 설치형으로 실행되고 제거 뒤 사용자 데이터를 보존한다", async () => {
+test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 설정과 데이터를 보존한다", async () => {
   const testRoot = await mkdtemp(join(tmpdir(), "gongpil-installer-test-"));
   const installRoot = join(testRoot, "installed", "Gongpil");
   const localAppData = join(testRoot, "local-app-data");
-  const dataRoot = join(localAppData, "Gongpil");
+  const dataRoot = join(testRoot, "selected-data-root");
+  const settingsPath = join(localAppData, "Gongpil", "client-settings.json");
   const environment = CreateIsolatedEnvironment(localAppData);
 
   try {
     Install(installRoot, join(testRoot, "install-1.log"), environment);
     await AssertInstalledLayout(installRoot);
+    await mkdir(join(localAppData, "Gongpil"), { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 1,
+      dataRoot,
+      showConnectorOnStartup: false,
+    }), "utf8");
 
     const firstRun = StartInstalledClient(installRoot, environment);
     try {
@@ -44,6 +51,7 @@ test("Windows Installer가 설치형으로 실행되고 제거 뒤 사용자 데
     Uninstall(installRoot, join(testRoot, "uninstall-1.log"), environment);
     await WaitForMissing(installRoot);
     assert.equal(JSON.parse(await readFile(join(dataRoot, "machine.json"), "utf8")).machineId, machineBeforeUninstall.machineId);
+    assert.equal(JSON.parse(await readFile(settingsPath, "utf8")).dataRoot, dataRoot);
 
     Install(installRoot, join(testRoot, "install-2.log"), environment);
     const secondRun = StartInstalledClient(installRoot, environment);
@@ -65,6 +73,7 @@ test("Windows Installer가 설치형으로 실행되고 제거 뒤 사용자 데
     Uninstall(installRoot, join(testRoot, "uninstall-2.log"), environment);
     await WaitForMissing(installRoot);
     await access(join(dataRoot, "machine.json"));
+    await access(settingsPath);
   }
   finally {
     await RemoveTreeEventually(testRoot);
@@ -99,10 +108,12 @@ async function AssertInstalledLayout(installRoot: string): Promise<void> {
     access(join(installRoot, "runtime", "node.exe")),
     access(join(installRoot, "runtime", "NODE_LICENSE.txt")),
     access(join(installRoot, "client", "src", "client-process.ts")),
+    access(join(installRoot, "client", "windows", "GongpilConnector.ps1")),
     access(join(installRoot, "Gongpil.vbs")),
     access(join(installRoot, "Gongpil.cmd")),
     access(join(installRoot, "unins000.exe")),
   ]);
+  assert.match(await readFile(join(installRoot, "Gongpil.vbs"), "utf8"), /WScript\.Arguments/);
   await assert.rejects(() => access(join(installRoot, "portable.marker")));
 }
 
@@ -150,14 +161,14 @@ async function OpenBrowserSession(readOutput: () => string) {
   const deadline = Date.now() + 10_000;
   let launchUrl: string | undefined;
   while (Date.now() < deadline) {
-    const match = /Browser 시작 주소: (http:\/\/127\.0\.0\.1:\d+\/launch\/[A-Za-z0-9_-]+)/.exec(readOutput());
+    const match = /인스턴스 시작 주소: (http:\/\/127\.0\.0\.1:\d+\/launch\/[A-Za-z0-9_-]+)/.exec(readOutput());
     if (match !== null) {
       launchUrl = match[1];
       break;
     }
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
-  assert.ok(launchUrl, `Browser 시작 주소 대기 시간 초과: ${readOutput()}`);
+  assert.ok(launchUrl, `인스턴스 시작 주소 대기 시간 초과: ${readOutput()}`);
   const launchResponse = await fetch(launchUrl, { redirect: "manual" });
   assert.equal(launchResponse.status, 303);
   return {
