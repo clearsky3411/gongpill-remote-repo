@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex Pro/OpenAI API 선택형 공동 집필 + 사용량·개발 로그
-- 최근 작업 브랜치: `codex/codex-provider-usage-observability`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + UTF-8 청크·증분 색인·검색
+- 최근 작업 브랜치: `codex/chunk-coordinate-index-search`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
@@ -85,7 +85,7 @@ npm run validate:release
 - [x] 전체 문서 생성·교체 제안, 변경 전후 확인, 승인·거절과 revision 충돌 방지
 - [ ] 기존 폴더 연결, 프로젝트 ID, 잠금과 읽기 전용 모드
 - [x] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
-- [ ] 청크 파싱, 증분 색인, 검색과 컨텍스트 조립
+- [x] 청크 파싱, 증분 색인, 검색과 명시 선택 컨텍스트 조립
 - [ ] 변경 제안, diff, 승인, 적용, 감사와 원복
 - [ ] 실행 Flow/Scope/Trace, 진행률, 취소와 오류 추적
 - [ ] 플러그인 계약·SDK·권한·설치 관리자
@@ -159,6 +159,25 @@ npm run validate:release
 - [ ] 프로젝트·문서를 선택하고 공동 집필 요청 뒤 토큰 정보가 갱신되는지 확인한다
 - [ ] `개발 로그`에서 키·문서 내용 없이 실행 상태만 보이는지 확인한다
 - [ ] 접속기에서 `OpenAI API (별도 과금)`로 바꾸면 예상 비용 문구가 표시되는지 확인한다
+
+### 현재 완료 보고: 청크·좌표·증분 색인·검색
+
+- [x] Markdown heading, JSON 최상위 구조, text 문단 기준 파서를 제공한다
+- [x] 내부 좌표를 `revision + UTF-8 byte [start,end)`로 고정하고 줄 번호·8자리 16진 범위를 표시용으로 제공한다
+- [x] 한글·한자·이모지·결합 문자·CRLF에서 byte 범위로 원문을 정확히 복원한다
+- [x] 32KB 초과 청크를 UTF-8 문자 경계를 깨지 않고 하위 분할한다
+- [x] 문서 revision이 바뀐 경우에만 해당 문서 청크를 다시 만들고 미변경 문서 chunk ID를 유지한다
+- [x] 누락·손상 색인은 사용자 원본에서 다시 생성할 수 있는 파생 JSON으로 저장한다
+- [x] 프로젝트 전체 키워드 검색과 문서별 청크 목록 Core 명령을 제공한다
+- [x] 인스턴스에서 현재 문서 청크·검색 결과를 여러 개 선택하고 AI 요청에 명시 전달한다
+- [x] 오래된 chunk ID와 1MB 초과 선택 컨텍스트를 Core에서 거부한다
+
+사용자가 직접 확인할 항목:
+
+- [ ] heading이 여러 개인 Markdown 문서를 열어 각 heading 청크와 byte 좌표가 보이는지 확인한다
+- [ ] 청크 검색으로 다른 문서의 결과를 찾고 여러 개를 선택한다
+- [ ] 공동 집필 요청 뒤 선택한 청크만 AI 컨텍스트로 전달되는지 답변으로 확인한다
+- [ ] 문서를 수정·저장하면 이전 선택이 정리되고 새 청크 좌표가 표시되는지 확인한다
 
 사용자가 직접 확인할 항목:
 
@@ -298,13 +317,13 @@ npm run validate:release
 
 ### Phase 5. 청크와 증분 색인
 
-- [ ] parser 인터페이스와 Markdown·JSON·text parser
-- [ ] Unicode를 고려한 내부 좌표 모델 확정
-- [ ] 안정적인 chunk ID와 source address
+- [x] parser 인터페이스와 Markdown·JSON·text parser
+- [x] revision + UTF-8 byte 내부 좌표 모델 확정
+- [x] 안정적인 chunk ID와 source address
 - [ ] watcher event 병합
-- [ ] 변경 파일만 처리하는 incremental index
+- [x] 변경 파일만 처리하는 incremental index
 - [ ] 색인 전체 rebuild와 상태 공개
-- [ ] 색인 삭제 뒤 원본에서 재생성
+- [x] 색인 삭제·손상 뒤 원본에서 재생성
 - [ ] 파일명·heading·전문·태그·참조 검색 API
 
 ### Phase 6. 변경 제안과 승인
@@ -375,7 +394,8 @@ npm run validate:release
 - [x] 프로젝트별 JSON 저장과 재실행 후 대화 표시
 - [x] Responses API text delta 스트리밍
 - [ ] persona 버전과 작업 profile 전환
-- [ ] 검색 청크 선택과 자동 추가 구분
+- [x] 검색 청크 명시 선택
+- [ ] 자동 추가 청크와 명시 선택 청크 구분
 - [ ] 토큰 예산, 중복 제거와 누락 경고
 - [ ] 응답에 사용한 파일·범위·revision snapshot 기록
 - [ ] 원본과 분리된 수정·삭제 가능한 장기 기억

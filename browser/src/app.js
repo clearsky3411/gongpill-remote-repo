@@ -12,6 +12,9 @@ const state = {
   chatConfigured: false,
   providerStatus: undefined,
   usage: undefined,
+  chunks: [],
+  selectedChunkIds: new Set(),
+  selectedChunkPaths: new Map(),
   chatSending: false,
   streamingText: "",
 };
@@ -36,6 +39,12 @@ const elements = {
   saveStatus: document.querySelector("#saveStatus"),
   characterCount: document.querySelector("#characterCount"),
   aiStatus: document.querySelector("#aiStatus"),
+  chunkSearchForm: document.querySelector("#chunkSearchForm"),
+  chunkSearchInput: document.querySelector("#chunkSearchInput"),
+  chunkList: document.querySelector("#chunkList"),
+  contextSelectionSummary: document.querySelector("#contextSelectionSummary"),
+  selectVisibleChunksButton: document.querySelector("#selectVisibleChunksButton"),
+  clearChunkSelectionButton: document.querySelector("#clearChunkSelectionButton"),
   chatMessages: document.querySelector("#chatMessages"),
   chatForm: document.querySelector("#chatForm"),
   chatInput: document.querySelector("#chatInput"),
@@ -69,11 +78,15 @@ async function OpenProject(projectId) {
   state.activeProject = payload.project;
   state.documents = payload.documents ?? [];
   state.activeDocument = undefined;
+  state.chunks = [];
+  state.selectedChunkIds.clear();
+  state.selectedChunkPaths.clear();
   state.dirty = false;
   RenderProjects();
   RenderDocuments();
   RenderEditor();
   await LoadChatSession();
+  await LoadChunks();
 }
 
 async function LoadChatSession() {
@@ -122,6 +135,7 @@ async function SendChatMessage() {
       projectId: state.activeProject.projectId,
       message,
       documentPath: state.activeDocument?.path,
+      chunkIds: [...state.selectedChunkIds],
     }));
     await LoadChatSession();
   }
@@ -144,6 +158,7 @@ async function OpenDocument(path) {
   state.dirty = false;
   RenderDocuments();
   RenderEditor();
+  await LoadChunks(path);
 }
 
 async function SaveDocument() {
@@ -163,6 +178,7 @@ async function SaveDocument() {
     state.dirty = false;
     elements.saveStatus.textContent = "저장 완료";
     await RefreshDocuments();
+    await LoadChunks(state.activeDocument.path);
     RenderEditor();
     ShowToast("문서를 안전하게 저장했습니다.");
   }
@@ -170,6 +186,97 @@ async function SaveDocument() {
     elements.saveButton.disabled = false;
     elements.saveStatus.textContent = "저장 실패";
     ShowToast(error.message);
+  }
+}
+
+async function LoadChunks(documentPath = state.activeDocument?.path) {
+  if (state.activeProject === undefined) {
+    state.chunks = [];
+    RenderContextSelection();
+    return;
+  }
+  const payload = RequirePayload(await runtime.Send("chunk.list", {
+    projectId: state.activeProject.projectId,
+    documentPath,
+  }));
+  state.chunks = payload.chunks ?? [];
+  PruneChunkSelection(documentPath);
+  RenderContextSelection();
+}
+
+async function SearchChunks() {
+  if (state.activeProject === undefined) {
+    return;
+  }
+  const query = elements.chunkSearchInput.value.trim();
+  if (query.length === 0) {
+    await LoadChunks();
+    return;
+  }
+  const payload = RequirePayload(await runtime.Send("chunk.search", {
+    projectId: state.activeProject.projectId,
+    query,
+    limit: 100,
+  }));
+  state.chunks = (payload.results ?? []).map((result) => result.chunk);
+  RenderContextSelection();
+}
+
+function RenderContextSelection() {
+  elements.contextSelectionSummary.textContent = `선택 ${state.selectedChunkIds.size.toLocaleString("ko-KR")}개`;
+  elements.selectVisibleChunksButton.disabled = state.chunks.length === 0;
+  elements.clearChunkSelectionButton.disabled = state.selectedChunkIds.size === 0;
+  elements.chunkSearchInput.disabled = state.activeProject === undefined;
+  elements.chunkList.replaceChildren();
+  if (state.chunks.length === 0) {
+    elements.chunkList.className = "chunk-list empty-state";
+    elements.chunkList.textContent = state.activeProject === undefined
+      ? "프로젝트를 선택하세요."
+      : "표시할 청크가 없습니다.";
+    return;
+  }
+  elements.chunkList.className = "chunk-list";
+  for (const chunk of state.chunks) {
+    const label = document.createElement("label");
+    label.className = "chunk-option";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = state.selectedChunkIds.has(chunk.chunkId);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        state.selectedChunkIds.add(chunk.chunkId);
+        state.selectedChunkPaths.set(chunk.chunkId, chunk.path);
+      }
+      else {
+        state.selectedChunkIds.delete(chunk.chunkId);
+        state.selectedChunkPaths.delete(chunk.chunkId);
+      }
+      RenderContextSelection();
+    });
+    const details = document.createElement("span");
+    const title = document.createElement("strong");
+    title.textContent = `${chunk.path} · ${chunk.title}`;
+    const coordinate = document.createElement("small");
+    coordinate.textContent = `L${chunk.coordinate.lineStart}-${chunk.coordinate.lineEnd} · ${chunk.coordinate.display}`;
+    const preview = document.createElement("span");
+    preview.className = "chunk-preview";
+    preview.textContent = chunk.preview || "(빈 청크)";
+    details.append(title, coordinate, preview);
+    label.append(checkbox, details);
+    elements.chunkList.append(label);
+  }
+}
+
+function PruneChunkSelection(documentPath) {
+  if (documentPath === undefined) {
+    return;
+  }
+  const currentIds = new Set(state.chunks.map((chunk) => chunk.chunkId));
+  for (const [chunkId, selectedPath] of state.selectedChunkPaths) {
+    if (selectedPath === documentPath && !currentIds.has(chunkId)) {
+      state.selectedChunkIds.delete(chunkId);
+      state.selectedChunkPaths.delete(chunkId);
+    }
   }
 }
 
@@ -572,6 +679,22 @@ elements.chatForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void RunAction(SendChatMessage);
 });
+elements.chunkSearchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void RunAction(SearchChunks);
+});
+elements.selectVisibleChunksButton.addEventListener("click", () => {
+  for (const chunk of state.chunks) {
+    state.selectedChunkIds.add(chunk.chunkId);
+    state.selectedChunkPaths.set(chunk.chunkId, chunk.path);
+  }
+  RenderContextSelection();
+});
+elements.clearChunkSelectionButton.addEventListener("click", () => {
+  state.selectedChunkIds.clear();
+  state.selectedChunkPaths.clear();
+  RenderContextSelection();
+});
 elements.shutdownButton.addEventListener("click", () => {
   if (!confirm("공필 Core를 종료하시겠습니까?")) {
     return;
@@ -601,6 +724,7 @@ runtime.Subscribe((event) => {
   }
   if (event.eventName === "document.changed" && event.payload.projectId === state.activeProject?.projectId) {
     void RunAction(RefreshDocuments);
+    void RunAction(() => LoadChunks(state.activeDocument?.path));
   }
   if (event.eventName === "chat.message.delta" && event.payload.projectId === state.activeProject?.projectId) {
     state.streamingText += event.payload.delta ?? "";
@@ -620,4 +744,5 @@ window.addEventListener("beforeunload", (event) => {
 
 void RunAction(async () => {
   await Promise.all([LoadProjects(), LoadProviderStatus()]);
+  RenderContextSelection();
 });

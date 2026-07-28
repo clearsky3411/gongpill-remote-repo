@@ -119,6 +119,22 @@ input:focus, textarea:focus { outline: 2px solid rgba(165, 71, 42, 0.2); border-
 .chat-heading { display: flex; align-items: center; justify-content: space-between; }
 .ai-status { color: var(--muted); font-size: 0.75rem; }
 .ai-status[data-ready="true"] { color: var(--green); }
+.context-selector { padding: 11px 13px; border-bottom: 1px solid var(--line); background: #faf6ef; }
+.context-selector-heading { display: flex; justify-content: space-between; margin-bottom: 8px; color: var(--muted); font-size: 0.75rem; }
+.context-search-form { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.context-search-form input { padding: 0.48rem 0.6rem; font-size: 0.78rem; }
+.context-search-form button { padding: 0.48rem 0.7rem; font-size: 0.76rem; }
+.context-actions { display: flex; gap: 6px; margin-top: 7px; }
+.context-actions button { flex: 1; padding: 0.42rem; font-size: 0.7rem; }
+.chunk-list { max-height: 170px; overflow: auto; margin-top: 8px; }
+.chunk-list.empty-state { padding: 9px; font-size: 0.75rem; }
+.chunk-option { display: grid; grid-template-columns: auto 1fr; gap: 8px; padding: 7px; border-radius: 7px; cursor: pointer; }
+.chunk-option:hover { background: #f2e7dc; }
+.chunk-option input { width: auto; margin-top: 3px; }
+.chunk-option strong, .chunk-option small, .chunk-preview { display: block; }
+.chunk-option strong { font-size: 0.74rem; }
+.chunk-option small { margin-top: 2px; color: var(--accent); font: 10px Consolas, monospace; }
+.chunk-preview { margin-top: 3px; color: var(--muted); font-size: 0.7rem; line-height: 1.35; }
 .chat-messages { flex: 1; overflow: auto; padding: 14px; }
 .chat-message { margin: 0 0 10px; padding: 11px 13px; border-radius: 10px; white-space: pre-wrap; line-height: 1.55; font-size: 0.88rem; }
 .chat-message[data-role="user"] { margin-left: 28px; background: #f3e7dd; }

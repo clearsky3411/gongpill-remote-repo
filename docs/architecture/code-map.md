@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `codex-provider-usage-observability` |
+| 작업 단위 | `chunk-coordinate-index-search` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
-| 브랜치 | `codex/codex-provider-usage-observability` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.connector.settings`, `ai.openai.responses`, `ai.provider.codex`, `ai.usage.observe`, `diagnostics.logs`, `ui.ai-collaboration`, `ui.observability`, `release.validation` |
-| 완료 결과 | ChatGPT 구독 Codex 공급자, API 선택·비용 표시, 공급자 사용량과 구조화 개발 로그 UI |
-| 다음 작업 | `chunk-coordinate-index-search` |
+| 브랜치 | `codex/chunk-coordinate-index-search` |
+| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `document.chunk.parse`, `document.index.search`, `ui.ai-collaboration`, `ui.context-selection`, `release.validation` |
+| 완료 결과 | UTF-8 byte 좌표 청크, 증분 색인·검색, 공동 집필 문서·청크 선택 UI와 전체 릴리스 검증 통과 |
+| 다음 작업 | `persona-context-source-snapshots` |
 
 ## 상태 라벨
 
@@ -82,6 +82,8 @@ flowchart TD
 | Browser same-origin transport | Network Runtime | `platform/network-runtime/browser/network-runtime.js` | `CURRENT` |
 | 프로젝트 생성·목록·열기 | Core | `core/src/project-store.ts` | `CURRENT` |
 | 문서 snapshot과 revision | Core | `core/src/document-store.ts` | `CURRENT` |
+| UTF-8 byte 좌표 기반 문서 청크 파싱 | Core | `core/src/chunk-parser.ts` | `CURRENT` |
+| revision 기반 증분 청크 색인과 검색 | Core | `core/src/chunk-index-store.ts` | `CURRENT` |
 | OpenAI Responses API 외부 어댑터 | Network Runtime | `platform/network-runtime/src/external/openai-responses-adapter.ts` | `CURRENT` |
 | ChatGPT 구독 Codex App Server 공급자 | Core | `core/src/codex-app-server-client.ts` | `CURRENT` |
 | 공급자 토큰·한도·API 예상 비용 관측 | Core | `core/src/core-process.ts` | `CURRENT` |
@@ -91,6 +93,7 @@ flowchart TD
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |
+| 공동 집필 문서·청크 검색과 명시 선택 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |
 | 자기완결 Windows 포터블 ZIP | Installer | `scripts/build-portable.ps1` | `CURRENT` |
