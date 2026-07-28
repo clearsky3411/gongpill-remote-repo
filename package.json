@@ -1,0 +1,15 @@
+{
+  "name": "gongpil-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.12.0"
+  },
+  "scripts": {
+    "demo:network": "node platform/network-runtime/demo/network-runtime-demo.ts",
+    "demo:network:loopback": "node platform/network-runtime/demo/loopback-network-runtime-demo.ts",
+    "test:network": "node --test platform/network-runtime/test/network-runtime.test.ts platform/network-runtime/test/loopback-network-runtime.test.ts",
+    "validate:architecture": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate-code-map.ps1"
+  }
+}
