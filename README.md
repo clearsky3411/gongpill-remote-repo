@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + UTF-8 청크·증분 색인·검색
-- 최근 작업 브랜치: `codex/chunk-coordinate-index-search`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 청크·검색 + 페르소나·출처 snapshot
+- 최근 작업 브랜치: `codex/persona-context-source-snapshots`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
@@ -178,6 +178,25 @@ npm run validate:release
 - [ ] 청크 검색으로 다른 문서의 결과를 찾고 여러 개를 선택한다
 - [ ] 공동 집필 요청 뒤 선택한 청크만 AI 컨텍스트로 전달되는지 답변으로 확인한다
 - [ ] 문서를 수정·저장하면 이전 선택이 정리되고 새 청크 좌표가 표시되는지 확인한다
+
+### 현재 완료 보고: 페르소나·컨텍스트·출처 snapshot
+
+- [x] 프로젝트별 기본 페르소나와 작업 프로필을 `dataRoot/personas`에 원자 저장한다
+- [x] 기존 페르소나를 덮어쓰지 않고 새 버전을 누적해 과거 채팅의 의미를 보존한다
+- [x] 인스턴스에서 페르소나·버전·작업 프로필을 즉시 전환하고 새 항목을 저장한다
+- [x] 작업 프로필마다 1,000~200,000 범위의 컨텍스트 토큰 예산을 설정한다
+- [x] 명시 선택 청크를 chunk ID로 중복 제거하고 예산 초과 출처 개수와 경고를 숨기지 않는다
+- [x] 실제 AI 입력에 포함된 출처만 파일·revision·UTF-8 byte·line·내용 SHA-256·원문 snapshot으로 채팅에 저장한다
+- [x] 문서가 나중에 수정돼도 당시 사용한 출처 내용과 페르소나 버전을 채팅에서 다시 확인한다
+- [x] 기존 메타데이터 없는 채팅 JSON을 그대로 읽는 하위 호환 테스트를 제공한다
+
+사용자가 직접 확인할 항목:
+
+- [ ] 공동 집필 패널 위에서 페르소나·버전·작업 프로필을 바꿔본다
+- [ ] `페르소나·프로필 편집`을 열어 새 버전과 새 프로필을 저장한다
+- [ ] 여러 청크를 선택하고 AI 요청 뒤 사용자 메시지의 `사용 출처`를 펼친다
+- [ ] 파일·줄·byte·revision과 당시 원문이 표시되는지 확인한다
+- [ ] 토큰 예산을 1,000으로 낮추고 큰 청크를 선택해 누락 경고가 보이는지 확인한다
 
 사용자가 직접 확인할 항목:
 
@@ -393,11 +412,11 @@ npm run validate:release
 - [x] 프로젝트별 chat message와 proposal의 안정적인 ID
 - [x] 프로젝트별 JSON 저장과 재실행 후 대화 표시
 - [x] Responses API text delta 스트리밍
-- [ ] persona 버전과 작업 profile 전환
+- [x] persona 버전과 작업 profile 전환
 - [x] 검색 청크 명시 선택
 - [ ] 자동 추가 청크와 명시 선택 청크 구분
-- [ ] 토큰 예산, 중복 제거와 누락 경고
-- [ ] 응답에 사용한 파일·범위·revision snapshot 기록
+- [x] 토큰 예산, 중복 제거와 누락 경고
+- [x] 응답에 사용한 파일·범위·revision snapshot 기록
 - [ ] 원본과 분리된 수정·삭제 가능한 장기 기억
 
 ### Phase 13. Markdown 편집기와 검색 플러그인

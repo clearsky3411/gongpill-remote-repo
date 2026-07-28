@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `chunk-coordinate-index-search` |
+| 작업 단위 | `persona-context-source-snapshots` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
-| 브랜치 | `codex/chunk-coordinate-index-search` |
+| 브랜치 | `codex/persona-context-source-snapshots` |
 | 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `document.chunk.parse`, `document.index.search`, `ui.ai-collaboration`, `ui.context-selection`, `release.validation` |
-| 완료 결과 | UTF-8 byte 좌표 청크, 증분 색인·검색, 공동 집필 문서·청크 선택 UI와 전체 릴리스 검증 통과 |
-| 다음 작업 | `persona-context-source-snapshots` |
+| 활성 기능 | `persona.version.manage`, `context.build.budget`, `context.source.snapshot`, `ui.persona-context`, `release.validation` |
+| 완료 결과 | 페르소나 버전·작업 프로필 전환, 예산 기반 컨텍스트, 재현 가능한 실제 출처 snapshot UI와 전체 릴리스 검증 통과 |
+| 다음 작업 | `chat-branches-and-long-term-memory` |
 
 ## 상태 라벨
 
@@ -89,11 +89,15 @@ flowchart TD
 | 공급자 토큰·한도·API 예상 비용 관측 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 민감정보 제거 구조화 개발 로그 | Core | `core/src/diagnostic-log-store.ts` | `CURRENT` |
 | 프로젝트 공동 집필 채팅과 제안 저장 | Core | `core/src/chat-store.ts` | `CURRENT` |
+| 프로젝트 페르소나 버전과 작업 프로필 관리 | Core | `core/src/persona-store.ts` | `CURRENT` |
+| 토큰 예산·중복 제거·누락 경고 컨텍스트 조립 | Core | `core/src/context-builder.ts` | `CURRENT` |
+| AI 요청 실제 출처 revision·좌표·내용 snapshot | Core | `core/src/chat-store.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 문서·청크 검색과 명시 선택 UI | Browser | `browser/src/index.html` | `CURRENT` |
+| 페르소나·작업 프로필 전환과 요청 출처 확인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |
 | 자기완결 Windows 포터블 ZIP | Installer | `scripts/build-portable.ps1` | `CURRENT` |

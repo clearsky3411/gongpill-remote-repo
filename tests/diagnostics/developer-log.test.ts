@@ -20,6 +20,9 @@ test("개발 로그는 허용된 실행 정보만 저장하고 키·경로·문�
         provider: "openai-api",
         model: "gpt-5.6-terra",
         httpStatus: 429,
+        personaVersion: 2,
+        contextSources: 3,
+        contextOmitted: 1,
         apiKey: "sk-should-never-appear",
         documentPath: "G:\\secret\\draft.md",
         documentContent: "비밀 원고",
@@ -32,6 +35,9 @@ test("개발 로그는 허용된 실행 정보만 저장하고 키·경로·문�
       provider: "openai-api",
       model: "gpt-5.6-terra",
       httpStatus: 429,
+      personaVersion: 2,
+      contextSources: 3,
+      contextOmitted: 1,
     });
     const serialized = JSON.stringify(entries);
     assert.doesNotMatch(serialized, /sk-should|secret|비밀 원고/);

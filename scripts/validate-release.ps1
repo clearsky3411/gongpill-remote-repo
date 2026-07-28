@@ -65,6 +65,7 @@ Invoke-NpmScript -Name 'test:client'
 Invoke-NpmScript -Name 'test:ai'
 Invoke-NpmScript -Name 'test:diagnostics'
 Invoke-NpmScript -Name 'test:chunks'
+Invoke-NpmScript -Name 'test:context'
 Invoke-NpmScript -Name 'test:mvp'
 Invoke-NpmScript -Name 'test:portable'
 Invoke-NpmScript -Name 'test:installer'
@@ -77,6 +78,6 @@ Write-Host "`n[release] Gongpil $Version MVP 전체 검증 성공" -ForegroundCo
 [ordered]@{
     version = $Version
     validatedAt = (Get-Date).ToUniversalTime().ToString('o')
-    checks = @('test:network', 'test:bootstrap', 'test:client', 'test:ai', 'test:diagnostics', 'test:chunks', 'test:mvp', 'test:portable', 'test:installer', 'validate:architecture')
+    checks = @('test:network', 'test:bootstrap', 'test:client', 'test:ai', 'test:diagnostics', 'test:chunks', 'test:context', 'test:mvp', 'test:portable', 'test:installer', 'validate:architecture')
     artifacts = @($portableArtifact, $installerArtifact)
 } | ConvertTo-Json -Depth 4

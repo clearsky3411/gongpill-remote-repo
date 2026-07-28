@@ -2,11 +2,15 @@ import { randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import type { GongpilContextSnapshot } from "./context-builder.ts";
+
 export interface GongpilChatMessage {
   messageId: string;
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+  contextSnapshot?: GongpilContextSnapshot;
+  inReplyToMessageId?: string;
 }
 
 export interface GongpilDocumentProposal {
@@ -52,6 +56,7 @@ export class GongpilChatStore {
     projectId: string,
     role: GongpilChatMessage["role"],
     content: string,
+    options: Pick<GongpilChatMessage, "contextSnapshot" | "inReplyToMessageId"> = {},
   ): Promise<GongpilChatMessage> {
     return await this.RunMutation(projectId, async () => {
       const session = await this.ReadSessionUnsafe(projectId);
@@ -60,6 +65,7 @@ export class GongpilChatStore {
         role,
         content,
         createdAt: new Date().toISOString(),
+        ...options,
       };
       session.messages.push(message);
       session.updatedAt = message.createdAt;
@@ -121,7 +127,10 @@ export class GongpilChatStore {
   private async ReadSessionUnsafe(projectId: string): Promise<GongpilChatSession> {
     try {
       const value = JSON.parse(await readFile(this.GetSessionPath(projectId), "utf8")) as GongpilChatSession;
-      if (value.projectId !== projectId || !Array.isArray(value.messages) || !Array.isArray(value.proposals)) {
+      if (value.projectId !== projectId
+        || !Array.isArray(value.messages)
+        || !value.messages.every(IsChatMessage)
+        || !Array.isArray(value.proposals)) {
         throw new Error("invalid");
       }
       return value;
@@ -171,4 +180,54 @@ export class GongpilChatStore {
 
   private readonly chatRoot: string;
   private readonly mutations = new Map<string, Promise<void>>();
+}
+
+function IsChatMessage(value: unknown): value is GongpilChatMessage {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const message = value as Partial<GongpilChatMessage>;
+  return typeof message.messageId === "string"
+    && (message.role === "user" || message.role === "assistant")
+    && typeof message.content === "string"
+    && typeof message.createdAt === "string"
+    && (message.inReplyToMessageId === undefined || typeof message.inReplyToMessageId === "string")
+    && (message.contextSnapshot === undefined || IsContextSnapshot(message.contextSnapshot));
+}
+
+function IsContextSnapshot(value: GongpilContextSnapshot): boolean {
+  return typeof value.snapshotId === "string"
+    && typeof value.createdAt === "string"
+    && typeof value.persona === "object"
+    && value.persona !== null
+    && typeof value.persona.personaId === "string"
+    && typeof value.persona.versionId === "string"
+    && Number.isSafeInteger(value.persona.version)
+    && typeof value.persona.name === "string"
+    && typeof value.profile === "object"
+    && value.profile !== null
+    && typeof value.profile.profileId === "string"
+    && typeof value.profile.name === "string"
+    && Number.isSafeInteger(value.profile.contextTokenBudget)
+    && Number.isSafeInteger(value.requestedSourceCount)
+    && Number.isSafeInteger(value.includedSourceCount)
+    && Number.isSafeInteger(value.omittedSourceCount)
+    && Number.isSafeInteger(value.estimatedInputTokens)
+    && Array.isArray(value.warnings)
+    && value.warnings.every((warning) => typeof warning === "string")
+    && Array.isArray(value.sources)
+    && value.sources.every((source) => (
+      typeof source.sourceId === "string"
+      && (source.selectionKind === "explicit" || source.selectionKind === "active-document")
+      && typeof source.fileId === "string"
+      && typeof source.path === "string"
+      && typeof source.revision === "string"
+      && typeof source.title === "string"
+      && Number.isSafeInteger(source.byteStart)
+      && Number.isSafeInteger(source.byteEnd)
+      && Number.isSafeInteger(source.lineStart)
+      && Number.isSafeInteger(source.lineEnd)
+      && typeof source.content === "string"
+      && /^[a-f0-9]{64}$/.test(source.contentSha256)
+    ));
 }

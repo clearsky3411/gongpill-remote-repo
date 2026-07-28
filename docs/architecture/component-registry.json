@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "chunk-coordinate-index-search",
+    "activeWorkUnit": "persona-context-source-snapshots",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "branch": "codex/chunk-coordinate-index-search",
+    "branch": "codex/persona-context-source-snapshots",
     "activeComponentIds": [
       "gongpil.core",
       "gongpil.browser",
@@ -16,14 +16,14 @@
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "document.chunk.parse",
-      "document.index.search",
-      "ui.ai-collaboration",
-      "ui.context-selection",
+      "persona.version.manage",
+      "context.build.budget",
+      "context.source.snapshot",
+      "ui.persona-context",
       "release.validation"
     ],
-    "summary": "revision과 결합된 UTF-8 byte 좌표로 Markdown, JSON, text 문서를 청크화하고 변경 문서만 증분 색인하며 검색·문서/청크 선택을 공동 집필 컨텍스트로 전달한다.",
-    "nextRecommendedWorkUnit": "persona-context-source-snapshots"
+    "summary": "프로젝트별 페르소나 버전과 작업 프로필을 전환하고 토큰 예산·중복 제거·누락 경고가 있는 컨텍스트를 조립하며 실제 사용 출처의 revision·좌표·내용 snapshot을 채팅에 보존한다.",
+    "nextRecommendedWorkUnit": "chat-branches-and-long-term-memory"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -70,11 +70,11 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals", "ai-provider", "diagnostic-logs", "chunk-parser", "chunk-index"],
+      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals", "ai-provider", "diagnostic-logs", "chunk-parser", "chunk-index", "persona-store", "context-builder", "source-snapshots"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts", "core/src/chunk-parser.ts", "core/src/chunk-index-store.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/chunks/chunk-index-search.test.ts"],
+      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts", "core/src/chunk-parser.ts", "core/src/chunk-index-store.ts", "core/src/persona-store.ts", "core/src/context-builder.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/chunks/chunk-index-search.test.ts", "tests/context/persona-context-source.test.ts"],
       "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -84,11 +84,11 @@
       "kind": "ui",
       "status": "CURRENT",
       "responsibility": "절대 저장 경로를 알지 않는 WebView와 브라우저 공통 사용자 인터페이스",
-      "owns": ["ui-state", "project-navigation", "document-editor", "connection-status", "approval-view"],
+      "owns": ["ui-state", "project-navigation", "document-editor", "connection-status", "approval-view", "persona-context-view", "source-snapshot-view"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
       "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/styles.css", "browser/src/favicon.svg"],
-      "tests": ["tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/context/persona-context-source.test.ts"],
       "relatedDocs": ["browser/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -210,11 +210,11 @@
       "kind": "test-group",
       "status": "CURRENT",
       "responsibility": "통합, E2E, 마이그레이션과 장애 주입 검증",
-      "owns": ["bootstrap-integration-tests", "project-document-mvp-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
+      "owns": ["bootstrap-integration-tests", "project-document-mvp-tests", "persona-context-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.installer", "gongpil.platform", "gongpil.network-runtime", "gongpil.packages", "gongpil.builtin-plugins"],
       "usedBy": [],
       "publicInterfaces": [],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/context/persona-context-source.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "relatedDocs": ["tests/README.md"]
     },
     {
@@ -438,6 +438,46 @@
       "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.message.send"], "events": ["chat.message.delta", "chat.message.completed", "proposal.created"] }
     },
     {
+      "id": "persona.version.manage",
+      "name": "프로젝트 페르소나 버전과 작업 프로필 관리",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/persona-store.ts",
+      "entrypoints": ["GongpilPersonaStore", "persona.workspace.read", "persona.version.create", "persona.profile.save", "persona.selection.update"],
+      "tests": ["tests/context/persona-context-source.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["persona.workspace.read", "persona.version.create", "persona.profile.save", "persona.selection.update"], "events": [] }
+    },
+    {
+      "id": "context.build.budget",
+      "name": "토큰 예산·중복 제거·누락 경고 컨텍스트 조립",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/context-builder.ts",
+      "entrypoints": ["BuildWritingContext"],
+      "tests": ["tests/context/persona-context-source.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "context.source.snapshot",
+      "name": "AI 요청 실제 출처 revision·좌표·내용 snapshot",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/chat-store.ts",
+      "entrypoints": ["GongpilContextSnapshot", "GongpilChatStore.AppendMessage", "chat.session.read"],
+      "tests": ["tests/context/persona-context-source.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.message.send"], "events": ["chat.message.completed"] }
+    },
+    {
+      "id": "ui.persona-context",
+      "name": "페르소나·작업 프로필 전환과 요청 출처 확인 UI",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.browser",
+      "path": "browser/src/index.html",
+      "entrypoints": ["LoadPersonaWorkspace", "RenderPersonaWorkspace", "RenderContextSnapshot"],
+      "tests": ["tests/context/persona-context-source.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["persona.workspace.read", "persona.version.create", "persona.profile.save", "persona.selection.update", "chat.session.read"], "events": [] }
+    },
+    {
       "id": "ui.ai-collaboration",
       "name": "인스턴스 공동 집필 채팅과 변경 승인 UI",
       "status": "CURRENT",
@@ -603,8 +643,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.repository",
       "path": "package.json",
-      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.build:installer", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:ai", "scripts.test:mvp", "scripts.test:portable", "scripts.test:installer", "scripts.validate:architecture", "scripts.validate:release"],
-      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts", "scripts/validate-release.ps1"],
+      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.build:installer", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:ai", "scripts.test:context", "scripts.test:mvp", "scripts.test:portable", "scripts.test:installer", "scripts.validate:architecture", "scripts.validate:release"],
+      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/context/persona-context-source.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts", "scripts/validate-release.ps1"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

@@ -117,6 +117,21 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
     runtime.Subscribe((event) => events.push(event as typeof events[number]));
     const projectResult = await runtime.Send("project.create", { name: "AI 공동 집필" });
     const project = projectResult.payload?.project as { projectId: string };
+    const personaWorkspaceResult = await runtime.Send("persona.workspace.read", {
+      projectId: project.projectId,
+    });
+    const defaultPersonaId = personaWorkspaceResult.payload?.workspace.personas[0].personaId as string;
+    const personaVersionResult = await runtime.Send("persona.version.create", {
+      projectId: project.projectId,
+      personaId: defaultPersonaId,
+      name: "긴장감 편집자",
+      systemInstructions: "장면의 긴장 구조를 우선 검토한다.",
+      workStyle: "선택한 근거만 사용한다.",
+      styleGuide: "감각적인 한국어",
+      forbiddenExpressions: ["명백히"],
+      referencePriorities: ["명시 선택 청크"],
+    });
+    assert.equal(personaVersionResult.state, "succeeded");
     const documentResult = await runtime.Send("document.create", {
       projectId: project.projectId,
       path: "draft/scene.md",
@@ -148,6 +163,8 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
     assert.equal(receivedAuthorization, `Bearer ${TEST_API_KEY}`);
     assert.equal(receivedBody?.model, "gpt-5.6-terra");
     assert.equal(receivedBody?.stream, true);
+    assert.match(String(receivedBody?.instructions), /긴장감 편집자 v2/);
+    assert.match(String(receivedBody?.instructions), /장면의 긴장 구조를 우선 검토한다/);
     assert.match(String(receivedBody?.input), /선택 장면/);
     assert.doesNotMatch(String(receivedBody?.input), /전달하지 않을 내용/);
     await WaitFor(() => events.some((event) => event.eventName === "proposal.created"));
@@ -169,6 +186,11 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
     const sessionResult = await runtime.Send("chat.session.read", { projectId: project.projectId });
     assert.equal(sessionResult.payload?.configured, true);
     assert.equal(sessionResult.payload?.session.messages.length, 2);
+    assert.equal(sessionResult.payload?.session.messages[0].contextSnapshot.persona.version, 2);
+    assert.equal(sessionResult.payload?.session.messages[0].contextSnapshot.sources.length, 1);
+    assert.equal(sessionResult.payload?.session.messages[0].contextSnapshot.sources[0].revision, original.revision);
+    assert.equal(sessionResult.payload?.session.messages[0].contextSnapshot.sources[0].content.includes("선택 장면"), true);
+    assert.equal(sessionResult.payload?.session.messages[1].inReplyToMessageId, sessionResult.payload?.session.messages[0].messageId);
     assert.equal(sessionResult.payload?.session.proposals[0].status, "applied");
     const usageResult = await runtime.Send("ai.usage.read", {});
     assert.deepEqual(usageResult.payload?.latest, {
