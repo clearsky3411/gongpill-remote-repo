@@ -20,6 +20,7 @@ npm run test:network
 npm run test:mvp
 npm run test:installer
 npm run test:portable
+npm run validate:release
 ```
 
 부트스트랩 통합 테스트는 실제 Core 자식 프로세스와 loopback HTTP/SSE 연결, 후보 롤백, 시작 실패, 잔류 프로세스 정리를 검증한다.

@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `windows-installer` |
+| 작업 단위 | `release-validation` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-28` |
 | 완료일 | `2026-07-28` |
-| 브랜치 | `codex/windows-installer` |
+| 브랜치 | `codex/release-validation` |
 | 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.distribution`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `install.windows`, `distribution.portable`, `bootstrap.paths.resolve`, `bootstrap.core.lifecycle`, `toolchain.node.typescript-runtime` |
-| 완료 결과 | 사용자 권한 Setup.exe, 바로가기, 포함 runtime 실행, 제거 데이터 보존과 재설치 데이터 재사용 검증 |
-| 다음 작업 | `release-validation` |
+| 활성 기능 | `release.validation`, `install.windows`, `distribution.portable`, `bootstrap.paths.resolve`, `bootstrap.core.lifecycle`, `toolchain.node.typescript-runtime` |
+| 완료 결과 | 전체 기능 테스트 23개, 포터블·Installer 실제 E2E, 아키텍처 검증과 산출물 checksum 단일 게이트 통과 |
+| 다음 작업 | `existing-folder-read-only-lock` |
 
 ## 상태 라벨
 
@@ -86,6 +86,7 @@ flowchart TD
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |
 | 자기완결 Windows 포터블 ZIP | Installer | `scripts/build-portable.ps1` | `CURRENT` |
+| MVP 전체 릴리스 검증 | Code Map Tooling | `scripts/validate-release.ps1` | `CURRENT` |
 | Markdown 편집기 | Built-in Plugins | `builtin-plugins/` | `TARGET` |
 
 ## Client와 Browser 경계

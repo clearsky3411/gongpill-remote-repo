@@ -4,14 +4,15 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 실제 Browser 화면에서 프로젝트와 문서를 생성·편집·안전 저장하는 사용 가능 MVP 완성
-- 최근 완료 작업 브랜치: `codex/usable-project-document-mvp`
+- 상태: `CURRENT` Windows Installer·포터블 ZIP으로 배포 가능한 프로젝트·문서 MVP 완성
+- 최근 완료 작업 브랜치: `codex/release-validation`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
 - 기계 판독 부트스트랩 계약: `packages/contracts/bootstrap/bootstrap-contracts.schema.json`
 - 기계 판독 네트워크 계약: `packages/contracts/network/network-contracts.schema.json`
 - 네트워크 사용 지도: `docs/architecture/network-map.md`
+- MVP 릴리스 노트: `docs/releases/0.1.0-mvp.md`
 
 현재 개발 환경에서 실제 사용:
 
@@ -47,6 +48,7 @@ npm run test:bootstrap
 npm run test:network
 npm run test:mvp
 npm run validate:architecture
+npm run validate:release
 ```
 
 ## 사용자 검수용 개발 현황
@@ -350,8 +352,8 @@ npm run validate:architecture
 - [ ] 저장·migration·색인 장애 주입과 복구
 - [ ] 10,000문서·100,000청크·1GB 프로젝트 성능 기준
 - [ ] 보안 검토, 라이선스와 checksum
-- [ ] 사용자·개발자 가이드와 release notes
-- [ ] 설치형·포터블·삭제 후 데이터 복구 검증
+- [x] MVP 사용자·개발자 가이드와 release notes
+- [x] 설치형·포터블·삭제 후 데이터 복구 검증
 
 ### 구현 전 결정이 필요한 항목
 
@@ -378,9 +380,9 @@ npm run validate:architecture
 - [x] 정상 종료, 시작 실패와 후보 롤백 통합 테스트
 - [x] Code Map과 사용자 검수 체크리스트 갱신
 
-### 다음 작업: bundled runtime packaging
+### 완료 작업: bundled runtime packaging
 
-- [ ] 배포할 Node 버전과 무결성 검증 기준 확정
+- [x] 배포 Node 24.18.0 LTS와 공식 SHA-256 검증 기준 확정
 - [x] 설치형·포터블 공용 패키지에 runtime 배치
 - [x] `bundledRuntimePath`가 시스템 Node와 PATH 없이 실행되는지 검증
 - [ ] runtime 누락·손상 시 사용자 오류와 복구 경로 검증

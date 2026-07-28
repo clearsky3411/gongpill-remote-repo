@@ -2,13 +2,12 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "windows-installer",
+    "activeWorkUnit": "release-validation",
     "status": "COMPLETED",
     "startedAt": "2026-07-28",
     "completedAt": "2026-07-28",
-    "branch": "codex/windows-installer",
+    "branch": "codex/release-validation",
     "activeComponentIds": [
-      "gongpil.client",
       "gongpil.installer",
       "gongpil.distribution",
       "gongpil.tests",
@@ -16,14 +15,15 @@
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
+      "release.validation",
       "install.windows",
       "distribution.portable",
       "bootstrap.paths.resolve",
       "bootstrap.core.lifecycle",
       "toolchain.node.typescript-runtime"
     ],
-    "summary": "사용자 권한 Windows Setup.exe, 시작 메뉴·선택 바탕 화면 바로가기와 사용자 데이터 보존 제거를 구현하고 설치·실행·제거·재설치를 검증했다.",
-    "nextRecommendedWorkUnit": "release-validation"
+    "summary": "전체 회귀 23개와 포터블·Installer 실제 E2E, 아키텍처 검증, 최종 산출물 checksum을 단일 릴리스 게이트로 통과하고 사용자 릴리스 노트를 작성했다.",
+    "nextRecommendedWorkUnit": "existing-folder-read-only-lock"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -47,7 +47,7 @@
       "usedBy": [],
       "publicInterfaces": ["package.json"],
       "tests": [],
-      "relatedDocs": ["README.md", "GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md"]
+      "relatedDocs": ["README.md", "GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md", "docs/releases/0.1.0-mvp.md"]
     },
     {
       "id": "gongpil.client",
@@ -196,11 +196,11 @@
       "kind": "tooling",
       "status": "CURRENT",
       "responsibility": "Code Map 구조, 경로, 관계와 현재 작업 상태 검증",
-      "owns": ["code-map-validation", "bootstrap-contract-validation", "network-contract-validation", "network-map-validation"],
+      "owns": ["code-map-validation", "bootstrap-contract-validation", "network-contract-validation", "network-map-validation", "release-validation"],
       "dependsOn": ["gongpil.architecture"],
       "usedBy": [],
-      "publicInterfaces": ["scripts/validate-code-map.ps1", "scripts/validate-bootstrap-contract.ps1", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1"],
-      "tests": ["scripts/validate-code-map.ps1", "scripts/validate-bootstrap-contract.ps1", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1"],
+      "publicInterfaces": ["scripts/validate-code-map.ps1", "scripts/validate-bootstrap-contract.ps1", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1", "scripts/validate-release.ps1"],
+      "tests": ["scripts/validate-code-map.ps1", "scripts/validate-bootstrap-contract.ps1", "scripts/validate-network-contract.ps1", "scripts/validate-network-map.ps1", "scripts/validate-release.ps1"],
       "relatedDocs": ["docs/architecture/code-map.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md", "docs/architecture/network-map.md"]
     },
     {
@@ -214,7 +214,7 @@
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.installer", "gongpil.platform", "gongpil.network-runtime", "gongpil.packages", "gongpil.builtin-plugins"],
       "usedBy": [],
       "publicInterfaces": [],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "relatedDocs": ["tests/README.md"]
     },
     {
@@ -378,6 +378,16 @@
       "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["plugin.invoke"], "events": ["plugin.event"] }
     },
     {
+      "id": "release.validation",
+      "name": "MVP 전체 회귀와 릴리스 게이트",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.code-map-tooling",
+      "path": "scripts/validate-release.ps1",
+      "entrypoints": ["npm run validate:release", "scripts/validate-release.ps1"],
+      "tests": ["scripts/validate-release.ps1", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
       "id": "distribution.portable",
       "name": "자기완결 Windows 포터블 ZIP",
       "status": "CURRENT",
@@ -483,8 +493,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.repository",
       "path": "package.json",
-      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.build:installer", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:mvp", "scripts.test:portable", "scripts.test:installer", "scripts.validate:architecture"],
-      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "entrypoints": ["scripts.start", "scripts.build:portable", "scripts.build:installer", "scripts.demo:network", "scripts.demo:network:loopback", "scripts.test:network", "scripts.test:mvp", "scripts.test:portable", "scripts.test:installer", "scripts.validate:architecture", "scripts.validate:release"],
+      "tests": ["platform/network-runtime/test/network-runtime.test.ts", "platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts", "scripts/validate-release.ps1"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
