@@ -1,28 +1,33 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-27",
+  "updatedAt": "2026-07-28",
   "workTracking": {
-    "activeWorkUnit": "network-runtime-loopback-slice",
+    "activeWorkUnit": "client-core-loopback-bootstrap-slice",
     "status": "COMPLETED",
-    "completedAt": "2026-07-27",
-    "nextSuggestedWorkUnit": "client-core-loopback-bootstrap-slice",
-    "branch": "codex/bootstrap-structure",
+    "startedAt": "2026-07-28",
+    "completedAt": "2026-07-28",
+    "nextSuggestedWorkUnit": "bundled-runtime-packaging-slice",
+    "branch": "codex/client-core-loopback-bootstrap",
     "activeComponentIds": [
-      "gongpil.repository",
+      "gongpil.client",
+      "gongpil.core",
+      "gongpil.contracts",
       "gongpil.network-runtime",
       "gongpil.tests",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
+      "bootstrap.paths.resolve",
+      "bootstrap.core.lifecycle",
+      "bootstrap.core.version-activation",
+      "bootstrap.contract.client-core",
+      "bootstrap.contract.browser-session",
       "network.runtime.facade",
-      "network.status.observe",
       "network.host.loopback-http",
-      "network.transport.loopback-http",
-      "network.event.sse",
-      "network.demo.loopback"
+      "network.transport.loopback-http"
     ],
-    "summary": "실제 127.0.0.1 동적 포트 HTTP JSON host·consumer, 세션당 단일 SSE, 재접속, 후보 검증 롤백과 사용자 CLI를 완성했다."
+    "summary": "Client가 설치형·포터블 경로를 결정하고 Core 자식 프로세스의 stdout 준비 계약과 실제 loopback 접속을 검증해 활성화 또는 롤백하는 수직 슬라이스를 완성했다."
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -53,28 +58,28 @@
       "name": "Client",
       "path": "client",
       "kind": "process",
-      "status": "TARGET",
+      "status": "CURRENT",
       "responsibility": "Browser 실행 전 모드·경로·런타임·세션 기준 결정과 Core 수명 관리",
-      "owns": ["bootstrap-paths", "process-lifecycle", "desktop-window"],
+      "owns": ["bootstrap-paths", "process-lifecycle", "core-activation", "browser-session-summary", "desktop-window"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": [],
-      "tests": [],
-      "relatedDocs": ["client/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
+      "publicInterfaces": ["client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
+      "relatedDocs": ["client/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
       "id": "gongpil.core",
       "name": "Core",
       "path": "core",
       "kind": "process",
-      "status": "TARGET",
+      "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["project-state", "source-data", "revision", "permissions", "proposals"],
+      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "source-data", "revision", "permissions", "proposals"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": [],
-      "tests": [],
-      "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
+      "publicInterfaces": ["core/src/core-process.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
+      "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
       "id": "gongpil.browser",
@@ -170,8 +175,8 @@
       "owns": ["bootstrap-contracts", "network-contracts", "protocol-version", "public-error-shape"],
       "dependsOn": [],
       "usedBy": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.network-runtime"],
-      "publicInterfaces": ["packages/contracts/bootstrap/bootstrap-contracts.schema.json", "packages/contracts/network/network-contracts.schema.json"],
-      "tests": ["scripts/validate-bootstrap-contract.ps1", "scripts/validate-network-contract.ps1"],
+      "publicInterfaces": ["packages/contracts/bootstrap/bootstrap-contracts.schema.json", "packages/contracts/bootstrap/contracts.ts", "packages/contracts/network/network-contracts.schema.json"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "scripts/validate-bootstrap-contract.ps1", "scripts/validate-network-contract.ps1"],
       "relatedDocs": ["packages/contracts/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -207,13 +212,13 @@
       "name": "Cross-boundary Tests",
       "path": "tests",
       "kind": "test-group",
-      "status": "TARGET",
+      "status": "CURRENT",
       "responsibility": "통합, E2E, 마이그레이션과 장애 주입 검증",
-      "owns": ["integration-tests", "e2e-tests", "fixtures", "migration-tests"],
+      "owns": ["bootstrap-integration-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.installer", "gongpil.platform", "gongpil.network-runtime", "gongpil.packages", "gongpil.builtin-plugins"],
       "usedBy": [],
       "publicInterfaces": [],
-      "tests": [],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
       "relatedDocs": ["tests/README.md"]
     },
     {
@@ -269,31 +274,31 @@
     {
       "id": "bootstrap.paths.resolve",
       "name": "실행 기준 경로 결정",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.client",
-      "path": "client",
-      "entrypoints": [],
-      "tests": [],
+      "path": "client/src/bootstrap-paths.ts",
+      "entrypoints": ["ResolveBootstrapPaths"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
       "id": "bootstrap.core.lifecycle",
       "name": "Core 프로세스 수명 관리",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.client",
-      "path": "client",
-      "entrypoints": [],
-      "tests": [],
+      "path": "client/src/core-process-manager.ts",
+      "entrypoints": ["GongpilCoreProcessManager.StartCore", "GongpilManagedCoreProcess.Stop", "GongpilCoreProcessManager.GetRunningProcessIds", "core/src/core-process.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["system.health.read"], "events": [] }
     },
     {
       "id": "bootstrap.core.version-activation",
       "name": "Core 버전 선택, 활성화와 롤백 판정",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.client",
-      "path": "client",
-      "entrypoints": [],
-      "tests": [],
+      "path": "client/src/client-bootstrap.ts",
+      "entrypoints": ["GongpilClientBootstrap.ActivateCore", "GongpilClientBootstrap.Stop", "GongpilClientBootstrap.GetNetworkRuntime"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["system.readiness.verify"], "events": [] }
     },
     {
@@ -302,8 +307,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.contracts",
       "path": "packages/contracts/bootstrap/bootstrap-contracts.schema.json",
-      "entrypoints": ["$defs.ClientBootstrapConfig", "$defs.CoreReadyInfo", "$defs.CoreActivationResult", "$defs.BootstrapError"],
-      "tests": ["scripts/validate-bootstrap-contract.ps1"],
+      "entrypoints": ["$defs.ClientBootstrapConfig", "$defs.CoreReadyInfo", "$defs.CoreActivationResult", "$defs.BootstrapError", "ParseClientBootstrapConfig", "ParseCoreReadyInfo", "IsProtocolCompatible"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "scripts/validate-bootstrap-contract.ps1"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
@@ -312,8 +317,8 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.contracts",
       "path": "packages/contracts/bootstrap/bootstrap-contracts.schema.json",
-      "entrypoints": ["$defs.BrowserSessionSummary", "$defs.BootstrapError"],
-      "tests": ["scripts/validate-bootstrap-contract.ps1"],
+      "entrypoints": ["$defs.BrowserSessionSummary", "$defs.BootstrapError", "GongpilBrowserSessionSummary"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "scripts/validate-bootstrap-contract.ps1"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

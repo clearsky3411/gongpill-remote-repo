@@ -4,9 +4,9 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 단일 NetworkRuntime의 in-memory 및 실제 loopback HTTP/SSE 수직 슬라이스 완성
-- 활성 브랜치: `codex/bootstrap-structure`
-- 구현 코드: `platform/network-runtime/src/`
+- 상태: `CURRENT` 실제 Client-Core 자식 프로세스와 loopback 부트스트랩 수직 슬라이스 완성
+- 활성 브랜치: `codex/client-core-loopback-bootstrap`
+- 구현 코드: `client/src/`, `core/src/`, `packages/contracts/bootstrap/`, `platform/network-runtime/src/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
 - 기계 판독 부트스트랩 계약: `packages/contracts/bootstrap/bootstrap-contracts.schema.json`
@@ -16,8 +16,10 @@
 첫 실행 확인:
 
 ```powershell
+npm run demo:bootstrap
 npm run demo:network
 npm run demo:network:loopback
+npm run test:bootstrap
 npm run test:network
 npm run validate:architecture
 ```
@@ -38,7 +40,7 @@ npm run validate:architecture
 - [x] Client-Core 부트스트랩 및 NetworkRuntime 공개 계약
 - [x] 실제 loopback HTTP JSON/SSE NetworkRuntime 수직 슬라이스
 - [ ] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
-- [ ] 설치형·포터블 모드와 독립된 데이터 루트
+- [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
 - [ ] 기존 폴더 연결, 프로젝트 ID, 잠금과 읽기 전용 모드
 - [ ] 문서 snapshot, file ID, revision, 원자 저장과 충돌 방지
 - [ ] 청크 파싱, 증분 색인, 검색과 컨텍스트 조립
@@ -79,6 +81,28 @@ npm run validate:architecture
 - [ ] `npm run test:network`가 11개 테스트를 모두 통과하는지 확인
 - [ ] `npm run validate:architecture`가 네 가지 아키텍처 검증을 모두 통과하는지 확인
 
+### 현재 완료 보고: Client-Core loopback bootstrap 수직 슬라이스
+
+- [x] 설치형·포터블 app/data/version/session/runtime 경로 결정
+- [x] 지정된 `bundledRuntimePath`로 실제 Core 자식 프로세스 시작
+- [x] stdin 한 줄 `ClientBootstrapConfig` 전달
+- [x] 자식 프로세스 환경에만 32-byte 무작위 세션 토큰 전달
+- [x] Core stdout 한 줄 `CoreReadyInfo`와 후보 `NetworkConnectionProfile` handoff
+- [x] protocol·Core 버전·health 검증 뒤 NetworkRuntime 활성화
+- [x] 호환되지 않는 후보 종료와 기존 Core·NetworkRuntime 유지
+- [x] Browser 요약에서 절대 경로·origin·port·token·secret 제외
+- [x] 시작 실패 정규화와 정상 종료 뒤 잔류 Core 0개 검증
+- [x] 부모 `PATH`, `CODEX_HOME`, 세션 토큰 환경 무변경 검증
+
+사용자가 직접 확인할 항목:
+
+- [ ] `npm run demo:bootstrap`에서 Core `1.0.0` 활성화 성공 확인
+- [ ] health HTTP 결과가 `succeeded`인지 확인
+- [ ] Browser 요약에 경로·port·token이 없는지 확인
+- [ ] 호환되지 않는 `2.0.0` 후보가 거부되고 `1.0.0`이 유지되는지 확인
+- [ ] 종료 뒤 `[잔류 Core] 0`인지 확인
+- [ ] `npm run test:bootstrap`이 5개 테스트를 모두 통과하는지 확인
+
 ## 상세 구현 체크리스트
 
 아래 목록은 마스터 계획의 Phase 0~17을 현재 저장소 상태에 맞게 요약한 것이다. 더 세부적인 정책과 완료 조건은 `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`를 정본으로 삼는다.
@@ -112,12 +136,15 @@ npm run validate:architecture
 - [x] 세션 토큰 인증과 health/readiness route
 - [x] 후보 접속 검증 뒤 원자적 교체와 실패 롤백
 - [ ] 포함 Node 버전 고정·검증·패키징
-- [ ] Client가 설치형·포터블 경로 결정
+- [x] Client가 설치형·포터블 경로 결정
 - [ ] Client가 포함 Node로 Core 프로세스 시작
-- [ ] CoreReadyInfo 표준 출력 handoff
-- [ ] Browser/Shell 창 시작과 논리 세션 공개
-- [ ] 정상 종료·강제 종료·잔류 프로세스 복구
-- [ ] 시스템 PATH와 전역 `CODEX_HOME` 무변경 검증
+- [x] Client가 지정된 `bundledRuntimePath`로 Core 프로세스 시작
+- [x] CoreReadyInfo 표준 출력 handoff
+- [x] 경로·연결 비밀정보 없는 Browser 논리 세션 공개
+- [ ] Browser/Shell 창 시작
+- [x] 정상 종료·시작 실패·잔류 프로세스 정리
+- [ ] 비정상 종료 감지와 고아 프로세스 복구
+- [x] 시스템 PATH와 전역 `CODEX_HOME` 무변경 검증
 
 ### Phase 3. 프로젝트와 데이터 루트
 
@@ -288,17 +315,24 @@ npm run validate:architecture
 - [ ] 대용량 binary 자산과 외부 파일 참조 정책
 - [ ] Git 통합을 사용자 기능의 기본값으로 둘지 여부
 
-### 다음 작업: Client-Core loopback bootstrap
+### 완료 작업: Client-Core loopback bootstrap
 
-- [ ] Code Map의 작업 단위를 `client-core-loopback-bootstrap-slice`로 전환
-- [ ] Client가 설치형·포터블 경로와 session 경계를 결정
-- [ ] 최소 Core 프로세스를 실제로 시작하고 종료
-- [ ] Core가 `CoreReadyInfo`와 후보 `NetworkConnectionProfile`을 전달
-- [ ] Client NetworkRuntime이 readiness·protocol을 검증
-- [ ] 성공 시 후보 연결을 활성화하고 실패 시 기존 Core를 유지
-- [ ] Browser에는 경로·port·token이 없는 `BrowserSessionSummary`만 공개
-- [ ] 정상 종료, 시작 실패와 후보 롤백 통합 테스트
-- [ ] Code Map과 사용자 검수 체크리스트 갱신
+- [x] Code Map의 작업 단위를 `client-core-loopback-bootstrap-slice`로 전환
+- [x] Client가 설치형·포터블 경로와 session 경계를 결정
+- [x] 최소 Core 프로세스를 실제로 시작하고 종료
+- [x] Core가 `CoreReadyInfo`와 후보 `NetworkConnectionProfile`을 전달
+- [x] Client NetworkRuntime이 readiness·protocol을 검증
+- [x] 성공 시 후보 연결을 활성화하고 실패 시 기존 Core를 유지
+- [x] Browser에는 경로·port·token이 없는 `BrowserSessionSummary`만 공개
+- [x] 정상 종료, 시작 실패와 후보 롤백 통합 테스트
+- [x] Code Map과 사용자 검수 체크리스트 갱신
+
+### 다음 작업: bundled runtime packaging
+
+- [ ] 배포할 Node 버전과 무결성 검증 기준 확정
+- [ ] 설치형·포터블 패키지에 runtime 배치
+- [ ] `bundledRuntimePath`가 시스템 Node 없이 실행되는지 검증
+- [ ] runtime 누락·손상 시 사용자 오류와 복구 경로 검증
 
 ## 최상위 책임
 

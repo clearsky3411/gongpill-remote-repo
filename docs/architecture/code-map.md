@@ -8,14 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `network-runtime-loopback-slice` |
+| 작업 단위 | `client-core-loopback-bootstrap-slice` |
 | 상태 | `COMPLETED` |
-| 완료일 | `2026-07-27` |
-| 다음 권장 작업 | `client-core-loopback-bootstrap-slice` |
-| 브랜치 | `codex/bootstrap-structure` |
-| 활성 컴포넌트 | `gongpil.repository`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `network.runtime.facade`, `network.status.observe`, `network.host.loopback-http`, `network.transport.loopback-http`, `network.event.sse`, `network.demo.loopback` |
-| 목적 | 실제 loopback HTTP·SSE와 후보 교체 롤백 수직 슬라이스 완성 |
+| 시작일 | `2026-07-28` |
+| 완료일 | `2026-07-28` |
+| 다음 권장 작업 | `bundled-runtime-packaging-slice` |
+| 브랜치 | `codex/client-core-loopback-bootstrap` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.contracts`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `bootstrap.paths.resolve`, `bootstrap.core.lifecycle`, `bootstrap.core.version-activation`, `bootstrap.contract.client-core`, `bootstrap.contract.browser-session`, `network.runtime.facade`, `network.host.loopback-http`, `network.transport.loopback-http` |
+| 목적 | Client가 Core 프로세스와 실제 loopback 접속을 검증해 활성화 또는 롤백하는 수직 슬라이스 완성 |
 
 ## 상태 라벨
 
@@ -58,9 +59,9 @@ flowchart TD
 |---|---|---|---|
 | 기능·작업 위치 추적 | Architecture | `docs/architecture/component-registry.json` | `CURRENT` |
 | Code Map 검증 | Code Map Tooling | `scripts/validate-code-map.ps1` | `CURRENT` |
-| 실행 기준 경로 결정 | Client | `client/` | `TARGET` |
-| Core 프로세스 수명 관리 | Client | `client/` | `TARGET` |
-| Core 버전 선택·활성화·롤백 | Client | `client/` | `TARGET` |
+| 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
+| Core 프로세스 수명 관리 | Client | `client/src/core-process-manager.ts` | `CURRENT` |
+| Core 버전 선택·활성화·롤백 | Client | `client/src/client-bootstrap.ts` | `CURRENT` |
 | Client-Core 부트스트랩 계약 | Contracts | `packages/contracts/bootstrap/bootstrap-contracts.schema.json` | `CURRENT` |
 | Browser 공개 세션 계약 | Contracts | `packages/contracts/bootstrap/bootstrap-contracts.schema.json` | `CURRENT` |
 | 부트스트랩 계약 검증 | Code Map Tooling | `scripts/validate-bootstrap-contract.ps1` | `CURRENT` |

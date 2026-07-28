@@ -10,6 +10,7 @@ Installer가 프로그램과 포함 런타임을 배치
 → Client가 설치형/포터블 모드를 판정
 → Client가 appRoot, dataRoot, versionRoot, sessionTemp를 확정
 → Client가 포함 런타임으로 Core를 실행
+→ Client가 stdin 한 줄로 설정을 보내고 자식 환경에만 세션 토큰을 주입
 → Core가 전달받은 경계를 검증하고 표준 출력으로 health와 NetworkConnectionProfile을 반환
 → Client의 NetworkRuntime이 후보 연결을 검증하고 원자적으로 교체
 → Client가 Browser 창을 연다
@@ -86,5 +87,6 @@ interface BrowserSessionSummary {
 - Core가 자신의 설치 폴더를 직접 교체하거나 활성화하지 않는다.
 - 기능 코드가 NetworkRuntime 밖에서 네트워크 연결을 직접 만들지 않는다.
 - Browser에 NetworkConnectionProfile, origin, port와 인증 정보를 전달하지 않는다.
+- 세션 token을 JSON 설정, 명령행 인자, stdout·stderr 또는 운영체제 전역 환경에 기록하지 않는다.
 
 통신은 로컬에서 loopback TCP 위의 HTTP JSON과 SSE를 사용하고, 클라우드에서는 같은 계약을 HTTPS와 HTTP/2로 제공한다. 상세 경계는 `network-runtime.md`에서 확인한다.

@@ -27,6 +27,8 @@ Client
 
 Client가 선택한 Core 프로세스에 전달하는 내부 계약이다.
 
+현재 프로세스 경계에서는 Client가 이 JSON을 Core stdin에 한 줄로 한 번 전달한다. 세션 인증 토큰은 이 계약이나 명령행 인자에 넣지 않고 자식 프로세스 전용 `GONGPIL_LOOPBACK_SESSION_TOKEN` 환경변수로만 전달한다. Client 자신의 환경과 운영체제 전역 환경은 변경하지 않는다.
+
 포함 정보:
 
 - 계약 protocol version
@@ -43,6 +45,8 @@ Client가 선택한 Core 프로세스에 전달하는 내부 계약이다.
 ## CoreReadyInfo
 
 Core가 초기화와 자기검증을 마친 뒤 Client에 반환한다.
+
+Core stdout은 이 JSON 한 줄 전용이다. 진단 정보는 비밀정보와 절대 경로를 제거한 stderr로 분리하며, token은 stdout·stderr·Browser 요약 어디에도 기록하지 않는다.
 
 포함 정보:
 

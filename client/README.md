@@ -1,6 +1,6 @@
 # Client
 
-상태: `TARGET`
+상태: `CURRENT` (부트스트랩 수직 슬라이스)
 
 Client는 Browser가 열리기 전에 존재하는 공필의 부트스트랩 인스턴스다.
 
@@ -24,3 +24,12 @@ Client는 Browser가 열리기 전에 존재하는 공필의 부트스트랩 인
 - 후보 접속이 ready가 아니면 기존 NetworkRuntime 연결을 유지한다.
 - 실행 중인 Core 파일을 덮어쓰지 않고 버전 폴더를 나란히 유지한다.
 - 활성 버전 포인터는 후보 Core 검증 뒤에만 전환한다.
+
+## 현재 구현
+
+- `src/bootstrap-paths.ts`: 설치형·포터블 app/data/version/session/runtime 경로 결정
+- `src/core-process-manager.ts`: 지정된 runtime으로 Core 시작, stdout 한 줄 준비 계약 수신, 정상·강제 종료
+- `src/client-bootstrap.ts`: protocol·버전·health 검증, NetworkRuntime 후보 교체, 실패 시 기존 Core 유지
+- `demo/client-core-loopback-bootstrap-demo.ts`: 실제 자식 프로세스, HTTP/SSE 접속, 롤백과 잔류 프로세스 0개 확인
+
+현재 구현은 `bundledRuntimePath`를 실행하지만 Node runtime 자체를 저장소에 패키징하지는 않는다. 데스크톱 창과 활성 버전 포인터도 후속 작업이다.
