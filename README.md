@@ -5,7 +5,7 @@
 ## 현재 단계
 
 - 상태: `CURRENT` 실제 Client-Core 자식 프로세스와 loopback 부트스트랩 수직 슬라이스 완성
-- 활성 브랜치: `codex/client-core-loopback-bootstrap`
+- 최근 완료 작업 브랜치: `codex/client-core-loopback-bootstrap`
 - 구현 코드: `client/src/`, `core/src/`, `packages/contracts/bootstrap/`, `platform/network-runtime/src/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
