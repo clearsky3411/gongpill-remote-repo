@@ -36,6 +36,9 @@ const SAFE_DETAIL_KEYS = new Set([
   "cachedInputTokens",
   "outputTokens",
   "reasoningOutputTokens",
+  "personaVersion",
+  "contextSources",
+  "contextOmitted",
   "httpStatus",
   "retryable",
 ]);

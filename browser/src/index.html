@@ -81,6 +81,41 @@
           <span id="aiStatus" class="ai-status">설정 확인 중</span>
         </div>
         <section class="context-selector" aria-label="AI 컨텍스트 선택">
+          <div class="persona-switcher">
+            <label>페르소나
+              <select id="personaSelect" disabled></select>
+            </label>
+            <label>버전
+              <select id="personaVersionSelect" disabled></select>
+            </label>
+            <label>작업 프로필
+              <select id="profileSelect" disabled></select>
+            </label>
+          </div>
+          <details id="personaEditor" class="persona-editor">
+            <summary>페르소나·프로필 편집</summary>
+            <form id="personaVersionForm">
+              <label>이름<input id="personaNameInput" maxlength="100" required></label>
+              <label>시스템 지시<textarea id="personaInstructionsInput" maxlength="20000" required></textarea></label>
+              <label>작업 방식<textarea id="personaWorkStyleInput" maxlength="10000"></textarea></label>
+              <label>문체 기준<textarea id="personaStyleInput" maxlength="10000"></textarea></label>
+              <label>금지 표현 (줄바꿈 구분)<textarea id="personaForbiddenInput" maxlength="10000"></textarea></label>
+              <label>참조 우선순위 (줄바꿈 구분)<textarea id="personaPrioritiesInput" maxlength="10000"></textarea></label>
+              <div class="persona-form-actions">
+                <button type="submit" value="version">새 버전 저장</button>
+                <button type="submit" value="persona" class="ghost-button">새 페르소나 저장</button>
+              </div>
+            </form>
+            <form id="profileForm">
+              <label>프로필 이름<input id="profileNameInput" maxlength="100" required></label>
+              <label>프로필 지시<textarea id="profileInstructionsInput" maxlength="10000"></textarea></label>
+              <label>컨텍스트 토큰 예산<input id="profileBudgetInput" type="number" min="1000" max="200000" step="1000" required></label>
+              <div class="persona-form-actions">
+                <button type="submit" value="update">프로필 저장</button>
+                <button type="submit" value="new" class="ghost-button">새 프로필 저장</button>
+              </div>
+            </form>
+          </details>
           <div class="context-selector-heading">
             <strong>문서·청크 지정</strong>
             <span id="contextSelectionSummary">선택 0개</span>

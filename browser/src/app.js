@@ -12,6 +12,7 @@ const state = {
   chatConfigured: false,
   providerStatus: undefined,
   usage: undefined,
+  personaWorkspace: undefined,
   chunks: [],
   selectedChunkIds: new Set(),
   selectedChunkPaths: new Map(),
@@ -39,6 +40,20 @@ const elements = {
   saveStatus: document.querySelector("#saveStatus"),
   characterCount: document.querySelector("#characterCount"),
   aiStatus: document.querySelector("#aiStatus"),
+  personaSelect: document.querySelector("#personaSelect"),
+  personaVersionSelect: document.querySelector("#personaVersionSelect"),
+  profileSelect: document.querySelector("#profileSelect"),
+  personaVersionForm: document.querySelector("#personaVersionForm"),
+  personaNameInput: document.querySelector("#personaNameInput"),
+  personaInstructionsInput: document.querySelector("#personaInstructionsInput"),
+  personaWorkStyleInput: document.querySelector("#personaWorkStyleInput"),
+  personaStyleInput: document.querySelector("#personaStyleInput"),
+  personaForbiddenInput: document.querySelector("#personaForbiddenInput"),
+  personaPrioritiesInput: document.querySelector("#personaPrioritiesInput"),
+  profileForm: document.querySelector("#profileForm"),
+  profileNameInput: document.querySelector("#profileNameInput"),
+  profileInstructionsInput: document.querySelector("#profileInstructionsInput"),
+  profileBudgetInput: document.querySelector("#profileBudgetInput"),
   chunkSearchForm: document.querySelector("#chunkSearchForm"),
   chunkSearchInput: document.querySelector("#chunkSearchInput"),
   chunkList: document.querySelector("#chunkList"),
@@ -78,6 +93,7 @@ async function OpenProject(projectId) {
   state.activeProject = payload.project;
   state.documents = payload.documents ?? [];
   state.activeDocument = undefined;
+  state.personaWorkspace = undefined;
   state.chunks = [];
   state.selectedChunkIds.clear();
   state.selectedChunkPaths.clear();
@@ -85,6 +101,7 @@ async function OpenProject(projectId) {
   RenderProjects();
   RenderDocuments();
   RenderEditor();
+  await LoadPersonaWorkspace();
   await LoadChatSession();
   await LoadChunks();
 }
@@ -109,6 +126,125 @@ async function LoadChatSession() {
   state.usage = payload.usage;
   state.streamingText = "";
   RenderChat();
+}
+
+async function LoadPersonaWorkspace() {
+  if (state.activeProject === undefined) {
+    state.personaWorkspace = undefined;
+    RenderPersonaWorkspace();
+    return;
+  }
+  const payload = RequirePayload(await runtime.Send("persona.workspace.read", {
+    projectId: state.activeProject.projectId,
+  }));
+  state.personaWorkspace = payload.workspace;
+  RenderPersonaWorkspace();
+}
+
+async function UpdatePersonaSelection(selection) {
+  if (state.activeProject === undefined) {
+    return;
+  }
+  const payload = RequirePayload(await runtime.Send("persona.selection.update", {
+    projectId: state.activeProject.projectId,
+    ...selection,
+  }));
+  state.personaWorkspace = payload.workspace;
+  RenderPersonaWorkspace();
+  ShowToast("공동 집필 페르소나·프로필을 전환했습니다.");
+}
+
+async function SavePersonaVersion(mode) {
+  if (state.activeProject === undefined || state.personaWorkspace === undefined) {
+    return;
+  }
+  const createNewPersona = mode === "persona";
+  const payload = RequirePayload(await runtime.Send("persona.version.create", {
+    projectId: state.activeProject.projectId,
+    personaId: createNewPersona ? undefined : state.personaWorkspace.selection.personaId,
+    name: elements.personaNameInput.value,
+    systemInstructions: elements.personaInstructionsInput.value,
+    workStyle: elements.personaWorkStyleInput.value,
+    styleGuide: elements.personaStyleInput.value,
+    forbiddenExpressions: SplitMultiline(elements.personaForbiddenInput.value),
+    referencePriorities: SplitMultiline(elements.personaPrioritiesInput.value),
+  }));
+  state.personaWorkspace = payload.workspace;
+  RenderPersonaWorkspace();
+  ShowToast(createNewPersona ? "새 페르소나를 저장했습니다." : "페르소나 새 버전을 저장했습니다.");
+}
+
+async function SaveWorkProfile(mode) {
+  if (state.activeProject === undefined || state.personaWorkspace === undefined) {
+    return;
+  }
+  const createNewProfile = mode === "new";
+  const payload = RequirePayload(await runtime.Send("persona.profile.save", {
+    projectId: state.activeProject.projectId,
+    profileId: createNewProfile ? undefined : state.personaWorkspace.selection.profileId,
+    name: elements.profileNameInput.value,
+    instructions: elements.profileInstructionsInput.value,
+    contextTokenBudget: Number(elements.profileBudgetInput.value),
+  }));
+  state.personaWorkspace = payload.workspace;
+  RenderPersonaWorkspace();
+  ShowToast(createNewProfile ? "새 작업 프로필을 저장했습니다." : "작업 프로필을 저장했습니다.");
+}
+
+function RenderPersonaWorkspace() {
+  const workspace = state.personaWorkspace;
+  const disabled = workspace === undefined;
+  const persona = workspace?.personas.find((candidate) => candidate.personaId === workspace.selection.personaId);
+  const version = persona?.versions.find((candidate) => candidate.versionId === workspace.selection.versionId);
+  const profile = workspace?.profiles.find((candidate) => candidate.profileId === workspace.selection.profileId);
+  PopulateSelect(
+    elements.personaSelect,
+    workspace?.personas.map((candidate) => ({ value: candidate.personaId, label: candidate.name })) ?? [],
+    workspace?.selection.personaId,
+  );
+  PopulateSelect(
+    elements.personaVersionSelect,
+    persona?.versions.map((candidate) => ({ value: candidate.versionId, label: `v${candidate.version} · ${candidate.name}` })) ?? [],
+    workspace?.selection.versionId,
+  );
+  PopulateSelect(
+    elements.profileSelect,
+    workspace?.profiles.map((candidate) => ({ value: candidate.profileId, label: `${candidate.name} · ${candidate.contextTokenBudget.toLocaleString("ko-KR")} tok` })) ?? [],
+    workspace?.selection.profileId,
+  );
+  for (const control of [
+    elements.personaSelect,
+    elements.personaVersionSelect,
+    elements.profileSelect,
+    ...elements.personaVersionForm.elements,
+    ...elements.profileForm.elements,
+  ]) {
+    control.disabled = disabled;
+  }
+  elements.personaNameInput.value = version?.name ?? "";
+  elements.personaInstructionsInput.value = version?.systemInstructions ?? "";
+  elements.personaWorkStyleInput.value = version?.workStyle ?? "";
+  elements.personaStyleInput.value = version?.styleGuide ?? "";
+  elements.personaForbiddenInput.value = version?.forbiddenExpressions.join("\n") ?? "";
+  elements.personaPrioritiesInput.value = version?.referencePriorities.join("\n") ?? "";
+  elements.profileNameInput.value = profile?.name ?? "";
+  elements.profileInstructionsInput.value = profile?.instructions ?? "";
+  elements.profileBudgetInput.value = String(profile?.contextTokenBudget ?? 32_000);
+}
+
+function PopulateSelect(select, options, selectedValue) {
+  select.replaceChildren();
+  for (const item of options) {
+    const option = document.createElement("option");
+    option.value = item.value;
+    option.textContent = item.label;
+    option.selected = item.value === selectedValue;
+    select.append(option);
+  }
+}
+
+function SplitMultiline(value) {
+  return [...new Set(value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean))];
 }
 
 async function SendChatMessage() {
@@ -383,10 +519,10 @@ function RenderChat() {
   }
   elements.chatMessages.className = "chat-messages";
   for (const message of state.chatMessages) {
-    elements.chatMessages.append(CreateChatMessage(message.role, message.content));
+    elements.chatMessages.append(CreateChatMessage(message));
   }
   if (state.streamingText.length > 0) {
-    elements.chatMessages.append(CreateChatMessage("assistant", state.streamingText));
+    elements.chatMessages.append(CreateChatMessage({ role: "assistant", content: state.streamingText }));
   }
   for (const proposal of state.proposals) {
     elements.chatMessages.append(CreateProposalCard(proposal));
@@ -545,17 +681,51 @@ function FormatTokens(value) {
   return `${Number(value ?? 0).toLocaleString("ko-KR")} tokens`;
 }
 
-function CreateChatMessage(role, content) {
+function CreateChatMessage(message) {
   const article = document.createElement("article");
   article.className = "chat-message";
-  article.dataset.role = role;
+  article.dataset.role = message.role;
   const label = document.createElement("span");
   label.className = "chat-role";
-  label.textContent = role === "user" ? "나" : "공필 AI";
+  label.textContent = message.role === "user" ? "나" : "공필 AI";
   const text = document.createElement("span");
-  text.textContent = content;
+  text.textContent = message.content;
   article.append(label, text);
+  if (message.contextSnapshot) {
+    article.append(RenderContextSnapshot(message.contextSnapshot));
+  }
   return article;
+}
+
+function RenderContextSnapshot(snapshot) {
+  const details = document.createElement("details");
+  details.className = "context-snapshot";
+  const summary = document.createElement("summary");
+  summary.textContent = [
+    `사용 출처 ${snapshot.includedSourceCount}/${snapshot.requestedSourceCount}`,
+    `${snapshot.persona.name} v${snapshot.persona.version}`,
+    snapshot.profile.name,
+    `약 ${snapshot.estimatedInputTokens.toLocaleString("ko-KR")} tokens`,
+  ].join(" · ");
+  details.append(summary);
+  for (const warningText of snapshot.warnings ?? []) {
+    const warning = document.createElement("p");
+    warning.className = "context-warning";
+    warning.textContent = warningText;
+    details.append(warning);
+  }
+  for (const source of snapshot.sources ?? []) {
+    const sourceDetails = document.createElement("details");
+    sourceDetails.className = "source-snapshot";
+    const sourceSummary = document.createElement("summary");
+    const selectionLabel = source.selectionKind === "explicit" ? "명시 선택" : "현재 문서";
+    sourceSummary.textContent = `${selectionLabel} · ${source.path} · L${source.lineStart}-${source.lineEnd} · bytes ${source.byteStart}-${source.byteEnd} · rev ${source.revision.slice(0, 10)}`;
+    const content = document.createElement("pre");
+    content.textContent = source.content;
+    sourceDetails.append(sourceSummary, content);
+    details.append(sourceDetails);
+  }
+  return details;
 }
 
 function CreateProposalCard(proposal) {
@@ -675,6 +845,29 @@ elements.saveButton.addEventListener("click", () => void SaveDocument());
 elements.usageButton.addEventListener("click", () => void RunAction(ShowUsage));
 elements.logsButton.addEventListener("click", () => void RunAction(ShowLogs));
 elements.dialogCloseButton.addEventListener("click", () => elements.observabilityDialog.close());
+elements.personaSelect.addEventListener("change", () => {
+  const persona = state.personaWorkspace?.personas.find((candidate) => candidate.personaId === elements.personaSelect.value);
+  const versionId = persona?.versions.at(-1)?.versionId;
+  if (versionId) {
+    void RunAction(() => UpdatePersonaSelection({ personaId: persona.personaId, versionId }));
+  }
+});
+elements.personaVersionSelect.addEventListener("change", () => {
+  void RunAction(() => UpdatePersonaSelection({ versionId: elements.personaVersionSelect.value }));
+});
+elements.profileSelect.addEventListener("change", () => {
+  void RunAction(() => UpdatePersonaSelection({ profileId: elements.profileSelect.value }));
+});
+elements.personaVersionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const mode = event.submitter?.value;
+  void RunAction(() => SavePersonaVersion(mode));
+});
+elements.profileForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const mode = event.submitter?.value;
+  void RunAction(() => SaveWorkProfile(mode));
+});
 elements.chatForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void RunAction(SendChatMessage);
@@ -744,5 +937,6 @@ window.addEventListener("beforeunload", (event) => {
 
 void RunAction(async () => {
   await Promise.all([LoadProjects(), LoadProviderStatus()]);
+  RenderPersonaWorkspace();
   RenderContextSelection();
 });

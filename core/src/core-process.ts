@@ -40,7 +40,11 @@ import {
   GongpilChunkIndexStore,
   GongpilChunkIndexStoreError,
 } from "./chunk-index-store.ts";
-import type { GongpilChunkDescriptor } from "./chunk-parser.ts";
+import {
+  GongpilPersonaStore,
+  GongpilPersonaStoreError,
+} from "./persona-store.ts";
+import { BuildWritingContext } from "./context-builder.ts";
 
 const LOOPBACK_SESSION_TOKEN_ENV = "GONGPIL_LOOPBACK_SESSION_TOKEN";
 const CORE_API_VERSION = "1.0.0";
@@ -60,6 +64,7 @@ async function RunCoreProcess(): Promise<void> {
   const documentStore = new GongpilDocumentStore(projectStore);
   const chunkIndexStore = new GongpilChunkIndexStore(config.paths.dataRoot, documentStore);
   const chatStore = new GongpilChatStore(config.paths.dataRoot);
+  const personaStore = new GongpilPersonaStore(config.paths.dataRoot);
   const openAiConfig = await LoadOpenAiConfig();
   const openAiAdapter = new GongpilOpenAiResponsesAdapter();
   const providerKind = ResolveProviderKind(openAiConfig !== undefined);
@@ -252,6 +257,69 @@ async function RunCoreProcess(): Promise<void> {
       throw NormalizeDomainError(error);
     }
   });
+  host.RegisterCommand("persona.workspace.read", async (payload) => {
+    try {
+      const projectId = RequireString(payload, "projectId");
+      await projectStore.GetProject(projectId);
+      return { workspace: await personaStore.ReadWorkspace(projectId) };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("persona.version.create", async (payload) => {
+    try {
+      const projectId = RequireString(payload, "projectId");
+      await projectStore.GetProject(projectId);
+      return {
+        workspace: await personaStore.CreateVersion(projectId, {
+          personaId: OptionalString(payload, "personaId"),
+          name: RequireString(payload, "name"),
+          systemInstructions: RequireString(payload, "systemInstructions"),
+          workStyle: OptionalString(payload, "workStyle"),
+          styleGuide: OptionalString(payload, "styleGuide"),
+          forbiddenExpressions: OptionalStringArray(payload, "forbiddenExpressions", 100),
+          referencePriorities: OptionalStringArray(payload, "referencePriorities", 100),
+        }),
+      };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("persona.profile.save", async (payload) => {
+    try {
+      const projectId = RequireString(payload, "projectId");
+      await projectStore.GetProject(projectId);
+      return {
+        workspace: await personaStore.SaveProfile(projectId, {
+          profileId: OptionalString(payload, "profileId"),
+          name: RequireString(payload, "name"),
+          instructions: OptionalString(payload, "instructions"),
+          contextTokenBudget: OptionalNumber(payload, "contextTokenBudget") ?? 32_000,
+        }),
+      };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("persona.selection.update", async (payload) => {
+    try {
+      const projectId = RequireString(payload, "projectId");
+      await projectStore.GetProject(projectId);
+      return {
+        workspace: await personaStore.UpdateSelection(projectId, {
+          personaId: OptionalString(payload, "personaId"),
+          versionId: OptionalString(payload, "versionId"),
+          profileId: OptionalString(payload, "profileId"),
+        }),
+      };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
   host.RegisterCommand("chat.session.read", async (payload) => {
     try {
       const projectId = RequireString(payload, "projectId");
@@ -300,20 +368,30 @@ async function RunCoreProcess(): Promise<void> {
           "선택한 청크는 합계 1MB 이하여야 합니다.",
         );
       }
-      const userMessage = await chatStore.AppendMessage(projectId, "user", userText);
-      const writingInput = CreateWritingInput(project.name, userText, document, selectedChunks);
+      const activePersona = await personaStore.GetActiveContext(projectId);
+      const writingContext = BuildWritingContext({
+        baseInstructions: CreateWritingInstructions(),
+        projectName: project.name,
+        userText,
+        activePersona,
+        selectedChunks,
+        activeDocument: document,
+      });
+      const userMessage = await chatStore.AppendMessage(projectId, "user", userText, {
+        contextSnapshot: writingContext.snapshot,
+      });
       const startedAt = Date.now();
       const response = providerKind === "codex"
         ? await GenerateWithCodex(
           codexClient,
-          CreateWritingInstructions(),
-          writingInput,
+          writingContext.instructions,
+          writingContext.input,
           context.signal,
         )
         : await openAiAdapter.CreateResponse({
           ...openAiConfig!,
-          instructions: CreateWritingInstructions(),
-          input: writingInput,
+          instructions: writingContext.instructions,
+          input: writingContext.input,
           signal: context.signal,
           onTextDelta: (delta) => host.Publish("chat.message.delta", {
             projectId,
@@ -337,7 +415,9 @@ async function RunCoreProcess(): Promise<void> {
       );
       const assistantText = response.text.trim()
         || (proposal === undefined ? "요청을 검토했지만 답변을 만들지 못했습니다." : proposal.summary);
-      const assistantMessage = await chatStore.AppendMessage(projectId, "assistant", assistantText);
+      const assistantMessage = await chatStore.AppendMessage(projectId, "assistant", assistantText, {
+        inReplyToMessageId: userMessage.messageId,
+      });
       if (providerKind === "codex") {
         host.Publish("chat.message.delta", {
           projectId,
@@ -360,6 +440,9 @@ async function RunCoreProcess(): Promise<void> {
           inputTokens: latestUsage?.inputTokens ?? 0,
           cachedInputTokens: latestUsage?.cachedInputTokens ?? 0,
           outputTokens: latestUsage?.outputTokens ?? 0,
+          personaVersion: writingContext.snapshot.persona.version,
+          contextSources: writingContext.snapshot.includedSourceCount,
+          contextOmitted: writingContext.snapshot.omittedSourceCount,
           reasoningOutputTokens: latestUsage?.reasoningOutputTokens ?? 0,
         },
       });
@@ -463,6 +546,10 @@ async function RunCoreProcess(): Promise<void> {
       "document.save",
       "chunk.list",
       "chunk.search",
+      "persona.workspace.read",
+      "persona.version.create",
+      "persona.profile.save",
+      "persona.selection.update",
       "chat.session.read",
       "chat.message.send",
       "proposal.apply",
@@ -590,6 +677,9 @@ function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
   if (error instanceof GongpilChunkIndexStoreError) {
     return new GongpilLoopbackCommandError(error.code, error.message);
   }
+  if (error instanceof GongpilPersonaStoreError) {
+    return new GongpilLoopbackCommandError(error.code, error.message);
+  }
   return new GongpilLoopbackCommandError(
     "CORE_OPERATION_FAILED",
     "Core가 요청을 처리하지 못했습니다.",
@@ -712,28 +802,6 @@ const OPENAI_STANDARD_RATES: Record<string, { input: number; cached: number; out
   "gpt-5.6-terra": { input: 2.5, cached: 0.25, output: 15 },
   "gpt-5.6-luna": { input: 1, cached: 0.1, output: 6 },
 };
-
-function CreateWritingInput(
-  projectName: string,
-  userText: string,
-  document?: { path: string; revision: string; content: string },
-  selectedChunks: readonly GongpilChunkDescriptor[] = [],
-): string {
-  const context = selectedChunks.length > 0
-    ? selectedChunks.map((chunk, index) => [
-      `--- 선택 청크 ${index + 1} ---`,
-      `문서: ${chunk.path}`,
-      `revision: ${chunk.revision}`,
-      `UTF-8 bytes: [${chunk.coordinate.byteStart}, ${chunk.coordinate.byteEnd})`,
-      `제목: ${chunk.title}`,
-      chunk.content,
-      `--- 선택 청크 ${index + 1} 끝 ---`,
-    ].join("\n")).join("\n\n")
-    : document === undefined
-      ? "선택된 문서 없음"
-      : `선택 문서: ${document.path}\nrevision: ${document.revision}\n--- 문서 시작 ---\n${document.content}\n--- 문서 끝 ---`;
-  return `프로젝트: ${projectName}\n${context}\n\n사용자 요청:\n${userText}`;
-}
 
 async function CreateProposalFromToolCall(
   chatStore: GongpilChatStore,
