@@ -170,7 +170,10 @@ if (Test-Path -LiteralPath $gitDirectory) {
     if ($LASTEXITCODE -ne 0) {
         $errors.Add('현재 Git 브랜치를 확인하지 못함')
     }
-    elseif ($actualBranch -ne $registry.workTracking.branch) {
+    elseif (
+        $registry.workTracking.status -eq 'IN_PROGRESS' -and
+        $actualBranch -ne $registry.workTracking.branch
+    ) {
         $errors.Add("workTracking 브랜치 불일치: registry=$($registry.workTracking.branch), actual=$actualBranch")
     }
 }
