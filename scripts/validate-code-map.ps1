@@ -15,15 +15,42 @@ $resolvedRegistryPath = (Resolve-Path -LiteralPath $RegistryPath).Path
 $registry = Get-Content -LiteralPath $resolvedRegistryPath -Raw | ConvertFrom-Json
 $errors = [System.Collections.Generic.List[string]]::new()
 $allowedStatuses = @('CURRENT', 'TARGET', 'TBD', 'PROPOSED', 'DEFERRED', 'LEGACY', 'REJECTED')
+$allowedWorkStatuses = @('IN_PROGRESS', 'COMPLETED', 'BLOCKED')
 
 if ($registry.schemaVersion -ne 1) {
     $errors.Add("지원하지 않는 schemaVersion: $($registry.schemaVersion)")
+}
+
+if ($allowedWorkStatuses -notcontains $registry.workTracking.status) {
+    $errors.Add("잘못된 workTracking 상태: $($registry.workTracking.status)")
+}
+
+if ($registry.workTracking.status -eq 'COMPLETED' -and [string]::IsNullOrWhiteSpace([string]$registry.workTracking.completedAt)) {
+    $errors.Add('COMPLETED 작업에 completedAt이 없음')
 }
 
 $components = @($registry.components)
 $features = @($registry.features)
 $componentById = @{}
 $featureById = @{}
+
+function Test-RegisteredPath {
+    param(
+        [string]$ownerId,
+        [string]$fieldName,
+        [string]$relativePath
+    )
+
+    if ([System.IO.Path]::IsPathRooted($relativePath) -or ($relativePath -match '(^|[\\/])\.\.([\\/]|$)')) {
+        $errors.Add("$fieldName 경로는 프로젝트 내부 상대 경로여야 함: $ownerId = $relativePath")
+        return
+    }
+
+    $resolvedPath = Join-Path $projectRoot $relativePath
+    if (-not (Test-Path -LiteralPath $resolvedPath)) {
+        $errors.Add("$fieldName 경로 없음: $ownerId = $relativePath")
+    }
+}
 
 foreach ($component in $components) {
     if ($componentById.ContainsKey($component.id)) {
@@ -45,6 +72,18 @@ foreach ($component in $components) {
     $componentPath = Join-Path $projectRoot ([string]$component.path)
     if (-not (Test-Path -LiteralPath $componentPath)) {
         $errors.Add("컴포넌트 경로 없음: $($component.id) = $($component.path)")
+    }
+
+    foreach ($publicInterfacePath in @($component.publicInterfaces)) {
+        Test-RegisteredPath -ownerId $component.id -fieldName 'publicInterfaces' -relativePath $publicInterfacePath
+    }
+
+    foreach ($testPath in @($component.tests)) {
+        Test-RegisteredPath -ownerId $component.id -fieldName 'tests' -relativePath $testPath
+    }
+
+    foreach ($relatedDocPath in @($component.relatedDocs)) {
+        Test-RegisteredPath -ownerId $component.id -fieldName 'relatedDocs' -relativePath $relatedDocPath
     }
 }
 
@@ -103,6 +142,14 @@ foreach ($feature in $features) {
     if (-not (Test-Path -LiteralPath $featurePath)) {
         $errors.Add("기능 경로 없음: $($feature.id) = $($feature.path)")
     }
+
+    foreach ($testPath in @($feature.tests)) {
+        Test-RegisteredPath -ownerId $feature.id -fieldName 'feature.tests' -relativePath $testPath
+    }
+
+    if ($feature.status -eq 'CURRENT' -and @($feature.entrypoints).Count -eq 0) {
+        $errors.Add("CURRENT 기능에 entrypoints가 없음: $($feature.id)")
+    }
 }
 
 foreach ($activeComponentId in @($registry.workTracking.activeComponentIds)) {
@@ -136,7 +183,32 @@ if ($errors.Count -gt 0) {
     exit 1
 }
 
+$bootstrapContractValidator = Join-Path $PSScriptRoot 'validate-bootstrap-contract.ps1'
+if (Test-Path -LiteralPath $bootstrapContractValidator) {
+    & $bootstrapContractValidator
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+}
+
+$networkContractValidator = Join-Path $PSScriptRoot 'validate-network-contract.ps1'
+if (Test-Path -LiteralPath $networkContractValidator) {
+    & $networkContractValidator
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+}
+
+$networkMapValidator = Join-Path $PSScriptRoot 'validate-network-map.ps1'
+if (Test-Path -LiteralPath $networkMapValidator) {
+    & $networkMapValidator -RegistryPath $resolvedRegistryPath
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+}
+
 Write-Host "Code Map 검증 성공: 컴포넌트 $($components.Count)개, 기능 $($features.Count)개" -ForegroundColor Green
 Write-Host "현재 작업: $($registry.workTracking.activeWorkUnit)"
+Write-Host "작업 상태: $($registry.workTracking.status)"
 Write-Host "활성 컴포넌트: $(@($registry.workTracking.activeComponentIds) -join ', ')"
 Write-Host "활성 기능: $(@($registry.workTracking.activeFeatureIds) -join ', ')"

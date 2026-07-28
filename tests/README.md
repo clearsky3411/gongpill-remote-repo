@@ -11,3 +11,11 @@
 - fixtures
 - migration
 - failure-injection
+
+현재 실행 가능한 단위 테스트:
+
+```powershell
+npm run test:network
+```
+
+구현 위치: `platform/network-runtime/test/network-runtime.test.ts`

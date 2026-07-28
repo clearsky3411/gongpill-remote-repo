@@ -4,11 +4,23 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 저장소 기초 구조와 Code Map 구축
+- 상태: `CURRENT` 단일 NetworkRuntime의 in-memory 및 실제 loopback HTTP/SSE 수직 슬라이스 완성
 - 활성 브랜치: `codex/bootstrap-structure`
-- 구현 코드: 아직 없음
+- 구현 코드: `platform/network-runtime/src/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
+- 기계 판독 부트스트랩 계약: `packages/contracts/bootstrap/bootstrap-contracts.schema.json`
+- 기계 판독 네트워크 계약: `packages/contracts/network/network-contracts.schema.json`
+- 네트워크 사용 지도: `docs/architecture/network-map.md`
+
+첫 실행 확인:
+
+```powershell
+npm run demo:network
+npm run demo:network:loopback
+npm run test:network
+npm run validate:architecture
+```
 
 ## 최상위 책임
 
@@ -18,7 +30,7 @@
 | `core/` | 프로젝트·문서·자산·revision·권한·승인·저장을 최종 집행한다. |
 | `browser/` | 실제 저장 경로를 알지 않고 Core의 논리 API를 사용하는 사용자 인터페이스다. |
 | `installer/` | 설치형·포터블 패키지와 제거·배포 자원을 관리한다. |
-| `platform/` | 실행 추적, 플러그인 호스트·런타임, 업데이트 기반을 제공한다. |
+| `platform/` | 단일 Network Runtime, 실행 추적, 플러그인 호스트·런타임, 업데이트 기반을 제공한다. |
 | `packages/` | 공통 계약과 재사용 가능한 도메인 패키지를 제공한다. |
 | `builtin-plugins/` | 기본 제공 기능을 일반 플러그인 규격으로 구현한다. |
 

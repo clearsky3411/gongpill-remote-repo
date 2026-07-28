@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:gongpil:schema:bootstrap-contracts:1",
+  "title": "Gongpil Bootstrap Contracts",
+  "description": "Client, Core, Browser 사이의 버전 있는 부트스트랩 계약",
+  "oneOf": [
+    { "$ref": "#/$defs/ClientBootstrapConfig" },
+    { "$ref": "#/$defs/CoreReadyInfo" },
+    { "$ref": "#/$defs/CoreActivationResult" },
+    { "$ref": "#/$defs/BrowserSessionSummary" },
+    { "$ref": "#/$defs/BootstrapError" }
+  ],
+  "$defs": {
+    "ProtocolVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["major", "minor"],
+      "properties": {
+        "major": { "type": "integer", "minimum": 0 },
+        "minor": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "SupportedProtocolRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["major", "minMinor", "maxMinor"],
+      "properties": {
+        "major": { "type": "integer", "minimum": 0 },
+        "minMinor": { "type": "integer", "minimum": 0 },
+        "maxMinor": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "SemanticVersion": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 128,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "StableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "AbsoluteWindowsPath": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 32767,
+      "pattern": "^(?:[A-Za-z]:[\\\\/]|\\\\\\\\)"
+    },
+    "BootstrapPaths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["appRoot", "dataRoot", "versionRoot", "sessionTemp", "bundledRuntimePath"],
+      "properties": {
+        "appRoot": { "$ref": "#/$defs/AbsoluteWindowsPath" },
+        "dataRoot": { "$ref": "#/$defs/AbsoluteWindowsPath" },
+        "versionRoot": { "$ref": "#/$defs/AbsoluteWindowsPath" },
+        "sessionTemp": { "$ref": "#/$defs/AbsoluteWindowsPath" },
+        "bundledRuntimePath": { "$ref": "#/$defs/AbsoluteWindowsPath" }
+      }
+    },
+    "ActivationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "requireHealthCheck"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": ["startup", "update", "rollback"]
+        },
+        "previousCoreVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "requireHealthCheck": { "const": true }
+      }
+    },
+    "ClientBootstrapConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "launchId",
+        "sessionId",
+        "mode",
+        "clientVersion",
+        "selectedCoreVersion",
+        "supportedCoreProtocol",
+        "paths",
+        "activation"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "launchId": { "$ref": "#/$defs/StableId" },
+        "sessionId": { "$ref": "#/$defs/StableId" },
+        "mode": {
+          "type": "string",
+          "enum": ["installed", "portable"]
+        },
+        "clientVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "selectedCoreVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "supportedCoreProtocol": { "$ref": "#/$defs/SupportedProtocolRange" },
+        "paths": { "$ref": "#/$defs/BootstrapPaths" },
+        "activation": { "$ref": "#/$defs/ActivationRequest" }
+      }
+    },
+    "CoreReadyInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "launchId",
+        "sessionId",
+        "coreVersion",
+        "coreApiVersion",
+        "health",
+        "networkProfile",
+        "capabilities"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "launchId": { "$ref": "#/$defs/StableId" },
+        "sessionId": { "$ref": "#/$defs/StableId" },
+        "coreVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "coreApiVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "health": {
+          "type": "string",
+          "enum": ["ready", "degraded"]
+        },
+        "networkProfile": {
+          "$ref": "../network/network-contracts.schema.json#/$defs/NetworkConnectionProfile"
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/StableId" }
+        }
+      }
+    },
+    "CoreActivationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "launchId",
+        "sessionId",
+        "accepted",
+        "activeCoreVersion",
+        "rollbackRequired"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "launchId": { "$ref": "#/$defs/StableId" },
+        "sessionId": { "$ref": "#/$defs/StableId" },
+        "accepted": { "type": "boolean" },
+        "activeCoreVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "rollbackRequired": { "type": "boolean" },
+        "error": { "$ref": "#/$defs/BootstrapError" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "accepted": { "const": false } },
+            "required": ["accepted"]
+          },
+          "then": { "required": ["error"] }
+        }
+      ]
+    },
+    "BrowserSessionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "sessionId",
+        "mode",
+        "coreStatus",
+        "readOnly",
+        "updateState",
+        "capabilities"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "sessionId": { "$ref": "#/$defs/StableId" },
+        "mode": {
+          "type": "string",
+          "enum": ["installed", "portable"]
+        },
+        "coreStatus": {
+          "type": "string",
+          "enum": ["starting", "ready", "failed", "rolled-back"]
+        },
+        "coreVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "coreApiVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "activeProjectId": { "$ref": "#/$defs/StableId" },
+        "activeProjectName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "readOnly": { "type": "boolean" },
+        "updateState": {
+          "type": "string",
+          "enum": ["idle", "activating", "active", "rolled-back"]
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/StableId" }
+        },
+        "error": { "$ref": "#/$defs/BootstrapError" }
+      }
+    },
+    "BootstrapError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "userMessage", "retryable"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "INVALID_BOOTSTRAP_CONFIG",
+            "CORE_START_FAILED",
+            "CORE_HEALTH_CHECK_FAILED",
+            "PROTOCOL_INCOMPATIBLE",
+            "CORE_VERSION_INVALID",
+            "CORE_VERSION_ROLLBACK_REQUIRED",
+            "SESSION_AUTH_FAILED"
+          ]
+        },
+        "userMessage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "retryable": { "type": "boolean" },
+        "traceId": { "$ref": "#/$defs/StableId" }
+      }
+    }
+  }
+}

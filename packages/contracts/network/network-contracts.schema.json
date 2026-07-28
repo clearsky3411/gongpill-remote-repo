@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gongpil.local/contracts/network/network-contracts.schema.json",
+  "title": "Gongpil Network Contracts",
+  "description": "NetworkRuntime의 접속 교체, 명령, 결과, 이벤트, 오류와 공개 상태 계약",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "ProtocolVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["major", "minor"],
+      "properties": {
+        "major": { "type": "integer", "minimum": 1 },
+        "minor": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "StableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "SemanticVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "NetworkConnectionProfile": {
+      "description": "Client와 NetworkRuntime만 사용하는 교체 가능한 내부 연결 프로필",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "profileId",
+        "mode",
+        "origin",
+        "commandBasePath",
+        "eventPath",
+        "statusPath",
+        "authMode"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "profileId": { "$ref": "#/$defs/StableId" },
+        "mode": {
+          "type": "string",
+          "enum": ["local", "cloud"]
+        },
+        "origin": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "commandBasePath": {
+          "type": "string",
+          "const": "/api/v1/commands"
+        },
+        "eventPath": {
+          "type": "string",
+          "const": "/api/v1/events"
+        },
+        "statusPath": {
+          "type": "string",
+          "const": "/api/v1/network/status"
+        },
+        "authMode": {
+          "type": "string",
+          "enum": ["loopback-session", "secure-cookie"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "local" } },
+            "required": ["mode"]
+          },
+          "then": {
+            "properties": {
+              "origin": { "pattern": "^http://127\\.0\\.0\\.1:[0-9]{1,5}$" },
+              "authMode": { "const": "loopback-session" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "mode": { "const": "cloud" } },
+            "required": ["mode"]
+          },
+          "then": {
+            "properties": {
+              "origin": { "pattern": "^https://" },
+              "authMode": { "const": "secure-cookie" }
+            }
+          }
+        }
+      ]
+    },
+    "NetworkCommandRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocolVersion", "requestId", "commandName", "payload"],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "requestId": { "$ref": "#/$defs/StableId" },
+        "commandName": { "$ref": "#/$defs/StableId" },
+        "traceId": { "$ref": "#/$defs/StableId" },
+        "idempotencyKey": { "$ref": "#/$defs/StableId" },
+        "payload": { "type": "object" }
+      }
+    },
+    "NetworkCommandResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocolVersion", "requestId", "state"],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "requestId": { "$ref": "#/$defs/StableId" },
+        "state": {
+          "type": "string",
+          "enum": ["succeeded", "failed", "cancelled"]
+        },
+        "payload": { "type": "object" },
+        "error": { "$ref": "#/$defs/NetworkError" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "state": { "const": "failed" } },
+            "required": ["state"]
+          },
+          "then": { "required": ["error"] }
+        }
+      ]
+    },
+    "NetworkEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "eventId",
+        "eventName",
+        "occurredAt",
+        "payload"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "eventId": { "$ref": "#/$defs/StableId" },
+        "eventName": { "$ref": "#/$defs/StableId" },
+        "occurredAt": { "type": "string", "format": "date-time" },
+        "requestId": { "$ref": "#/$defs/StableId" },
+        "traceId": { "$ref": "#/$defs/StableId" },
+        "payload": { "type": "object" }
+      }
+    },
+    "NetworkStatus": {
+      "description": "Browser에도 공개 가능한 비밀정보 제거 상태",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protocolVersion",
+        "mode",
+        "state",
+        "commandChannel",
+        "eventChannel",
+        "security",
+        "activeRequests",
+        "activeStreams",
+        "reconnectAttempt"
+      ],
+      "properties": {
+        "protocolVersion": { "$ref": "#/$defs/ProtocolVersion" },
+        "mode": {
+          "type": "string",
+          "enum": ["local", "cloud"]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "starting",
+            "connecting",
+            "ready",
+            "degraded",
+            "reconnecting",
+            "offline",
+            "failed"
+          ]
+        },
+        "commandChannel": {
+          "type": "string",
+          "const": "http-json"
+        },
+        "eventChannel": {
+          "type": "string",
+          "const": "sse"
+        },
+        "security": {
+          "type": "string",
+          "enum": ["loopback-session", "tls-session"]
+        },
+        "activeProfileId": { "$ref": "#/$defs/StableId" },
+        "pendingProfileId": { "$ref": "#/$defs/StableId" },
+        "pendingMode": {
+          "type": "string",
+          "enum": ["local", "cloud"]
+        },
+        "coreVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "coreApiVersion": { "$ref": "#/$defs/SemanticVersion" },
+        "lastHeartbeatAt": { "type": "string", "format": "date-time" },
+        "roundTripMs": { "type": "integer", "minimum": 0 },
+        "activeRequests": { "type": "integer", "minimum": 0 },
+        "activeStreams": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "reconnectAttempt": { "type": "integer", "minimum": 0 },
+        "lastErrorCode": { "$ref": "#/$defs/StableId" },
+        "lastTraceId": { "$ref": "#/$defs/StableId" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "local" } },
+            "required": ["mode"]
+          },
+          "then": {
+            "properties": { "security": { "const": "loopback-session" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "mode": { "const": "cloud" } },
+            "required": ["mode"]
+          },
+          "then": {
+            "properties": { "security": { "const": "tls-session" } }
+          }
+        }
+      ]
+    },
+    "NetworkError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "userMessage", "retryable"],
+      "properties": {
+        "code": { "$ref": "#/$defs/StableId" },
+        "userMessage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "retryable": { "type": "boolean" },
+        "traceId": { "$ref": "#/$defs/StableId" }
+      }
+    }
+  }
+}

@@ -6,7 +6,7 @@
 
 예정 패키지:
 
-- contracts
+- `contracts`: Client, Core, Browser와 플러그인 사이의 버전 있는 기계 판독 계약
 - config
 - project-model
 - document-store
@@ -19,3 +19,5 @@
 - plugin-cli
 
 제품 영역의 내부 구현을 공통 패키지로 성급하게 이동하지 않는다.
+
+현재 작업 중인 계약은 `contracts/README.md`에서 추적한다.
