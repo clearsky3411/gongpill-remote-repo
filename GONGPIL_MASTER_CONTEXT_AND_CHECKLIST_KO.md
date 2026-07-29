@@ -1835,6 +1835,13 @@ interface GongpilError {
 
 ## Phase 17. 안정화와 0.1.0 출시
 
+현재 검증된 패키지 슬라이스:
+
+- [x] `0.1.1` Client 중앙 정렬 핫픽스와 Part Window v2/UI 릴리스 게이트
+- [x] `Gongpil-0.1.1-setup.exe` 설치·실행·제거·재설치 검증
+- [x] `Gongpil-0.1.1-portable.zip` 포함 runtime 실행·데이터 보존 검증
+- [x] `0.1.1` checksum과 프리릴리스 노트 기록
+
 - [ ] E2E 전체
 - [ ] crash recovery
 - [ ] migration

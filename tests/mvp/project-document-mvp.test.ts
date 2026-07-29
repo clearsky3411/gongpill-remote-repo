@@ -276,7 +276,8 @@ test("실제 Client 사용자 진입점이 Browser를 준비하고 종료 요청
     assert.equal(shutdownResult.state, "succeeded");
     const exitCode = await WaitForChildExit(childProcess);
     assert.equal(exitCode, 0, stderr);
-    assert.match(stdout, /공필 0\.1\.0/);
+    const productVersion = JSON.parse(await readFile(join(APP_ROOT, "package.json"), "utf8")).version;
+    assert.match(stdout, new RegExp(`공필 ${productVersion.replaceAll(".", "\\.")}`));
   }
   finally {
     if (childProcess.exitCode === null) {

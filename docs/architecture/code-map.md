@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `instance-part-window-ux` |
+| 작업 단위 | `client-package-0.1.1` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/instance-part-window-ux` |
-| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `instance.layout.persistence`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | 작은 제목 바, 화면 내부 스냅 재배치, 유연한 크기 배분과 공동 집필 Part Section 조작 UI 구현 |
-| 다음 작업 | `client-package-0.1.1` |
+| 브랜치 | `codex/client-package-0.1.1` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.installer`, `gongpil.packages`, `gongpil.distribution`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `client.release-notes`, `distribution.portable`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Client 중앙 정렬 핫픽스와 Part Window v2/UI를 0.1.1 Installer·portable 산출물 및 릴리스 정보로 묶어 검증 |
+| 다음 작업 | `distribution-update-channel` |
 
 ## 상태 라벨
 

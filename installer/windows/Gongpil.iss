@@ -1,8 +1,8 @@
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "0.1.1"
 #endif
 #ifndef AppNumericVersion
-  #define AppNumericVersion "0.1.0.0"
+  #define AppNumericVersion "0.1.1.0"
 #endif
 #ifndef AppSourceRoot
   #error AppSourceRoot define is required

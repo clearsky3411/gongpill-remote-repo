@@ -20,8 +20,8 @@ import {
 } from "./client-settings-store.ts";
 import { GongpilCoreProcessManager } from "./core-process-manager.ts";
 
-const CLIENT_VERSION = "0.1.0";
-const CORE_VERSION = "0.1.0";
+const CLIENT_VERSION = "0.1.1";
+const CORE_VERSION = "0.1.1";
 
 async function RunClientProcess(): Promise<void> {
   const appRoot = fileURLToPath(new URL("../..", import.meta.url));

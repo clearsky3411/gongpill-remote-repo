@@ -24,10 +24,30 @@ const APP_ROOT = process.cwd();
 
 test("Client Package 릴리스 정보가 버전·가능 기능·패치노트를 제공한다", async () => {
   const releaseNotes = await LoadClientReleaseNotes(APP_ROOT);
+  const packageManifest = JSON.parse(await readFile(join(APP_ROOT, "package.json"), "utf8"));
   assert.equal(releaseNotes.schemaVersion, 1);
-  assert.match(releaseNotes.productVersion, /^\d+\.\d+\.\d+/);
+  assert.equal(releaseNotes.productVersion, packageManifest.version);
+  assert.equal(releaseNotes.productVersion, "0.1.1");
   assert.ok(releaseNotes.capabilities.length >= 5);
   assert.ok(releaseNotes.changes.some((change) => change.includes("heartbeat")));
+  const versionSourcePaths = [
+    ["client", "src", "client-process.ts"],
+    ["client", "windows", "GongpilConnector.ps1"],
+    ["core", "src", "codex-app-server-client.ts"],
+    ["installer", "windows", "Gongpil.iss"],
+    ["scripts", "build-portable.ps1"],
+    ["scripts", "build-installer.ps1"],
+    ["scripts", "test-portable.ps1"],
+    ["scripts", "test-installer.ps1"],
+    ["scripts", "validate-release.ps1"],
+  ];
+  for (const pathParts of versionSourcePaths) {
+    assert.match(
+      await readFile(join(APP_ROOT, ...pathParts), "utf8"),
+      new RegExp(releaseNotes.productVersion.replaceAll(".", "\\.")),
+      `${pathParts.join("/")}의 기본 버전이 Client Package 버전과 다릅니다.`,
+    );
+  }
 });
 
 test("Windows 접속기 UI가 홈·설정·정보와 Runtime 상태를 구분한다", async () => {

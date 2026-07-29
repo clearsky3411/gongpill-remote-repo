@@ -2,27 +2,31 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "instance-part-window-ux",
+    "activeWorkUnit": "client-package-0.1.1",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/instance-part-window-ux",
+    "branch": "codex/client-package-0.1.1",
     "activeComponentIds": [
+      "gongpil.client",
       "gongpil.core",
       "gongpil.browser",
+      "gongpil.installer",
+      "gongpil.packages",
+      "gongpil.distribution",
       "gongpil.tests",
       "gongpil.repository",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "instance.layout.persistence",
-      "ui.workspace.layout",
+      "client.release-notes",
+      "distribution.portable",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "작은 제목 바, 화면 내부 스냅 재배치, 유연한 크기 배분과 공동 집필 Part Section 조작 UI를 구현한다.",
-    "nextRecommendedWorkUnit": "client-package-0.1.1"
+    "summary": "Client 중앙 정렬 핫픽스와 Part Window v2/UI를 0.1.1 Installer, portable 산출물과 릴리스 정보로 묶어 검증한다.",
+    "nextRecommendedWorkUnit": "distribution-update-channel"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -46,7 +50,7 @@
       "usedBy": [],
       "publicInterfaces": ["package.json"],
       "tests": [],
-      "relatedDocs": ["README.md", "GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md", "docs/releases/0.1.0-mvp.md"]
+      "relatedDocs": ["README.md", "GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md", "docs/releases/0.1.0-mvp.md", "docs/releases/0.1.1.md"]
     },
     {
       "id": "gongpil.client",
@@ -702,7 +706,7 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.installer",
       "path": "installer/windows/Gongpil.iss",
-      "entrypoints": ["npm run build:installer", "scripts/build-installer.ps1", "Gongpil-0.1.0-setup.exe"],
+      "entrypoints": ["npm run build:installer", "scripts/build-installer.ps1", "Gongpil-0.1.1-setup.exe"],
       "tests": ["scripts/test-installer.ps1", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
