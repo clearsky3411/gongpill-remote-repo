@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `installer-appearance-seed` |
+| 작업 단위 | `instance-panel-layout-contract` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/installer-appearance-seed` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.appearance.settings`, `install.appearance.seed`, `install.windows`, `client.release-notes`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Windows Installer가 Client Runtime appearance 최초값을 설정하되 기존 사용자 설정을 덮어쓰지 않도록 함 |
-| 다음 작업 | `instance-panel-layout-contract` |
+| 브랜치 | `codex/instance-panel-layout-contract` |
+| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `instance.layout.persistence`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Instance 작업 영역 레이아웃을 dataRoot에 검증·원자 저장하고 Browser가 읽고 쓸 명령 계약 생성 |
+| 다음 작업 | `instance-panel-layout-ui` |
 
 ## 상태 라벨
 
@@ -105,6 +105,7 @@ flowchart TD
 | AI 요청 실제 문서·대화 출처 좌표·내용 snapshot | Core | `core/src/chat-store.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
+| Instance 작업 영역 레이아웃 저장 계약 | Core | `core/src/instance-layout-store.ts` | `CURRENT` |
 | Instance 작업 영역 접기·펼치기·이동·도킹 | Browser | `browser/src/index.html` | `TARGET` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |

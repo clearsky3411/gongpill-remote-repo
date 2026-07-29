@@ -53,6 +53,10 @@ import {
 } from "./persona-store.ts";
 import { BuildWritingContext } from "./context-builder.ts";
 import { GongpilBrowserPresenceMonitor } from "./browser-presence-monitor.ts";
+import {
+  GongpilInstanceLayoutStore,
+  GongpilInstanceLayoutStoreError,
+} from "./instance-layout-store.ts";
 
 const LOOPBACK_SESSION_TOKEN_ENV = "GONGPIL_LOOPBACK_SESSION_TOKEN";
 const CORE_API_VERSION = "1.0.0";
@@ -73,6 +77,7 @@ async function RunCoreProcess(): Promise<void> {
   const chunkIndexStore = new GongpilChunkIndexStore(config.paths.dataRoot, documentStore);
   const chatStore = new GongpilChatStore(config.paths.dataRoot);
   const personaStore = new GongpilPersonaStore(config.paths.dataRoot);
+  const instanceLayoutStore = new GongpilInstanceLayoutStore(config.paths.dataRoot);
   const openAiConfig = await LoadOpenAiConfig();
   const openAiAdapter = new GongpilOpenAiResponsesAdapter();
   const providerKind = ResolveProviderKind(openAiConfig !== undefined);
@@ -177,6 +182,22 @@ async function RunCoreProcess(): Promise<void> {
   host.RegisterCommand("diagnostics.logs.read", async (payload) => ({
     entries: await diagnosticLogs.Read(OptionalNumber(payload, "limit") ?? 200),
   }));
+  host.RegisterCommand("instance.layout.read", async () => {
+    try {
+      return { layout: await instanceLayoutStore.Read() };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("instance.layout.update", async (payload) => {
+    try {
+      return { layout: await instanceLayoutStore.Update(payload.layout) };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
   host.RegisterCommand("project.list", async () => ({
     projects: await projectStore.ListProjects(),
   }));
@@ -643,6 +664,8 @@ async function RunCoreProcess(): Promise<void> {
       "ai.provider.login.start",
       "ai.usage.read",
       "diagnostics.logs.read",
+      "instance.layout.read",
+      "instance.layout.update",
       "project.list",
       "project.create",
       "project.open",
@@ -837,6 +860,9 @@ function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
     return new GongpilLoopbackCommandError(error.code, error.message);
   }
   if (error instanceof GongpilPersonaStoreError) {
+    return new GongpilLoopbackCommandError(error.code, error.message);
+  }
+  if (error instanceof GongpilInstanceLayoutStoreError) {
     return new GongpilLoopbackCommandError(error.code, error.message);
   }
   return new GongpilLoopbackCommandError(
