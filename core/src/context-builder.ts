@@ -1,11 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 
 import type { GongpilChunkDescriptor } from "./chunk-parser.ts";
+import type { GongpilChatHistoryChunk } from "./chat-history-context.ts";
+import type { GongpilChatClassification } from "./chat-store.ts";
 import type { GongpilDocumentSnapshot } from "./document-store.ts";
 import type { GongpilActivePersonaContext } from "./persona-store.ts";
 
-export interface GongpilSourceSnapshot {
+export interface GongpilDocumentSourceSnapshot {
   sourceId: string;
+  sourceKind: "document";
   selectionKind: "explicit" | "active-document";
   chunkId?: string;
   fileId: string;
@@ -18,6 +21,30 @@ export interface GongpilSourceSnapshot {
   lineEnd: number;
   content: string;
   contentSha256: string;
+}
+
+export interface GongpilConversationSourceSnapshot {
+  sourceId: string;
+  sourceKind: "conversation";
+  selectionKind: "conversation";
+  historyChunkId: string;
+  messageId: string;
+  turnId: string;
+  role: "user" | "assistant";
+  createdAt: string;
+  classification?: GongpilChatClassification;
+  byteStart: number;
+  byteEnd: number;
+  content: string;
+  contentSha256: string;
+}
+
+export type GongpilSourceSnapshot = GongpilDocumentSourceSnapshot | GongpilConversationSourceSnapshot;
+
+export interface GongpilContextOmissionSnapshot {
+  sourceReference: string;
+  sourceKind: GongpilSourceSnapshot["sourceKind"];
+  reason: "duplicate" | "token-budget";
 }
 
 export interface GongpilContextSnapshot {
@@ -45,6 +72,7 @@ export interface GongpilContextSnapshot {
   omittedSourceCount: number;
   estimatedInputTokens: number;
   warnings: string[];
+  omissions: GongpilContextOmissionSnapshot[];
   sources: GongpilSourceSnapshot[];
 }
 
@@ -60,33 +88,51 @@ export function BuildWritingContext(value: {
   userText: string;
   activePersona: GongpilActivePersonaContext;
   selectedChunks?: readonly GongpilChunkDescriptor[];
+  selectedHistoryChunks?: readonly GongpilChatHistoryChunk[];
   activeDocument?: GongpilDocumentSnapshot;
 }): GongpilBuiltWritingContext {
   const instructions = CreateInstructions(value.baseInstructions, value.activePersona);
-  const candidates = CreateSourceCandidates(value.selectedChunks ?? [], value.activeDocument);
+  const candidates = CreateSourceCandidates(
+    value.selectedChunks ?? [],
+    value.selectedHistoryChunks ?? [],
+    value.activeDocument,
+  );
   const fixedInput = `프로젝트: ${value.projectName}\n사용자 요청:\n${value.userText}`;
   const budget = value.activePersona.profile.contextTokenBudget;
   const fixedEstimatedTokens = EstimateTokenCount(`${instructions}\n${fixedInput}`);
   let estimatedTokens = fixedEstimatedTokens;
   const sources: GongpilSourceSnapshot[] = [];
+  const omissions: GongpilContextOmissionSnapshot[] = [];
   const sourceBlocks: string[] = [];
+  const includedContentHashes = new Set<string>();
   for (const candidate of candidates) {
+    if (includedContentHashes.has(candidate.contentSha256)) {
+      omissions.push(CreateOmission(candidate, "duplicate"));
+      continue;
+    }
     const block = CreateSourceBlock(candidate, sourceBlocks.length + 1);
     const blockTokens = EstimateTokenCount(block);
     if (estimatedTokens + blockTokens > budget) {
+      omissions.push(CreateOmission(candidate, "token-budget"));
       continue;
     }
     sources.push(candidate);
     sourceBlocks.push(block);
+    includedContentHashes.add(candidate.contentSha256);
     estimatedTokens += blockTokens;
   }
-  const omittedSourceCount = candidates.length - sources.length;
+  const omittedSourceCount = omissions.length;
   const warnings: string[] = [];
   if (fixedEstimatedTokens > budget) {
     warnings.push("페르소나 지시와 사용자 요청만으로 작업 프로필의 토큰 예산을 초과했습니다.");
   }
-  if (omittedSourceCount > 0) {
-    warnings.push(`컨텍스트 토큰 예산으로 출처 ${omittedSourceCount}개를 제외했습니다.`);
+  const duplicateCount = omissions.filter((omission) => omission.reason === "duplicate").length;
+  const budgetOmissionCount = omissions.filter((omission) => omission.reason === "token-budget").length;
+  if (duplicateCount > 0) {
+    warnings.push(`같은 내용의 출처 ${duplicateCount}개를 중복으로 제외했습니다.`);
+  }
+  if (budgetOmissionCount > 0) {
+    warnings.push(`컨텍스트 토큰 예산으로 출처 ${budgetOmissionCount}개를 제외했습니다.`);
   }
   if (candidates.length > 0 && sources.length === 0) {
     warnings.push("선택한 출처가 하나도 포함되지 않았습니다. 작업 프로필의 토큰 예산을 늘리세요.");
@@ -127,6 +173,7 @@ export function BuildWritingContext(value: {
       omittedSourceCount,
       estimatedInputTokens: estimatedTokens,
       warnings,
+      omissions,
       sources,
     },
   };
@@ -162,8 +209,10 @@ function CreateInstructions(
 
 function CreateSourceCandidates(
   selectedChunks: readonly GongpilChunkDescriptor[],
+  selectedHistoryChunks: readonly GongpilChatHistoryChunk[],
   activeDocument?: GongpilDocumentSnapshot,
 ): GongpilSourceSnapshot[] {
+  const documentSources: GongpilDocumentSourceSnapshot[] = [];
   if (selectedChunks.length > 0) {
     const uniqueChunks = new Map<string, GongpilChunkDescriptor>();
     for (const chunk of selectedChunks) {
@@ -171,8 +220,9 @@ function CreateSourceCandidates(
         uniqueChunks.set(chunk.chunkId, chunk);
       }
     }
-    return [...uniqueChunks.values()].map((chunk) => ({
+    documentSources.push(...[...uniqueChunks.values()].map((chunk) => ({
       sourceId: `source-${randomUUID()}`,
+      sourceKind: "document" as const,
       selectionKind: "explicit",
       chunkId: chunk.chunkId,
       fileId: chunk.fileId,
@@ -185,28 +235,64 @@ function CreateSourceCandidates(
       lineEnd: chunk.coordinate.lineEnd,
       content: chunk.content,
       contentSha256: CreateContentHash(chunk.content),
-    }));
+    })));
   }
-  if (activeDocument === undefined) {
-    return [];
+  else if (activeDocument !== undefined) {
+    documentSources.push({
+      sourceId: `source-${randomUUID()}`,
+      sourceKind: "document",
+      selectionKind: "active-document",
+      fileId: activeDocument.fileId,
+      path: activeDocument.path,
+      revision: activeDocument.revision,
+      title: activeDocument.name,
+      byteStart: 0,
+      byteEnd: Buffer.byteLength(activeDocument.content, "utf8"),
+      lineStart: 1,
+      lineEnd: Math.max(1, activeDocument.content.split(/\r?\n/).length),
+      content: activeDocument.content,
+      contentSha256: CreateContentHash(activeDocument.content),
+    });
   }
-  return [{
+  const uniqueHistoryChunks = new Map<string, GongpilChatHistoryChunk>();
+  for (const chunk of selectedHistoryChunks) {
+    if (!uniqueHistoryChunks.has(chunk.chunkId)) {
+      uniqueHistoryChunks.set(chunk.chunkId, chunk);
+    }
+  }
+  const conversationSources: GongpilConversationSourceSnapshot[] = [...uniqueHistoryChunks.values()].map((chunk) => ({
     sourceId: `source-${randomUUID()}`,
-    selectionKind: "active-document",
-    fileId: activeDocument.fileId,
-    path: activeDocument.path,
-    revision: activeDocument.revision,
-    title: activeDocument.name,
-    byteStart: 0,
-    byteEnd: Buffer.byteLength(activeDocument.content, "utf8"),
-    lineStart: 1,
-    lineEnd: Math.max(1, activeDocument.content.split(/\r?\n/).length),
-    content: activeDocument.content,
-    contentSha256: CreateContentHash(activeDocument.content),
-  }];
+    sourceKind: "conversation",
+    selectionKind: "conversation",
+    historyChunkId: chunk.chunkId,
+    messageId: chunk.messageId,
+    turnId: chunk.turnId,
+    role: chunk.role,
+    createdAt: chunk.createdAt,
+    classification: chunk.classification,
+    byteStart: chunk.byteStart,
+    byteEnd: chunk.byteEnd,
+    content: chunk.content,
+    contentSha256: chunk.contentSha256,
+  }));
+  return [...documentSources, ...conversationSources];
 }
 
 function CreateSourceBlock(source: GongpilSourceSnapshot, index: number): string {
+  if (source.sourceKind === "conversation") {
+    const classification = FormatClassification(source.classification);
+    return [
+      `--- 출처 ${index} (이전 대화) ---`,
+      `역할: ${source.role}`,
+      `시간: ${source.createdAt}`,
+      `턴: ${source.turnId}`,
+      `메시지: ${source.messageId}`,
+      `분류: ${classification}`,
+      `UTF-8 bytes: [${source.byteStart}, ${source.byteEnd})`,
+      source.content,
+      `--- 출처 ${index} 끝 ---`,
+    ].join("\n");
+  }
   return [
     `--- 출처 ${index} (${source.selectionKind === "explicit" ? "명시 선택" : "현재 문서"}) ---`,
     `문서: ${source.path}`,
@@ -217,6 +303,32 @@ function CreateSourceBlock(source: GongpilSourceSnapshot, index: number): string
     source.content,
     `--- 출처 ${index} 끝 ---`,
   ].join("\n");
+}
+
+function CreateOmission(
+  source: GongpilSourceSnapshot,
+  reason: GongpilContextOmissionSnapshot["reason"],
+): GongpilContextOmissionSnapshot {
+  return {
+    sourceReference: source.sourceKind === "conversation"
+      ? source.historyChunkId
+      : source.chunkId ?? source.fileId,
+    sourceKind: source.sourceKind,
+    reason,
+  };
+}
+
+function FormatClassification(classification: GongpilChatClassification | undefined): string {
+  if (classification === undefined) {
+    return "미분류";
+  }
+  const values = [
+    classification.topic === undefined ? undefined : `주제=${classification.topic}`,
+    classification.task === undefined ? undefined : `작업=${classification.task}`,
+    classification.session === undefined ? undefined : `세션=${classification.session}`,
+    classification.labels === undefined ? undefined : `라벨=${classification.labels.join(", ")}`,
+  ].filter((value): value is string => value !== undefined);
+  return values.length > 0 ? values.join("; ") : "미분류";
 }
 
 function CreateContentHash(content: string): string {

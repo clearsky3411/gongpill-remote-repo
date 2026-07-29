@@ -2,12 +2,12 @@
 
 ## 저장 시점 상태
 
-- 기준 브랜치: `main`의 `fa68951` (`feat: add persona context and source snapshots (#12)`)
+- 기준 브랜치: `main`의 `b5af05e` (`fix: align Codex sandbox mode protocol (#14)`)
 - 현재 배포물: `distribution/Gongpil-0.1.0-setup.exe`, `distribution/Gongpil-0.1.0-portable.zip`
 - 완료 범위: Codex/API 제공자, 사용량·개발 로그, 문서 청크·UTF-8 byte 좌표·증분 색인·검색, 페르소나 버전·작업 프로필, 출처 snapshot
 - 아직 전체 제품 완성 상태는 아니다.
 
-## 재개 시 가장 먼저 고칠 오류
+## 완료: Codex sandbox 오류
 
 관측 로그:
 
@@ -17,12 +17,12 @@ Invalid request: unknown variant `readOnly`, expected one of `read-only`, `works
 {"provider":"codex"}
 ```
 
-예상 원인:
+확인 및 수정 결과:
 
-- Codex App Server 요청의 sandbox 값에 `readOnly`를 보내고 있다.
-- 현재 App Server 계약이 요구하는 직렬화 값은 `read-only`다.
-- 재개 직후 `core/src/codex-app-server-client.ts`의 요청 payload와 테스트 fixture를 확인해 최소 수정한다.
-- 수정 뒤 실제 격리 `CODEX_HOME`을 사용한 Codex 요청과 `npm run test:ai`, `npm run validate:release`를 검증한다.
+- [x] 설치된 Codex App Server 생성 스키마로 `thread/start.sandbox=read-only`를 확인했다.
+- [x] `turn/start.sandboxPolicy.type=readOnly`는 별도 계약이므로 그대로 유지했다.
+- [x] `core/src/codex-app-server-client.ts`와 fixture를 최소 수정했다.
+- [x] `npm run test:ai`, `npm run validate:architecture`를 통과하고 PR #14로 병합했다.
 
 로그인 시 ChatGPT 페이지로 이동하는 것은 Codex Pro가 ChatGPT 계정 인증을 사용하는 브라우저 로그인 흐름이므로 그 자체는 정상이다. 다만 로그인 완료 뒤 공필 인스턴스가 계정 상태를 다시 읽어 `준비됨`으로 바뀌는지 검증해야 한다.
 
@@ -44,6 +44,20 @@ Invalid request: unknown variant `readOnly`, expected one of `read-only`, `works
 - [ ] AI 요청에 실제 포함된 이전 대화의 message ID, 역할, 시각, 분류, 내용 hash/snapshot을 보존한다.
 - [ ] 문서 청크와 이전 대화가 같은 내용을 반복하면 중복을 제거하되 사용자가 결과를 확인할 수 있어야 한다.
 - [ ] 이전 대화 원문, 요약본, 선택 청크 중 무엇을 넣을지 사용자가 선택할 수 있어야 한다.
+
+### Core 구현 현황
+
+- [x] 답글 관계를 기준으로 사용자/AI 메시지를 턴으로 묶는다.
+- [x] 이전 메시지를 UTF-8 byte 좌표의 안정적인 청크로 나눈다.
+- [x] 최근 N개, 턴 ID, 개별 청크 ID 선택을 Core에서 해석한다.
+- [x] 주제·작업·세션·라벨 분류를 프로젝트 채팅 JSON에 하위 호환 방식으로 저장한다.
+- [x] `chat.history.list`, `chat.context.preview`, `chat.message.classification.update` 명령을 제공한다.
+- [x] 문서와 대화 출처를 한 토큰 예산에서 조립하고 중복·예산 제외 사유를 snapshot에 기록한다.
+- [x] 실제 포함 대화의 message ID, 역할, 시각, 분류, UTF-8 byte 좌표, 내용 hash와 원문을 보존한다.
+- [x] 다른 프로젝트·오래된 선택 ID를 `CHAT_HISTORY_SELECTION_STALE`로 거부한다.
+- [x] 과거 `contextSnapshot`을 재귀적으로 다시 포함하지 않는다.
+- [ ] Browser에서 최근 10개·개별·분류·청크 선택과 토큰 미리보기를 제공한다.
+- [ ] 원문·요약본·선택 청크 모드를 제공한다. 자동 요약은 비용과 생성 시점을 명시해야 한다.
 
 ## 구현 원칙
 

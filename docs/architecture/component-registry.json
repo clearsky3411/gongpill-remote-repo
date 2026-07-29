@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "codex-sandbox-mode-protocol-fix",
+    "activeWorkUnit": "chat-history-context-core",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/codex-sandbox-enum-fix",
+    "branch": "codex/chat-history-context-core",
     "activeComponentIds": [
       "gongpil.core",
       "gongpil.tests",
@@ -14,12 +14,16 @@
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "ai.provider.codex",
+      "chat.session.persist",
+      "chat.history.classify",
+      "context.history.select",
+      "context.build.budget",
+      "context.source.snapshot",
       "architecture.code-map.track",
       "architecture.code-map.validate"
     ],
-    "summary": "Codex App Server thread/start의 sandbox 모드를 read-only로 직렬화하고 turn/start의 readOnly 정책과 서로 다른 enum 표현을 회귀 테스트로 고정했다.",
-    "nextRecommendedWorkUnit": "chat-history-context-selection"
+    "summary": "프로젝트 채팅을 턴·메시지·UTF-8 byte 청크로 분류하고 최근·턴·개별 청크 선택, 문서와 통합된 토큰 미리보기, 중복·누락 사유와 재현 가능한 snapshot을 제공한다.",
+    "nextRecommendedWorkUnit": "chat-history-context-ui"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -66,11 +70,11 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "permissions", "proposals", "ai-provider", "diagnostic-logs", "chunk-parser", "chunk-index", "persona-store", "context-builder", "source-snapshots"],
+      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "chat-history-context", "permissions", "proposals", "ai-provider", "diagnostic-logs", "chunk-parser", "chunk-index", "persona-store", "context-builder", "source-snapshots"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts", "core/src/chunk-parser.ts", "core/src/chunk-index-store.ts", "core/src/persona-store.ts", "core/src/context-builder.ts"],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/chunks/chunk-index-search.test.ts", "tests/context/persona-context-source.test.ts"],
+      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/chat-history-context.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts", "core/src/chunk-parser.ts", "core/src/chunk-index-store.ts", "core/src/persona-store.ts", "core/src/context-builder.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/chunks/chunk-index-search.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts"],
       "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -206,11 +210,11 @@
       "kind": "test-group",
       "status": "CURRENT",
       "responsibility": "통합, E2E, 마이그레이션과 장애 주입 검증",
-      "owns": ["bootstrap-integration-tests", "project-document-mvp-tests", "persona-context-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
+      "owns": ["bootstrap-integration-tests", "project-document-mvp-tests", "persona-context-tests", "chat-history-context-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.installer", "gongpil.platform", "gongpil.network-runtime", "gongpil.packages", "gongpil.builtin-plugins"],
       "usedBy": [],
       "publicInterfaces": [],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/context/persona-context-source.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "relatedDocs": ["tests/README.md"]
     },
     {
@@ -434,6 +438,26 @@
       "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.message.send"], "events": ["chat.message.delta", "chat.message.completed", "proposal.created"] }
     },
     {
+      "id": "chat.history.classify",
+      "name": "프로젝트 대화 주제·작업·세션 분류",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/chat-store.ts",
+      "entrypoints": ["GongpilChatStore.UpdateMessageClassification", "chat.message.classification.update"],
+      "tests": ["tests/context/chat-history-context.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.message.classification.update"], "events": [] }
+    },
+    {
+      "id": "context.history.select",
+      "name": "이전 대화 턴·메시지·청크 선택과 토큰 미리보기",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/chat-history-context.ts",
+      "entrypoints": ["CreateChatHistoryIndex", "ResolveChatHistorySelection", "chat.history.list", "chat.context.preview", "chat.message.send"],
+      "tests": ["tests/context/chat-history-context.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.history.list", "chat.context.preview", "chat.message.send"], "events": [] }
+    },
+    {
       "id": "persona.version.manage",
       "name": "프로젝트 페르소나 버전과 작업 프로필 관리",
       "status": "CURRENT",
@@ -450,18 +474,18 @@
       "ownerComponentId": "gongpil.core",
       "path": "core/src/context-builder.ts",
       "entrypoints": ["BuildWritingContext"],
-      "tests": ["tests/context/persona-context-source.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "tests": ["tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
       "id": "context.source.snapshot",
-      "name": "AI 요청 실제 출처 revision·좌표·내용 snapshot",
+      "name": "AI 요청 실제 문서·대화 출처 좌표·내용 snapshot",
       "status": "CURRENT",
       "ownerComponentId": "gongpil.core",
       "path": "core/src/chat-store.ts",
-      "entrypoints": ["GongpilContextSnapshot", "GongpilChatStore.AppendMessage", "chat.session.read"],
-      "tests": ["tests/context/persona-context-source.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
-      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.message.send"], "events": ["chat.message.completed"] }
+      "entrypoints": ["GongpilContextSnapshot", "GongpilChatStore.AppendMessage", "chat.session.read", "chat.context.preview"],
+      "tests": ["tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.context.preview", "chat.message.send"], "events": ["chat.message.completed"] }
     },
     {
       "id": "ui.persona-context",
