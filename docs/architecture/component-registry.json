@@ -2,26 +2,27 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "client-center-screen-hotfix",
+    "activeWorkUnit": "instance-part-window-contract",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/client-center-screen-hotfix",
+    "branch": "codex/instance-part-window-contract",
     "activeComponentIds": [
-      "gongpil.client",
+      "gongpil.core",
+      "gongpil.browser",
       "gongpil.tests",
       "gongpil.repository",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "client.appearance.ui",
-      "client.home.dashboard",
+      "instance.layout.persistence",
+      "ui.workspace.layout",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Client 접속기 실제 표시 경로에서 protected CenterToScreen 호출로 발생하는 예외를 제거하고 회귀 테스트를 추가한다.",
-    "nextRecommendedWorkUnit": "instance-part-window-contract"
+    "summary": "Part Window와 공동 집필 Part Section의 순서, 크기, 표시 상태를 저장하는 v2 계약과 v1 마이그레이션을 확정한다.",
+    "nextRecommendedWorkUnit": "instance-part-window-ux"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -647,11 +648,11 @@
     },
     {
       "id": "instance.layout.persistence",
-      "name": "Instance 작업 영역 레이아웃 저장 계약",
+      "name": "Instance Part Window·공동 집필 Part Section v2 저장 및 v1 마이그레이션 계약",
       "status": "CURRENT",
       "ownerComponentId": "gongpil.core",
       "path": "core/src/instance-layout-store.ts",
-      "entrypoints": ["GongpilInstanceLayoutStore.Read", "GongpilInstanceLayoutStore.Update", "CreateDefaultInstanceLayout", "instance.layout.read", "instance.layout.update"],
+      "entrypoints": ["GongpilInstanceLayoutStore.Read", "GongpilInstanceLayoutStore.Update", "CreateDefaultInstanceLayout", "GONGPIL_PART_WINDOW_IDS", "GONGPIL_CO_WRITER_PART_SECTION_IDS", "instance.layout.read", "instance.layout.update"],
       "tests": ["tests/browser/instance-panel-layout.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["instance.layout.read", "instance.layout.update"], "events": [] }
     },

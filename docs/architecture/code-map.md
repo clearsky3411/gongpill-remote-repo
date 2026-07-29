@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `client-center-screen-hotfix` |
+| 작업 단위 | `instance-part-window-contract` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/client-center-screen-hotfix` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.appearance.ui`, `client.home.dashboard`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Client 접속기 실제 표시 경로의 화면 중앙 정렬 예외 제거와 회귀 테스트 추가 |
-| 다음 작업 | `instance-part-window-contract` |
+| 브랜치 | `codex/instance-part-window-contract` |
+| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `instance.layout.persistence`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Part Window와 공동 집필 Part Section의 순서·크기·표시 상태를 저장하는 v2 계약 및 v1 마이그레이션 확정 |
+| 다음 작업 | `instance-part-window-ux` |
 
 ## 상태 라벨
 
@@ -105,7 +105,7 @@ flowchart TD
 | AI 요청 실제 문서·대화 출처 좌표·내용 snapshot | Core | `core/src/chat-store.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
-| Instance 작업 영역 레이아웃 저장 계약 | Core | `core/src/instance-layout-store.ts` | `CURRENT` |
+| Instance Part Window·공동 집필 Part Section v2 저장 및 v1 마이그레이션 계약 | Core | `core/src/instance-layout-store.ts` | `CURRENT` |
 | Instance 작업 영역 접기·펼치기·좌우 이동·너비 조절·전역 복원 | Browser | `browser/src/index.html`, `browser/src/instance-layout.js` | `CURRENT` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |
