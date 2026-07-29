@@ -8,6 +8,7 @@ import test from "node:test";
 import {
   GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
   LoadClientSettings,
+  ResolveClientAppearanceSeedPath,
   ResolveClientFontRoot,
   ResolveClientSettingsPath,
   SaveClientSettings,
@@ -66,6 +67,47 @@ test("설치형 첫 실행은 기본 dataRoot와 접속기 표시 옵션을 준�
       ...GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
       fontRoot: join(context.settingsRoot, "fonts"),
     });
+  }
+  finally {
+    await rm(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("설치형 첫 실행은 인스톨러 화면 시드를 검증·원자 저장한 뒤 제거한다", async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), "gongpil-client-appearance-seed-"));
+  try {
+    const context = {
+      mode: "installed" as const,
+      appRoot: join(testRoot, "program", "Gongpil"),
+      settingsRoot: join(testRoot, "settings"),
+    };
+    const fontRoot = join(testRoot, "my-client-fonts");
+    const seedPath = ResolveClientAppearanceSeedPath(context);
+    await mkdir(context.settingsRoot, { recursive: true });
+    await writeFile(seedPath, JSON.stringify({
+      schemaVersion: 1,
+      appearance: {
+        ...GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
+        fontRoot,
+        baseFontSizePt: 11,
+        uiScalePercent: 125,
+        windowWidthDip: 980,
+        windowHeightDip: 820,
+      },
+    }), "utf8");
+
+    const loaded = await LoadClientSettings(context);
+    assert.equal(loaded.isFirstRun, true);
+    assert.deepEqual(loaded.settings.appearance, {
+      ...GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
+      fontRoot,
+      baseFontSizePt: 11,
+      uiScalePercent: 125,
+      windowWidthDip: 980,
+      windowHeightDip: 820,
+    });
+    assert.deepEqual(JSON.parse(await readFile(loaded.settingsPath, "utf8")).appearance, loaded.settings.appearance);
+    await assert.rejects(readFile(seedPath), /ENOENT/);
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });

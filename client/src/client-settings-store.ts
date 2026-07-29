@@ -15,6 +15,8 @@ export const GONGPIL_CLIENT_APPEARANCE_DEFAULTS = Object.freeze({
   windowHeightDip: 720,
 });
 
+export const GONGPIL_CLIENT_APPEARANCE_SEED_FILE = "client-settings-seed.json";
+
 export interface GongpilClientAppearanceSettings {
   baselineDpi: 96;
   fontRoot: string;
@@ -69,7 +71,12 @@ export async function LoadClientSettings(
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       const migrated = await TryMigrateLegacySettings(context, settingsPath);
       if (migrated !== undefined) {
+        await RemoveInstallerAppearanceSeed(context);
         return migrated;
+      }
+      const seeded = await TryConsumeInstallerAppearanceSeed(context, settingsPath, defaultSettings);
+      if (seeded !== undefined) {
+        return seeded;
       }
       return { settings: defaultSettings, settingsPath, isFirstRun: true };
     }
@@ -135,6 +142,13 @@ export function ResolveClientSettingsPath(context: GongpilClientSettingsContext)
 
 export function ResolveClientFontRoot(context: GongpilClientSettingsContext): string {
   return ResolveClientStoragePaths(context).userFontRoot;
+}
+
+export function ResolveClientAppearanceSeedPath(context: GongpilClientSettingsContext): string {
+  return WindowsPath.join(
+    WindowsPath.dirname(ResolveClientSettingsPath(context)),
+    GONGPIL_CLIENT_APPEARANCE_SEED_FILE,
+  );
 }
 
 function CreateDefaultClientSettings(context: GongpilClientSettingsContext): GongpilClientSettings {
@@ -267,6 +281,54 @@ async function TryMigrateLegacySettings(
     }
   }
   return undefined;
+}
+
+async function TryConsumeInstallerAppearanceSeed(
+  context: GongpilClientSettingsContext,
+  settingsPath: string,
+  defaultSettings: GongpilClientSettings,
+): Promise<GongpilLoadedClientSettings | undefined> {
+  if (context.mode !== "installed") {
+    return undefined;
+  }
+  const seedPath = ResolveClientAppearanceSeedPath(context);
+  let parsedSeed: unknown;
+  try {
+    parsedSeed = JSON.parse(RemoveByteOrderMark(await readFile(seedPath, "utf8")));
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+    if (error instanceof SyntaxError) {
+      throw new Error(`인스톨러 화면 설정 시드가 손상되었습니다: ${seedPath}`);
+    }
+    throw error;
+  }
+
+  if (typeof parsedSeed !== "object" || parsedSeed === null || Array.isArray(parsedSeed)) {
+    throw new Error(`인스톨러 화면 설정 시드 형식이 올바르지 않습니다: ${seedPath}`);
+  }
+  const seed = parsedSeed as Readonly<Record<string, unknown>>;
+  if (seed.schemaVersion !== 1) {
+    throw new Error(`지원하지 않는 인스톨러 화면 설정 시드입니다: ${seedPath}`);
+  }
+  const settings = await SaveClientSettings(context, {
+    ...defaultSettings,
+    appearance: NormalizeAppearanceSettings(seed.appearance, context),
+  });
+  const verified = NormalizeClientSettings(
+    JSON.parse(RemoveByteOrderMark(await readFile(settingsPath, "utf8"))),
+    context,
+  );
+  await rm(seedPath, { force: true });
+  return { settings: verified, settingsPath, isFirstRun: true };
+}
+
+async function RemoveInstallerAppearanceSeed(context: GongpilClientSettingsContext): Promise<void> {
+  if (context.mode === "installed") {
+    await rm(ResolveClientAppearanceSeedPath(context), { force: true });
+  }
 }
 
 async function WriteClientSettings(

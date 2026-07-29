@@ -10,6 +10,76 @@ if (setupPath === undefined) {
   throw new Error("GONGPIL_SETUP_PATH가 필요합니다.");
 }
 
+test("Windows Installer 화면 시드는 최초 설정에만 적용되고 재설치에서 기존 설정을 보존한다", async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), "gongpil-installer-appearance-test-"));
+  const installRoot = join(testRoot, "installed", "Gongpil");
+  const localAppData = join(testRoot, "local-app-data");
+  const configRoot = join(testRoot, "installed", "GongpilConfig");
+  const settingsPath = join(configRoot, "client-settings.json");
+  const seedPath = join(configRoot, "client-settings-seed.json");
+  const fontRoot = join(testRoot, "client-fonts");
+  const environment = CreateIsolatedEnvironment(localAppData);
+
+  try {
+    Install(installRoot, join(testRoot, "install-1.log"), environment, {
+      fontRoot,
+      fontSize: 11,
+      uiScale: 125,
+      windowWidth: 980,
+      windowHeight: 820,
+    });
+    assert.deepEqual(JSON.parse(await readFile(seedPath, "utf8")), {
+      schemaVersion: 1,
+      appearance: {
+        baselineDpi: 96,
+        fontRoot,
+        uiFontId: "bundled:nanum-gothic",
+        monospaceFontId: "bundled:d2coding",
+        baseFontSizePt: 11,
+        uiScalePercent: 125,
+        windowWidthDip: 980,
+        windowHeightDip: 820,
+      },
+    });
+
+    const firstRun = StartInstalledClient(installRoot, environment);
+    try {
+      const session = await OpenBrowserSession(firstRun.ReadStdout);
+      await SendCommand(session, "instance.shutdown.request", {});
+      assert.equal(await firstRun.WaitForExit(), 0, firstRun.ReadStderr());
+    }
+    finally {
+      firstRun.Kill();
+    }
+    const firstSettings = JSON.parse(await readFile(settingsPath, "utf8"));
+    assert.equal(firstSettings.appearance.fontRoot, fontRoot);
+    assert.equal(firstSettings.appearance.baseFontSizePt, 11);
+    assert.equal(firstSettings.appearance.uiScalePercent, 125);
+    assert.equal(firstSettings.appearance.windowWidthDip, 980);
+    assert.equal(firstSettings.appearance.windowHeightDip, 820);
+    await assert.rejects(readFile(seedPath), /ENOENT/);
+
+    Uninstall(installRoot, join(testRoot, "uninstall-1.log"), environment);
+    await WaitForMissing(installRoot);
+    Install(installRoot, join(testRoot, "install-2.log"), environment, {
+      fontRoot: join(testRoot, "should-not-replace-fonts"),
+      fontSize: 18,
+      uiScale: 150,
+      windowWidth: 1400,
+      windowHeight: 1000,
+    });
+    assert.deepEqual(JSON.parse(await readFile(settingsPath, "utf8")), firstSettings);
+    await assert.rejects(readFile(seedPath), /ENOENT/);
+
+    Uninstall(installRoot, join(testRoot, "uninstall-2.log"), environment);
+    await WaitForMissing(installRoot);
+    await access(settingsPath);
+  }
+  finally {
+    await RemoveTreeEventually(testRoot);
+  }
+});
+
 test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 설정과 데이터를 보존한다", async () => {
   const testRoot = await mkdtemp(join(tmpdir(), "gongpil-installer-test-"));
   const installRoot = join(testRoot, "installed", "Gongpil");
@@ -17,6 +87,7 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
   const dataRoot = join(testRoot, "selected-data-root");
   const legacySettingsPath = join(localAppData, "Gongpil", "client-settings.json");
   const settingsPath = join(testRoot, "installed", "GongpilConfig", "client-settings.json");
+  const seedPath = join(testRoot, "installed", "GongpilConfig", "client-settings-seed.json");
   const environment = CreateIsolatedEnvironment(localAppData);
 
   try {
@@ -50,6 +121,7 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
 
     const machineBeforeUninstall = JSON.parse(await readFile(join(dataRoot, "machine.json"), "utf8"));
     await assert.rejects(readFile(legacySettingsPath), /ENOENT/);
+    await assert.rejects(readFile(seedPath), /ENOENT/);
     Uninstall(installRoot, join(testRoot, "uninstall-1.log"), environment);
     await WaitForMissing(installRoot);
     assert.equal(JSON.parse(await readFile(join(dataRoot, "machine.json"), "utf8")).machineId, machineBeforeUninstall.machineId);
@@ -82,8 +154,21 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
   }
 });
 
-function Install(installRoot: string, logPath: string, environment: NodeJS.ProcessEnv): void {
-  const result = spawnSync(setupPath, [
+interface InstallerAppearanceOptions {
+  fontRoot: string;
+  fontSize: number;
+  uiScale: number;
+  windowWidth: number;
+  windowHeight: number;
+}
+
+function Install(
+  installRoot: string,
+  logPath: string,
+  environment: NodeJS.ProcessEnv,
+  appearance?: InstallerAppearanceOptions,
+): void {
+  const arguments_ = [
     "/VERYSILENT",
     "/SUPPRESSMSGBOXES",
     "/NORESTART",
@@ -91,7 +176,17 @@ function Install(installRoot: string, logPath: string, environment: NodeJS.Proce
     "/NOICONS",
     `/DIR=${installRoot}`,
     `/LOG=${logPath}`,
-  ], { env: environment, encoding: "utf8", windowsHide: true });
+  ];
+  if (appearance !== undefined) {
+    arguments_.push(
+      `/GONGPILFONTROOT=${appearance.fontRoot}`,
+      `/GONGPILFONTSIZE=${appearance.fontSize}`,
+      `/GONGPILUISCALE=${appearance.uiScale}`,
+      `/GONGPILWINDOWWIDTH=${appearance.windowWidth}`,
+      `/GONGPILWINDOWHEIGHT=${appearance.windowHeight}`,
+    );
+  }
+  const result = spawnSync(setupPath, arguments_, { env: environment, encoding: "utf8", windowsHide: true });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 }
 

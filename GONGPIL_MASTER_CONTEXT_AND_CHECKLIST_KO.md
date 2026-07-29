@@ -168,6 +168,7 @@
 - [x] Client Package에 나눔고딕 Regular/Bold와 D2Coding, 라이선스·checksum manifest를 포함한다.
 - [x] Client Runtime appearance는 96 DPI 기준 DIP, 760×720 DIP, 9pt, 100% 기본값을 명시한다.
 - [x] Client Runtime이 포함 글꼴을 시스템 설치 없이 비공개로 로드하고 DPI·창 크기를 적용한다.
+- [x] Windows Installer가 사용자 글꼴 폴더·글자 크기·UI 배율·창 DIP 최초값을 받고 기존 Client 설정은 덮어쓰지 않는다.
 
 ## 3.2 실행 격리
 
@@ -1172,6 +1173,7 @@ Instance Runtime 종료 요청
 - [x] Client 설정 v2의 appearance 계약과 포터블 Client 설정 루트 분리
 - [x] 나눔고딕·D2Coding 번들, 공식 라이선스와 SHA-256 검증
 - [x] WinForms Client Runtime의 비공개 글꼴·DPI·창 크기 실제 적용
+- [x] Installer appearance 최초 설정 시드와 재설치 시 기존 설정 보존
 - [ ] Windows 재부팅·로그오프 처리
 
 ---

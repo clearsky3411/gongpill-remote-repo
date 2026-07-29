@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + Client 자체 글꼴·DPI UI
-- 최근 작업 브랜치: `codex/client-private-font-ui`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 자기완결 Client 화면 설정
+- 최근 작업 브랜치: `codex/installer-appearance-seed`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -37,10 +37,11 @@ Node 설치 없이 포터블로 사용:
 일반 Windows 설치:
 
 1. `distribution/Gongpil-0.1.0-setup.exe`를 실행한다.
-2. 설치 후 시작 메뉴의 `Gongpil`을 실행한다.
-3. 처음 뜨는 클라이언트(접속기)에서 데이터 폴더를 정하고 `인스턴스 시작`을 누른다.
-4. 나중에 바꾸려면 시작 메뉴의 `Gongpil 설정`을 실행한다. 경로 변경은 기존 데이터를 자동 이동하지 않는다.
-5. 제거해도 클라이언트 설정과 선택한 프로젝트·문서는 유지되며, 재설치하면 그대로 다시 사용한다.
+2. 설치 과정에서 Client Runtime 사용자 글꼴 폴더, 기본 글자 크기, UI 배율과 96 DPI 기준 창 크기를 정한다.
+3. 설치 후 시작 메뉴의 `Gongpil`을 실행한다.
+4. 처음 뜨는 클라이언트(접속기)에서 데이터 폴더를 정하고 `인스턴스 시작`을 누른다.
+5. 나중에 바꾸려면 시작 메뉴의 `Gongpil 설정`을 실행한다. 경로 변경은 기존 데이터를 자동 이동하지 않는다.
+6. 제거해도 클라이언트 설정과 선택한 프로젝트·문서는 유지되며, 재설치해도 기존 화면 설정을 덮어쓰지 않는다.
 
 설치 프로그램은 `npm run build:installer`로 만들고 `npm run test:installer`로 실제 설치·실행·제거·재설치를 검증한다.
 
@@ -85,6 +86,7 @@ npm run validate:release
 - [x] 나눔고딕 Regular/Bold·D2Coding과 라이선스·checksum을 포함한 Client Package 글꼴 카탈로그
 - [x] 포터블 Client 설정·사용자 글꼴을 프로젝트 데이터와 분리하고 기존 설정을 검증 후 이동
 - [x] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
+- [x] Windows Installer의 Client 화면 최초값 선택과 재설치 설정 보존
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필

@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "client-private-font-ui",
+    "activeWorkUnit": "installer-appearance-seed",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/client-private-font-ui",
+    "branch": "codex/installer-appearance-seed",
     "activeComponentIds": [
       "gongpil.client",
       "gongpil.installer",
@@ -16,16 +16,15 @@
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "client.connector.settings",
       "client.appearance.settings",
-      "client.font.catalog",
-      "client.appearance.ui",
+      "install.appearance.seed",
+      "install.windows",
       "client.release-notes",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "WinForms Client Runtime에 Client Package 비공개 글꼴과 96 DPI 기준 크기·배율 설정을 적용한다.",
-    "nextRecommendedWorkUnit": "installer-appearance-seed"
+    "summary": "Windows Installer가 Client Runtime appearance 최초값을 설정하되 기존 사용자 설정을 덮어쓰지 않도록 한다.",
+    "nextRecommendedWorkUnit": "instance-panel-layout-contract"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -315,7 +314,7 @@
       "status": "CURRENT",
       "ownerComponentId": "gongpil.client",
       "path": "client/src/client-settings-store.ts",
-      "entrypoints": ["GONGPIL_CLIENT_APPEARANCE_DEFAULTS", "LoadClientSettings", "SaveClientSettings"],
+      "entrypoints": ["GONGPIL_CLIENT_APPEARANCE_DEFAULTS", "GONGPIL_CLIENT_APPEARANCE_SEED_FILE", "LoadClientSettings", "SaveClientSettings", "ResolveClientAppearanceSeedPath"],
       "tests": ["tests/client/client-connector-settings.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
@@ -342,11 +341,11 @@
     {
       "id": "install.appearance.seed",
       "name": "Installer Client appearance 최초 설정",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.installer",
       "path": "installer/windows/Gongpil.iss",
-      "entrypoints": [],
-      "tests": [],
+      "entrypoints": ["InitializeWizard", "ValidateAppearance", "WriteAppearanceSeed", "TryConsumeInstallerAppearanceSeed"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
