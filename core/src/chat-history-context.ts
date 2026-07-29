@@ -220,9 +220,9 @@ function MergeClassification(
     return undefined;
   }
   return {
-    topic: next?.topic ?? base?.topic,
-    task: next?.task ?? base?.task,
-    session: next?.session ?? base?.session,
+    topic: base?.topic ?? next?.topic,
+    task: base?.task ?? next?.task,
+    session: base?.session ?? next?.session,
     labels: [...new Set([...(base?.labels ?? []), ...(next?.labels ?? [])])],
   };
 }

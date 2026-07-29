@@ -32,6 +32,7 @@ test("이전 대화를 턴과 UTF-8 byte 청크로 만들고 최근·개별 선�
       content: "첫 답변",
       createdAt: "2026-07-29T00:00:01.000Z",
       inReplyToMessageId: "message-user-1",
+      classification: { topic: "답변 주제", session: "답변 세션", labels: ["응답"] },
     },
     {
       messageId: "message-user-2",
@@ -51,6 +52,9 @@ test("이전 대화를 턴과 UTF-8 byte 청크로 만들고 최근·개별 선�
   const history = CreateChatHistoryIndex(messages, { maxChunkBytes: 256 });
   assert.equal(history.turns.length, 2);
   assert.equal(history.turns[0].classification?.topic, "등장인물");
+  assert.equal(history.turns[0].classification?.task, "퇴고");
+  assert.equal(history.turns[0].classification?.session, "답변 세션");
+  assert.deepEqual(history.turns[0].classification?.labels, ["중요", "응답"]);
   assert.ok(history.turns[0].chunkIds.length > 2);
   const firstMessageChunks = history.chunks.filter((chunk) => chunk.messageId === "message-user-1");
   assert.equal(firstMessageChunks.map((chunk) => chunk.content).join(""), longMessage);
