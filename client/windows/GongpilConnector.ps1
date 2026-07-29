@@ -151,7 +151,7 @@ $isPortable = $inputModel.mode -eq 'portable'
 $lifecycleReason = if ($null -eq $inputModel.PSObject.Properties['lifecycleReason']) { 'startup' } else { [string]$inputModel.lifecycleReason }
 $releaseNotes = if ($null -eq $inputModel.PSObject.Properties['releaseNotes']) {
     [pscustomobject]@{
-        productVersion = '0.1.0'
+        productVersion = '0.1.1'
         releasedAt = ''
         title = '공필 클라이언트'
         summary = '인스턴스를 시작하고 설정할 수 있습니다.'

@@ -5,7 +5,7 @@
 ## 현재 단계
 
 - 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 복원 가능한 Instance Part Window
-- 최근 작업 브랜치: `codex/instance-part-window-ux`
+- 최근 작업 브랜치: `codex/client-package-0.1.1`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -13,7 +13,8 @@
 - 기계 판독 부트스트랩 계약: `packages/contracts/bootstrap/bootstrap-contracts.schema.json`
 - 기계 판독 네트워크 계약: `packages/contracts/network/network-contracts.schema.json`
 - 네트워크 사용 지도: `docs/architecture/network-map.md`
-- MVP 릴리스 노트: `docs/releases/0.1.0-mvp.md`
+- 현재 프리릴리스 노트: `docs/releases/0.1.1.md`
+- 최초 MVP 릴리스 노트: `docs/releases/0.1.0-mvp.md`
 
 현재 개발 환경에서 실제 사용:
 
@@ -27,7 +28,7 @@ OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 A
 
 Node 설치 없이 포터블로 사용:
 
-1. `distribution/Gongpil-0.1.0-portable.zip`을 원하는 폴더에 푼다.
+1. `distribution/Gongpil-0.1.1-portable.zip`을 원하는 폴더에 푼다.
 2. 압축을 푼 폴더의 `Gongpil.vbs`를 더블클릭한다.
 3. 클라이언트(접속기)에서 고정된 `GongpilData` 위치를 확인하고 인스턴스를 시작한다.
 4. `GongpilData`가 사용자 데이터이므로 이동·백업할 때 함께 보관한다.
@@ -36,7 +37,7 @@ Node 설치 없이 포터블로 사용:
 
 일반 Windows 설치:
 
-1. `distribution/Gongpil-0.1.0-setup.exe`를 실행한다.
+1. `distribution/Gongpil-0.1.1-setup.exe`를 실행한다.
 2. 설치 과정에서 Client Runtime 사용자 글꼴 폴더, 기본 글자 크기, UI 배율과 96 DPI 기준 창 크기를 정한다.
 3. 설치 후 시작 메뉴의 `Gongpil`을 실행한다.
 4. 처음 뜨는 클라이언트(접속기)에서 데이터 폴더를 정하고 `인스턴스 시작`을 누른다.
@@ -89,7 +90,7 @@ npm run validate:release
 - [x] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
 - [x] Windows Installer의 Client 화면 최초값 선택과 재설치 설정 보존
 - [x] Instance Part Window 순서·최소화·너비와 공동 집필 Part Section 순서·접힘·높이의 v2 검증·원자 저장 계약 및 v1 마이그레이션
-- [x] 현재 프로젝트·문서·편집기·공동 집필 영역 접기·펼치기, 좌우 순서·너비 조절과 전역 복원
+- [x] 현재 프로젝트·문서·편집기·공동 집필 Part Window 최소화, 스냅 순서·너비 조절과 전역 복원
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필
@@ -113,6 +114,7 @@ npm run validate:release
 - [x] Windows 사용자 권한 설치·바로가기·프로그램 제거
 - [ ] 자동 업데이트·실패 롤백·사용자 선택 전체 삭제
 - [x] Windows x64 포터블 ZIP 배포
+- [x] 0.1.1 Client 중앙 정렬 핫픽스·Part Window v2/UI Installer와 portable 검증 산출물
 - [ ] 보안·성능·장애 복구·E2E 검증 후 `0.1.0` 출시
 
 ### 현재 완료 보고: 실제 프로젝트·문서 MVP

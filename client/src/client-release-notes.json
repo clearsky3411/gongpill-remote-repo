@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "productVersion": "0.1.0",
+  "productVersion": "0.1.1",
   "releasedAt": "2026-07-29",
-  "title": "자기완결 화면과 복원 가능한 작업 영역",
-  "summary": "Client Runtime이 자체 글꼴과 명시적인 화면 기준을 사용하고, Instance 작업 영역 배치를 데이터 루트에 저장해 다시 복원합니다.",
+  "title": "안정된 Client 화면과 스냅 Part Window",
+  "summary": "Client 접속기의 실제 표시 오류를 고치고, Instance의 Part Window와 공동 집필 Part Section을 편하게 옮기고 조절해 다시 복원할 수 있습니다.",
   "capabilities": [
     "프로젝트와 Markdown, text, JSON 문서 생성·편집·revision 저장",
     "Codex 또는 OpenAI API를 이용한 공동 집필 채팅과 변경 승인",
@@ -11,7 +11,8 @@
     "페르소나 버전과 작업 프로필 관리",
     "상주 Client Runtime에서 Instance Runtime 종료·재시작",
     "Client Package 자체 나눔고딕·D2Coding과 검증 가능한 라이선스",
-    "프로젝트·문서·편집기·공동 집필 영역 접기·좌우 이동·너비 조절과 복원"
+    "프로젝트·문서·편집기·공동 집필 Part Window 스냅·최소화·크기 조절과 복원",
+    "공동 집필 컨텍스트·대화·요청 Part Section 순서·접힘·높이 조절"
   ],
   "changes": [
     "Browser heartbeat 응답이 끊기면 Instance Runtime만 자동 종료합니다.",
@@ -20,7 +21,12 @@
     "Client 화면 설정을 96 DPI 기준 DIP·글자 크기·배율·글꼴 역할로 명시했습니다.",
     "시스템 글꼴 설치 없이 나눔고딕과 D2Coding을 읽고 사용자 글꼴 폴더도 선택할 수 있습니다.",
     "Windows Installer에서 Client 화면 최초값을 정하고 재설치에서는 기존 설정을 그대로 보존합니다.",
-    "Instance의 네 작업 영역을 접거나 좌우로 옮기고 포인터·키보드로 너비를 조절할 수 있습니다.",
-    "작업 영역 배치를 데이터 루트에 원자 저장하고 다음 Instance 시작 때 복원하며 기본 배치로 초기화할 수 있습니다."
+    "Client 접속기를 실제로 열 때 protected CenterToScreen 호출로 발생하던 예외를 제거했습니다.",
+    "Instance의 네 Part Window를 작은 제목 바로 드래그하거나 버튼으로 스냅 이동하고 44px 레일로 최소화할 수 있습니다.",
+    "최소화된 Part Window의 남는 너비를 다른 창에 자동 배분하고 포인터·키보드 크기 조절을 보정했습니다.",
+    "공동 집필을 컨텍스트·대화·요청 Part Section으로 나누고 순서·접힘·높이 조절과 복원을 추가했습니다.",
+    "컨텍스트를 기본 접고 대화와 요청 입력을 넓혀 실제 집필 공간을 확보했습니다.",
+    "기존 Instance 레이아웃 v1의 순서·너비·접힘을 잃지 않고 v2로 읽고 다음 저장 때 전환합니다.",
+    "Part Window와 Part Section 배치를 데이터 루트에 원자 저장하고 다음 Instance 시작 때 복원하며 기본 배치로 초기화할 수 있습니다."
   ]
 }

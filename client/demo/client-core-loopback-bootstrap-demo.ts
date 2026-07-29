@@ -32,7 +32,7 @@ function CreateConfig(
     launchId: options.launchId,
     sessionId: options.sessionId,
     mode: "installed",
-    clientVersion: "0.1.0",
+    clientVersion: "0.1.1",
     selectedCoreVersion: options.coreVersion,
     supportedCoreProtocol: {
       major: options.supportedMajor,

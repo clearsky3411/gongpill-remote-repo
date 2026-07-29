@@ -210,7 +210,7 @@ export class GongpilCodexAppServerClient {
       this.HandleLine(line);
     });
     await this.Request("initialize", {
-      clientInfo: { name: "gongpil", title: "Gongpil", version: "0.1.0" },
+      clientInfo: { name: "gongpil", title: "Gongpil", version: "0.1.1" },
     });
     this.Notify("initialized", {});
   }
