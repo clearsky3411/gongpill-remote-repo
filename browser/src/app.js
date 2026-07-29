@@ -1,9 +1,16 @@
 import { GongpilBrowserNetworkRuntime } from "/network-runtime.js";
 import {
+  CoWriterPartSectionHeightRange,
   CloneInstanceLayout,
   CreateDefaultInstanceLayout,
+  InstancePartWindowWidthRange,
+  MoveCoWriterPartSection,
+  MoveCoWriterPartSectionToIndex,
   MoveInstancePartWindow,
+  MoveInstancePartWindowToIndex,
+  ResizeAdjacentCoWriterPartSections,
   ResizeAdjacentInstancePartWindows,
+  ToggleCoWriterPartSection,
   ToggleInstancePartWindow,
 } from "./instance-layout.js";
 
@@ -40,6 +47,7 @@ const state = {
 const elements = {
   networkStatus: document.querySelector("#networkStatus"),
   workspace: document.querySelector("#workspace"),
+  coWriterPartSections: document.querySelector("#coWriterPartSections"),
   layoutResetButton: document.querySelector("#layoutResetButton"),
   usageButton: document.querySelector("#usageButton"),
   logsButton: document.querySelector("#logsButton"),
@@ -114,6 +122,12 @@ function RequirePayload(result) {
 const instancePanelElements = new Map(
   [...document.querySelectorAll("[data-panel-id]")].map((panel) => [panel.dataset.panelId, panel]),
 );
+const coWriterPartSectionElements = new Map(
+  [...document.querySelectorAll("[data-part-section-id]")].map((partSection) => [
+    partSection.dataset.partSectionId,
+    partSection,
+  ]),
+);
 let instanceLayoutSaveTimer;
 
 async function LoadInstanceLayout() {
@@ -133,23 +147,138 @@ function RenderInstanceLayout(rebuildResizers = true) {
     const panelState = state.instanceLayout.partWindows[panelId];
     panel.style.gridColumn = String((index * 2) + 1);
     panel.style.gridRow = "1";
-    panel.classList.toggle("is-collapsed", panelState.minimized);
+    panel.classList.toggle("is-minimized", panelState.minimized);
     const toggleButton = panel.querySelector('[data-panel-action="toggle"]');
-    toggleButton.textContent = panelState.minimized ? "펼치기" : "접기";
+    toggleButton.textContent = panelState.minimized ? "□" : "—";
+    toggleButton.title = panelState.minimized ? "복원" : "최소화";
+    toggleButton.setAttribute("aria-label", `${PanelLabel(panelId)} Part Window ${panelState.minimized ? "복원" : "최소화"}`);
     toggleButton.setAttribute("aria-expanded", String(!panelState.minimized));
     panel.querySelector('[data-panel-action="move-left"]').disabled = index === 0;
     panel.querySelector('[data-panel-action="move-right"]').disabled = index === state.instanceLayout.partWindowOrder.length - 1;
-    columns.push(panelState.minimized ? "var(--collapsed-panel-width)" : `${panelState.widthCssPx}px`);
+    const [minimumWidth] = InstancePartWindowWidthRange(panelId);
+    columns.push(panelState.minimized
+      ? "var(--minimized-part-window-width)"
+      : `minmax(${minimumWidth}px, ${panelState.widthCssPx}fr)`);
     if (index < state.instanceLayout.partWindowOrder.length - 1) {
       const rightPanelId = state.instanceLayout.partWindowOrder[index + 1];
       if (rebuildResizers) {
         const resizer = CreatePanelResizer(panelId, rightPanelId, (index * 2) + 2);
         elements.workspace.append(resizer);
       }
-      columns.push("var(--panel-resizer-width)");
+      columns.push("var(--part-window-resizer-width)");
     }
   });
   elements.workspace.style.gridTemplateColumns = columns.join(" ");
+  RenderCoWriterPartSections(rebuildResizers);
+}
+
+function RenderCoWriterPartSections(rebuildResizers = true) {
+  const rows = [];
+  if (rebuildResizers) {
+    elements.coWriterPartSections.querySelectorAll(".part-section-resizer").forEach((resizer) => resizer.remove());
+  }
+  state.instanceLayout.coWriter.partSectionOrder.forEach((partSectionId, index) => {
+    const partSection = coWriterPartSectionElements.get(partSectionId);
+    const partSectionState = state.instanceLayout.coWriter.partSections[partSectionId];
+    partSection.style.gridRow = String((index * 2) + 1);
+    partSection.classList.toggle("is-collapsed", partSectionState.collapsed);
+    const toggleButton = partSection.querySelector('[data-part-section-action="toggle"]');
+    toggleButton.textContent = partSectionState.collapsed ? "+" : "—";
+    toggleButton.title = partSectionState.collapsed ? "펼치기" : "접기";
+    toggleButton.setAttribute("aria-label", `${PartSectionLabel(partSectionId)} Part Section ${partSectionState.collapsed ? "펼치기" : "접기"}`);
+    toggleButton.setAttribute("aria-expanded", String(!partSectionState.collapsed));
+    partSection.querySelector('[data-part-section-action="move-up"]').disabled = index === 0;
+    partSection.querySelector('[data-part-section-action="move-down"]').disabled = index === state.instanceLayout.coWriter.partSectionOrder.length - 1;
+    rows.push(partSectionState.collapsed
+      ? "var(--part-section-titlebar-height)"
+      : `minmax(${PartSectionVisualMinimum(partSectionId)}px, ${partSectionState.heightCssPx}fr)`);
+    if (index < state.instanceLayout.coWriter.partSectionOrder.length - 1) {
+      const lowerPartSectionId = state.instanceLayout.coWriter.partSectionOrder[index + 1];
+      if (rebuildResizers) {
+        elements.coWriterPartSections.append(CreatePartSectionResizer(
+          partSectionId,
+          lowerPartSectionId,
+          (index * 2) + 2,
+        ));
+      }
+      rows.push("var(--part-section-resizer-height)");
+    }
+  });
+  elements.coWriterPartSections.style.gridTemplateRows = rows.join(" ");
+}
+
+function CreatePartSectionResizer(upperPartSectionId, lowerPartSectionId, gridRow) {
+  const resizer = document.createElement("div");
+  const disabled = state.instanceLayout.coWriter.partSections[upperPartSectionId].collapsed
+    || state.instanceLayout.coWriter.partSections[lowerPartSectionId].collapsed;
+  resizer.className = "part-section-resizer";
+  resizer.style.gridRow = String(gridRow);
+  resizer.tabIndex = disabled ? -1 : 0;
+  resizer.setAttribute("role", "separator");
+  resizer.setAttribute("aria-orientation", "horizontal");
+  resizer.setAttribute("aria-label", `${PartSectionLabel(upperPartSectionId)}와 ${PartSectionLabel(lowerPartSectionId)} 높이 조절`);
+  resizer.setAttribute("aria-disabled", String(disabled));
+  if (!disabled) {
+    resizer.addEventListener("pointerdown", (event) => BeginPartSectionResize(
+      event,
+      resizer,
+      upperPartSectionId,
+      lowerPartSectionId,
+    ));
+    resizer.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+        return;
+      }
+      event.preventDefault();
+      const renderedLayout = CaptureRenderedPartSectionHeights(
+        state.instanceLayout,
+        state.instanceLayout.coWriter.partSectionOrder,
+      );
+      const delta = event.key === "ArrowUp" ? -16 : 16;
+      ApplyInstanceLayout(ResizeAdjacentCoWriterPartSections(
+        renderedLayout,
+        upperPartSectionId,
+        lowerPartSectionId,
+        delta,
+      ), false);
+      ScheduleInstanceLayoutSave();
+    });
+  }
+  return resizer;
+}
+
+function BeginPartSectionResize(event, resizer, upperPartSectionId, lowerPartSectionId) {
+  if (event.button !== 0) {
+    return;
+  }
+  event.preventDefault();
+  const startY = event.clientY;
+  const startLayout = CaptureRenderedPartSectionHeights(
+    state.instanceLayout,
+    state.instanceLayout.coWriter.partSectionOrder,
+  );
+  resizer.classList.add("is-resizing");
+  resizer.setPointerCapture?.(event.pointerId);
+  const Move = (moveEvent) => {
+    state.instanceLayout = ResizeAdjacentCoWriterPartSections(
+      startLayout,
+      upperPartSectionId,
+      lowerPartSectionId,
+      moveEvent.clientY - startY,
+    );
+    state.instanceLayoutRevision += 1;
+    RenderInstanceLayout(false);
+  };
+  const End = () => {
+    window.removeEventListener("pointermove", Move);
+    window.removeEventListener("pointerup", End);
+    window.removeEventListener("pointercancel", End);
+    resizer.classList.remove("is-resizing");
+    ScheduleInstanceLayoutSave(0);
+  };
+  window.addEventListener("pointermove", Move);
+  window.addEventListener("pointerup", End, { once: true });
+  window.addEventListener("pointercancel", End, { once: true });
 }
 
 function CreatePanelResizer(leftPanelId, rightPanelId, gridColumn) {
@@ -171,7 +300,11 @@ function CreatePanelResizer(leftPanelId, rightPanelId, gridColumn) {
       }
       event.preventDefault();
       const delta = event.key === "ArrowLeft" ? -16 : 16;
-      ApplyInstanceLayout(ResizeAdjacentInstancePartWindows(state.instanceLayout, leftPanelId, rightPanelId, delta), false);
+      const renderedLayout = CaptureRenderedPartWindowWidths(
+        state.instanceLayout,
+        state.instanceLayout.partWindowOrder,
+      );
+      ApplyInstanceLayout(ResizeAdjacentInstancePartWindows(renderedLayout, leftPanelId, rightPanelId, delta), false);
       ScheduleInstanceLayoutSave();
     });
   }
@@ -184,7 +317,10 @@ function BeginPanelResize(event, resizer, leftPanelId, rightPanelId) {
   }
   event.preventDefault();
   const startX = event.clientX;
-  const startLayout = CloneInstanceLayout(state.instanceLayout);
+  const startLayout = CaptureRenderedPartWindowWidths(
+    state.instanceLayout,
+    state.instanceLayout.partWindowOrder,
+  );
   resizer.classList.add("is-resizing");
   resizer.setPointerCapture?.(event.pointerId);
   const Move = (moveEvent) => {
@@ -201,11 +337,135 @@ function BeginPanelResize(event, resizer, leftPanelId, rightPanelId) {
     window.removeEventListener("pointermove", Move);
     window.removeEventListener("pointerup", End);
     window.removeEventListener("pointercancel", End);
+    resizer.classList.remove("is-resizing");
     ScheduleInstanceLayoutSave(0);
   };
   window.addEventListener("pointermove", Move);
   window.addEventListener("pointerup", End, { once: true });
   window.addEventListener("pointercancel", End, { once: true });
+}
+
+function CaptureRenderedPartWindowWidths(layout, partWindowIds) {
+  const nextLayout = CloneInstanceLayout(layout);
+  for (const partWindowId of partWindowIds) {
+    if (nextLayout.partWindows[partWindowId].minimized) {
+      continue;
+    }
+    const [minimum, maximum] = InstancePartWindowWidthRange(partWindowId);
+    const renderedWidth = Math.round(instancePanelElements.get(partWindowId).getBoundingClientRect().width);
+    nextLayout.partWindows[partWindowId].widthCssPx = Math.min(maximum, Math.max(minimum, renderedWidth));
+  }
+  return nextLayout;
+}
+
+function CaptureRenderedPartSectionHeights(layout, partSectionIds) {
+  const nextLayout = CloneInstanceLayout(layout);
+  for (const partSectionId of partSectionIds) {
+    if (nextLayout.coWriter.partSections[partSectionId].collapsed) {
+      continue;
+    }
+    const [minimum, maximum] = CoWriterPartSectionHeightRange(partSectionId);
+    const renderedHeight = Math.round(coWriterPartSectionElements.get(partSectionId).getBoundingClientRect().height);
+    nextLayout.coWriter.partSections[partSectionId].heightCssPx = Math.min(maximum, Math.max(minimum, renderedHeight));
+  }
+  return nextLayout;
+}
+
+function BeginPartWindowDrag(event, titlebar, partWindowId) {
+  if (event.button !== 0 || event.target.closest("button, input, textarea, select, a, summary")) {
+    return;
+  }
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const partWindow = instancePanelElements.get(partWindowId);
+  let dragging = false;
+  titlebar.setPointerCapture?.(event.pointerId);
+  const Move = (moveEvent) => {
+    if (!dragging && Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) < 6) {
+      return;
+    }
+    dragging = true;
+    moveEvent.preventDefault();
+    partWindow.classList.add("is-dragging");
+  };
+  const End = (endEvent) => {
+    window.removeEventListener("pointermove", Move);
+    window.removeEventListener("pointerup", End);
+    window.removeEventListener("pointercancel", End);
+    partWindow.classList.remove("is-dragging");
+    if (!dragging || endEvent.type === "pointercancel") {
+      return;
+    }
+    const targetIndex = CalculateDropIndex(
+      state.instanceLayout.partWindowOrder,
+      instancePanelElements,
+      partWindowId,
+      endEvent.clientX,
+      "horizontal",
+    );
+    ApplyInstanceLayout(MoveInstancePartWindowToIndex(state.instanceLayout, partWindowId, targetIndex));
+    ScheduleInstanceLayoutSave(0);
+  };
+  window.addEventListener("pointermove", Move);
+  window.addEventListener("pointerup", End, { once: true });
+  window.addEventListener("pointercancel", End, { once: true });
+}
+
+function BeginPartSectionDrag(event, titlebar, partSectionId) {
+  if (event.button !== 0 || event.target.closest("button, input, textarea, select, a, summary")) {
+    return;
+  }
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const partSection = coWriterPartSectionElements.get(partSectionId);
+  let dragging = false;
+  titlebar.setPointerCapture?.(event.pointerId);
+  const Move = (moveEvent) => {
+    if (!dragging && Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) < 6) {
+      return;
+    }
+    dragging = true;
+    moveEvent.preventDefault();
+    partSection.classList.add("is-dragging");
+  };
+  const End = (endEvent) => {
+    window.removeEventListener("pointermove", Move);
+    window.removeEventListener("pointerup", End);
+    window.removeEventListener("pointercancel", End);
+    partSection.classList.remove("is-dragging");
+    if (!dragging || endEvent.type === "pointercancel") {
+      return;
+    }
+    const targetIndex = CalculateDropIndex(
+      state.instanceLayout.coWriter.partSectionOrder,
+      coWriterPartSectionElements,
+      partSectionId,
+      endEvent.clientY,
+      "vertical",
+    );
+    ApplyInstanceLayout(MoveCoWriterPartSectionToIndex(state.instanceLayout, partSectionId, targetIndex));
+    ScheduleInstanceLayoutSave(0);
+  };
+  window.addEventListener("pointermove", Move);
+  window.addEventListener("pointerup", End, { once: true });
+  window.addEventListener("pointercancel", End, { once: true });
+}
+
+function CalculateDropIndex(order, elementMap, movingId, coordinate, orientation) {
+  let targetIndex = 0;
+  for (const identifier of order) {
+    if (identifier === movingId) {
+      continue;
+    }
+    const bounds = elementMap.get(identifier).getBoundingClientRect();
+    const center = orientation === "horizontal"
+      ? bounds.left + (bounds.width / 2)
+      : bounds.top + (bounds.height / 2);
+    if (coordinate > center) {
+      targetIndex += 1;
+    }
+  }
+  return targetIndex;
 }
 
 function ApplyInstanceLayout(layout, rebuildResizers = true) {
@@ -241,6 +501,20 @@ async function SaveInstanceLayout() {
 
 function PanelLabel(panelId) {
   return instancePanelElements.get(panelId)?.querySelector("h2")?.textContent ?? panelId;
+}
+
+function PartSectionLabel(partSectionId) {
+  return coWriterPartSectionElements.get(partSectionId)?.querySelector(".part-section-titlebar > strong")?.textContent
+    ?? partSectionId;
+}
+
+function PartSectionVisualMinimum(partSectionId) {
+  switch (partSectionId) {
+    case "context": return 120;
+    case "chat": return 180;
+    case "request": return 130;
+    default: return 120;
+  }
 }
 
 async function LoadProjects() {
@@ -1052,19 +1326,19 @@ function RenderChat() {
   elements.chatSendButton.textContent = state.chatSending ? "작성 중…" : "AI에게 보내기";
   elements.chatMessages.replaceChildren();
   if (!hasProject) {
-    elements.chatMessages.className = "chat-messages empty-state";
+    elements.chatMessages.className = "part-section-content chat-messages empty-state";
     elements.chatMessages.textContent = "프로젝트를 선택하면 AI와 함께 작성할 수 있습니다.";
     return;
   }
   if (!state.chatConfigured) {
-    elements.chatMessages.className = "chat-messages empty-state";
+    elements.chatMessages.className = "part-section-content chat-messages empty-state";
     elements.chatMessages.textContent = state.providerStatus?.message
       ?? (isCodex
         ? "AI 사용 정보에서 Codex 로그인을 시작하세요."
         : "공필 설정에서 OPENAI_API_KEY가 든 .env.local 파일을 선택하세요.");
     return;
   }
-  elements.chatMessages.className = "chat-messages";
+  elements.chatMessages.className = "part-section-content chat-messages";
   for (const message of state.chatMessages) {
     elements.chatMessages.append(CreateChatMessage(message));
   }
@@ -1478,6 +1752,29 @@ elements.selectFilteredHistoryButton.addEventListener("click", () => {
   ScheduleContextPreview();
 });
 elements.workspace.addEventListener("click", (event) => {
+  const partSectionButton = event.target.closest("[data-part-section-action]");
+  const partSection = partSectionButton?.closest("[data-part-section-id]");
+  if (partSectionButton !== null && partSection !== null) {
+    if (partSectionButton.disabled) {
+      return;
+    }
+    const partSectionId = partSection.dataset.partSectionId;
+    const partSectionAction = partSectionButton.dataset.partSectionAction;
+    if (partSectionAction === "toggle") {
+      ApplyInstanceLayout(ToggleCoWriterPartSection(state.instanceLayout, partSectionId));
+    }
+    else if (partSectionAction === "move-up") {
+      ApplyInstanceLayout(MoveCoWriterPartSection(state.instanceLayout, partSectionId, -1));
+    }
+    else if (partSectionAction === "move-down") {
+      ApplyInstanceLayout(MoveCoWriterPartSection(state.instanceLayout, partSectionId, 1));
+    }
+    else {
+      return;
+    }
+    ScheduleInstanceLayoutSave(0);
+    return;
+  }
   const button = event.target.closest("[data-panel-action]");
   const panel = button?.closest("[data-panel-id]");
   if (button === null || panel === null || button.disabled) {
@@ -1502,7 +1799,7 @@ elements.workspace.addEventListener("click", (event) => {
 elements.layoutResetButton.addEventListener("click", () => {
   ApplyInstanceLayout(CreateDefaultInstanceLayout());
   ScheduleInstanceLayoutSave(0);
-  ShowToast("작업 영역 배치를 기본값으로 되돌렸습니다.");
+  ShowToast("Part Window와 Part Section 배치를 기본값으로 되돌렸습니다.");
 });
 elements.shutdownButton.addEventListener("click", () => {
   if (!confirm("현재 인스턴스를 종료하시겠습니까? Client Runtime은 계속 실행됩니다.")) {
@@ -1553,6 +1850,15 @@ window.addEventListener("beforeunload", (event) => {
     event.preventDefault();
   }
 });
+
+for (const [partWindowId, partWindow] of instancePanelElements) {
+  const titlebar = partWindow.querySelector("[data-part-window-drag-handle]");
+  titlebar.addEventListener("pointerdown", (event) => BeginPartWindowDrag(event, titlebar, partWindowId));
+}
+for (const [partSectionId, partSection] of coWriterPartSectionElements) {
+  const titlebar = partSection.querySelector("[data-part-section-drag-handle]");
+  titlebar.addEventListener("pointerdown", (event) => BeginPartSectionDrag(event, titlebar, partSectionId));
+}
 
 RenderInstanceLayout();
 void RunAction(async () => {

@@ -15,7 +15,7 @@
       </div>
       <div class="header-actions">
         <span id="networkStatus" class="status-pill" data-state="starting">시작 중</span>
-        <button id="layoutResetButton" class="ghost-button" type="button">영역 배치 초기화</button>
+        <button id="layoutResetButton" class="ghost-button" type="button">창 배치 초기화</button>
         <button id="usageButton" class="ghost-button" type="button">AI 사용 정보</button>
         <button id="logsButton" class="ghost-button" type="button">개발 로그</button>
         <button id="shutdownButton" class="ghost-button" type="button">인스턴스 종료</button>
@@ -24,15 +24,15 @@
 
     <main id="workspace" class="workspace" aria-label="공필 작업 영역">
       <aside id="projectsPanel" class="panel projects-panel" data-panel-id="projects">
-        <div class="panel-heading">
+        <div class="panel-heading part-window-titlebar" data-part-window-drag-handle>
           <div>
             <p class="section-label">PROJECTS</p>
             <h2>프로젝트</h2>
           </div>
-          <div class="panel-layout-actions" aria-label="프로젝트 영역 배치">
-            <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="프로젝트 영역을 왼쪽으로 이동">←</button>
-            <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="프로젝트 영역을 오른쪽으로 이동">→</button>
-            <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" aria-controls="projectsPanel" aria-expanded="true">접기</button>
+          <div class="panel-layout-actions" aria-label="프로젝트 Part Window 배치">
+            <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="프로젝트 Part Window를 왼쪽으로 이동">‹</button>
+            <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="프로젝트 Part Window를 오른쪽으로 이동">›</button>
+            <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" title="최소화" aria-label="프로젝트 Part Window 최소화" aria-controls="projectsPanel" aria-expanded="true">—</button>
           </div>
         </div>
         <form id="projectForm" class="compact-form">
@@ -46,15 +46,15 @@
       </aside>
 
       <aside id="documentsPanel" class="panel documents-panel" data-panel-id="documents">
-        <div class="panel-heading">
+        <div class="panel-heading part-window-titlebar" data-part-window-drag-handle>
           <div>
             <p class="section-label">DOCUMENTS</p>
             <h2 id="documentPanelTitle">문서</h2>
           </div>
-          <div class="panel-layout-actions" aria-label="문서 영역 배치">
-            <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="문서 영역을 왼쪽으로 이동">←</button>
-            <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="문서 영역을 오른쪽으로 이동">→</button>
-            <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" aria-controls="documentsPanel" aria-expanded="true">접기</button>
+          <div class="panel-layout-actions" aria-label="문서 Part Window 배치">
+            <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="문서 Part Window를 왼쪽으로 이동">‹</button>
+            <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="문서 Part Window를 오른쪽으로 이동">›</button>
+            <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" title="최소화" aria-label="문서 Part Window 최소화" aria-controls="documentsPanel" aria-expanded="true">—</button>
           </div>
         </div>
         <form id="documentForm" class="compact-form" hidden>
@@ -68,7 +68,7 @@
       </aside>
 
       <section id="editorPanel" class="panel editor-panel" data-panel-id="editor">
-        <div class="editor-toolbar">
+        <div class="editor-toolbar part-window-titlebar" data-part-window-drag-handle>
           <div>
             <p id="editorProject" class="section-label">EDITOR</p>
             <h2 id="editorTitle">문서를 선택하세요</h2>
@@ -76,10 +76,10 @@
           </div>
           <div class="editor-toolbar-actions">
             <button id="saveButton" type="button" disabled>변경 저장</button>
-            <div class="panel-layout-actions" aria-label="편집기 영역 배치">
-              <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="편집기 영역을 왼쪽으로 이동">←</button>
-              <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="편집기 영역을 오른쪽으로 이동">→</button>
-              <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" aria-controls="editorPanel" aria-expanded="true">접기</button>
+            <div class="panel-layout-actions" aria-label="편집기 Part Window 배치">
+              <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="편집기 Part Window를 왼쪽으로 이동">‹</button>
+              <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="편집기 Part Window를 오른쪽으로 이동">›</button>
+              <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" title="최소화" aria-label="편집기 Part Window 최소화" aria-controls="editorPanel" aria-expanded="true">—</button>
             </div>
           </div>
         </div>
@@ -91,21 +91,32 @@
       </section>
 
       <aside id="coWriterPanel" class="panel chat-panel" data-panel-id="co-writer">
-        <div class="panel-heading chat-heading">
+        <div class="panel-heading chat-heading part-window-titlebar" data-part-window-drag-handle>
           <div>
             <p class="section-label">CO-WRITER</p>
             <h2>공동 집필</h2>
           </div>
           <div class="chat-heading-actions">
             <span id="aiStatus" class="ai-status">설정 확인 중</span>
-            <div class="panel-layout-actions" aria-label="공동 집필 영역 배치">
-              <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="공동 집필 영역을 왼쪽으로 이동">←</button>
-              <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="공동 집필 영역을 오른쪽으로 이동">→</button>
-              <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" aria-controls="coWriterPanel" aria-expanded="true">접기</button>
+            <div class="panel-layout-actions" aria-label="공동 집필 Part Window 배치">
+              <button class="panel-layout-button" type="button" data-panel-action="move-left" title="왼쪽으로 이동" aria-label="공동 집필 Part Window를 왼쪽으로 이동">‹</button>
+              <button class="panel-layout-button" type="button" data-panel-action="move-right" title="오른쪽으로 이동" aria-label="공동 집필 Part Window를 오른쪽으로 이동">›</button>
+              <button class="panel-layout-button panel-toggle-button" type="button" data-panel-action="toggle" title="최소화" aria-label="공동 집필 Part Window 최소화" aria-controls="coWriterPanel" aria-expanded="true">—</button>
             </div>
           </div>
         </div>
-        <section class="context-selector" aria-label="AI 컨텍스트 선택">
+        <div id="coWriterPartSections" class="co-writer-part-sections">
+          <section class="part-section context-part-section" data-part-section-id="context">
+            <header class="part-section-titlebar" data-part-section-drag-handle>
+              <strong>컨텍스트</strong>
+              <span class="part-section-description">페르소나·자료·이전 대화</span>
+              <div class="part-section-actions" aria-label="컨텍스트 Part Section 배치">
+                <button type="button" data-part-section-action="move-up" title="위로 이동" aria-label="컨텍스트 Part Section을 위로 이동">⌃</button>
+                <button type="button" data-part-section-action="move-down" title="아래로 이동" aria-label="컨텍스트 Part Section을 아래로 이동">⌄</button>
+                <button class="part-section-toggle" type="button" data-part-section-action="toggle" title="접기" aria-label="컨텍스트 Part Section 접기" aria-expanded="true">—</button>
+              </div>
+            </header>
+            <div class="part-section-content context-selector" aria-label="AI 컨텍스트 선택">
           <div class="persona-switcher">
             <label>페르소나
               <select id="personaSelect" disabled></select>
@@ -185,15 +196,39 @@
             <ol id="contextPreviewSources" class="context-preview-sources"></ol>
             <div id="contextPreviewOmissions" class="context-preview-omissions"></div>
           </section>
-        </section>
-        <div id="chatMessages" class="chat-messages empty-state" aria-live="polite">
-          프로젝트를 선택하면 AI와 함께 작성할 수 있습니다.
+            </div>
+          </section>
+          <section class="part-section chat-part-section" data-part-section-id="chat">
+            <header class="part-section-titlebar" data-part-section-drag-handle>
+              <strong>대화</strong>
+              <span class="part-section-description">AI 응답과 변경 제안</span>
+              <div class="part-section-actions" aria-label="대화 Part Section 배치">
+                <button type="button" data-part-section-action="move-up" title="위로 이동" aria-label="대화 Part Section을 위로 이동">⌃</button>
+                <button type="button" data-part-section-action="move-down" title="아래로 이동" aria-label="대화 Part Section을 아래로 이동">⌄</button>
+                <button class="part-section-toggle" type="button" data-part-section-action="toggle" title="접기" aria-label="대화 Part Section 접기" aria-expanded="true">—</button>
+              </div>
+            </header>
+            <div id="chatMessages" class="part-section-content chat-messages empty-state" aria-live="polite">
+              프로젝트를 선택하면 AI와 함께 작성할 수 있습니다.
+            </div>
+          </section>
+          <section class="part-section request-part-section" data-part-section-id="request">
+            <header class="part-section-titlebar" data-part-section-drag-handle>
+              <strong>요청</strong>
+              <span class="part-section-description">AI에게 보낼 지시</span>
+              <div class="part-section-actions" aria-label="요청 Part Section 배치">
+                <button type="button" data-part-section-action="move-up" title="위로 이동" aria-label="요청 Part Section을 위로 이동">⌃</button>
+                <button type="button" data-part-section-action="move-down" title="아래로 이동" aria-label="요청 Part Section을 아래로 이동">⌄</button>
+                <button class="part-section-toggle" type="button" data-part-section-action="toggle" title="접기" aria-label="요청 Part Section 접기" aria-expanded="true">—</button>
+              </div>
+            </header>
+            <form id="chatForm" class="part-section-content chat-form">
+              <label class="visually-hidden" for="chatInput">요청</label>
+              <textarea id="chatInput" maxlength="20000" placeholder="예: 이 장면의 긴장감을 높이는 수정안을 만들어줘" disabled></textarea>
+              <button id="chatSendButton" type="submit" disabled>AI에게 보내기</button>
+            </form>
+          </section>
         </div>
-        <form id="chatForm" class="chat-form">
-          <label for="chatInput">요청</label>
-          <textarea id="chatInput" maxlength="20000" placeholder="예: 이 장면의 긴장감을 높이는 수정안을 만들어줘" disabled></textarea>
-          <button id="chatSendButton" type="submit" disabled>AI에게 보내기</button>
-        </form>
       </aside>
     </main>
 

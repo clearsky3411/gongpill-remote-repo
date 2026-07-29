@@ -1198,15 +1198,15 @@ Shell은 공통 작업공간만 제공한다.
 - [x] 현재 프로젝트·문서·편집기·공동 집필 영역 접기와 펼치기
 - [x] 현재 네 Part Window 좌우 이동, 크기 조절과 전역 레이아웃 저장
 - [x] Part Window 순서·최소화·너비와 공동 집필 Part Section 순서·접힘·높이의 v2 계약 및 v1 마이그레이션
-- [ ] 작은 창 형태 제목 바, 화면 내부 스냅 재배치와 공동 집필 Part Section 조작 UI
+- [x] 작은 창 형태 제목 바, 화면 내부 스냅 재배치와 공동 집필 Part Section 조작 UI
 - [ ] Package 등 후속 실제 영역을 같은 레이아웃 계약에 등록
-- [ ] 자유 부동 창 이동과 임의 재도킹
+- [x] 현재 UI 전략: 자유 부동·별도 OS 창 대신 화면 내부 스냅 사용
 
 ## 16.2 UI 상태
 
 - [x] 전역 Instance Part Window·공동 집필 Part Section v2 Core 저장 계약과 v1 마이그레이션
 - [x] 전역 Instance Part Window 순서·최소화·너비 복원
-- [ ] 공동 집필 Part Section 순서·접힘·높이 복원 UI
+- [x] 공동 집필 Part Section 순서·접힘·높이 복원 UI
 - [ ] 프로젝트별 레이아웃
 - [ ] 플러그인 제거 시 죽은 Part Window 정리
 - [ ] Part Window crash 격리

@@ -126,7 +126,7 @@ export function CreateDefaultInstanceLayout(): GongpilInstanceLayout {
       partSections: {
         context: { collapsed: true, heightCssPx: 280 },
         chat: { collapsed: false, heightCssPx: 420 },
-        request: { collapsed: false, heightCssPx: 180 },
+        request: { collapsed: false, heightCssPx: 240 },
       },
     },
     updatedAt: new Date(0).toISOString(),

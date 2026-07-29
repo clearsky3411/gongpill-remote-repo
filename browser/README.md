@@ -1,12 +1,12 @@
 # Browser 인스턴스
 
-상태: `CURRENT` (프로젝트·문서 편집 + AI 공동 집필·이전 대화 컨텍스트 + 전역 작업 영역 복원)
+상태: `CURRENT` (프로젝트·문서 편집 + AI 공동 집필·이전 대화 컨텍스트 + Part Window·Part Section 복원)
 
 Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebView와 개발용 웹 브라우저에서 사용하는 공통 사용자 인터페이스다.
 
 ## 책임
 
-- 프로젝트 선택과 작업 패널
+- 프로젝트 선택과 Part Window 작업 화면
 - 프로젝트·문서·편집기·공동 집필 영역의 접기·좌우 이동·너비 조절과 전역 복원
 - 문서 탐색, 검색, 채팅과 컨텍스트 표시
 - 변경 제안과 diff 승인 화면
@@ -28,9 +28,9 @@ Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebV
 ## 현재 구현
 
 - `src/index.html`: 프로젝트, 문서, 편집기, 공동 집필 채팅, 영역 배치 조작과 Instance Runtime 종료 화면 구조
-- `src/styles.css`: 가변 4영역 작업 레이아웃, 접힌 레일·크기 조절 손잡이, 채팅·이전 대화 선택, 컨텍스트 미리보기와 proposal 변경 전후 표시
+- `src/styles.css`: 가변 4개 Part Window, 최소화 레일·가로/세로 크기 조절 손잡이, 공동 집필 Part Section, 채팅·컨텍스트와 proposal 표시
 - `src/instance-layout.js`: Core 저장 계약과 같은 기본값을 사용하는 접기·순서 이동·인접 너비 조절 순수 함수
-- `src/app.js`: 프로젝트·문서 CRUD, 작업 영역 읽기·저장·복원, AI delta 표시, proposal 적용·거절, 이전 대화 분류·선택과 revision 저장
+- `src/app.js`: 프로젝트·문서 CRUD, Part Window·Part Section 읽기·스냅 이동·저장·복원, AI delta 표시, proposal 적용·거절, 이전 대화 분류·선택과 revision 저장
 - `platform/network-runtime/browser/network-runtime.js`: same-origin HTTP JSON/SSE 전용 facade
 
 ## 이전 대화 컨텍스트
@@ -44,6 +44,6 @@ Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebV
 
 원문·자동 요약·선택 청크를 전환하는 요약 모드는 다음 작업 단위다. 자동 요약은 별도 AI 호출과 비용이 발생할 수 있으므로 생성 시점과 비용 표기를 먼저 설계한다.
 
-현재 프로젝트·문서·편집기·공동 집필 Part Window는 접기·펼치기, 좌우 순서 이동, 포인터·키보드 너비 조절과 데이터 루트 단위 복원을 지원한다. 저장 계약 v2는 Part Window 순서·최소화·너비와 공동 집필 `context/chat/request` Part Section 순서·접힘·높이를 검증하며 기존 v1 설정을 보존해 읽는다. 작은 창 형태의 제목 바, 스냅 재배치와 Part Section 조작 UI는 다음 작업이다. 별도 OS 창과 프로젝트별 레이아웃은 후속 `TARGET`이며, Package 영역은 실제 UI가 생길 때 같은 계약에 등록한다.
+현재 프로젝트·문서·편집기·공동 집필 Part Window는 작은 제목 바의 드래그와 `‹`·`›` 버튼 스냅 이동, 최소화·복원, 포인터·키보드 너비 조절과 데이터 루트 단위 복원을 지원한다. 공동 집필 `context/chat/request` Part Section도 드래그·버튼 순서 이동, 접기·펼치기, 포인터·키보드 높이 조절을 지원하며 컨텍스트는 기본 접힘, 대화와 요청은 넓은 기본 높이를 사용한다. 저장 계약 v2는 이 상태를 검증하며 기존 v1 설정을 보존해 읽는다. 별도 OS 창과 자유 부동 창은 현재 UI 전략에서 제외하고 화면 내부 스냅에 집중한다. 프로젝트별 레이아웃은 후속 `TARGET`이며, Package 영역은 실제 UI가 생길 때 같은 계약에 등록한다.
 
 `npm start`로 클라이언트(접속기)를 거쳐 실제 Core와 함께 기본 브라우저에서 열린다. `인스턴스 종료`는 현재 Instance Runtime만 끝내며 Client Runtime은 접속기로 돌아간다. 인스턴스 기능 코드는 파일 시스템과 endpoint를 직접 다루지 않는다.
