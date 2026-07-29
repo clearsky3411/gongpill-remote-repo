@@ -37,6 +37,11 @@ test("Windows 접속기 UI가 홈·설정·정보와 Runtime 상태를 구분한
   assert.match(script, /Client Runtime 실행 중/);
   assert.match(script, /지금 가능한 작업/);
   assert.match(script, /패치노트/);
+  assert.match(script, /\$appearanceTab\.Text = '화면'/);
+  assert.match(script, /System\.Drawing\.Text\.PrivateFontCollection/);
+  assert.match(script, /SetProcessDpiAwarenessContext/);
+  assert.match(script, /AutoScaleMode.*Dpi/);
+  assert.doesNotMatch(script, /Malgun Gothic/);
 });
 
 test("설치형 첫 실행은 기본 dataRoot와 접속기 표시 옵션을 준비한다", async () => {
@@ -308,14 +313,29 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
     const outputPath = join(testRoot, "output.json");
     const appRoot = join(testRoot, "program", "Gongpil");
     const dataRoot = join(testRoot, "selected-data");
+    const settingsContext = {
+      mode: "installed" as const,
+      appRoot,
+      settingsRoot: join(testRoot, "settings"),
+    };
+    const settings = (await LoadClientSettings(settingsContext)).settings;
+    const appearance = {
+      ...settings.appearance,
+      baseFontSizePt: 10,
+      uiScalePercent: 125,
+      windowWidthDip: 900,
+      windowHeightDip: 800,
+    };
     await writeFile(inputPath, JSON.stringify({
       mode: "installed",
-      settings: { schemaVersion: 1, dataRoot, showConnectorOnStartup: true },
+      settings: { ...settings, dataRoot, appearance },
       isFirstRun: true,
       lifecycleReason: "startup",
       appRoot,
       settingsPath: join(testRoot, "settings", "client-settings.json"),
       releaseNotes: await LoadClientReleaseNotes(APP_ROOT),
+      fontCatalog: await LoadClientFontCatalog(APP_ROOT),
+      userFontFiles: [],
     }), "utf8");
     const systemRoot = process.env.SystemRoot ?? process.env.WINDIR;
     assert.ok(systemRoot, "SystemRoot가 필요합니다.");
@@ -341,6 +361,7 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
       codexModel: "gpt-5.6-terra",
       openAiEnvFile: "",
       openAiModel: "gpt-5.6-terra",
+      appearance,
     });
   }
   finally {

@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + Client appearance 계약·자체 글꼴
-- 최근 작업 브랜치: `codex/client-appearance-contract`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + Client 자체 글꼴·DPI UI
+- 최근 작업 브랜치: `codex/client-private-font-ui`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -84,7 +84,7 @@ npm run validate:release
 - [x] Client 설정 v2의 96 DPI·DIP 창 크기·글자 크기·UI 배율·글꼴 역할 계약
 - [x] 나눔고딕 Regular/Bold·D2Coding과 라이선스·checksum을 포함한 Client Package 글꼴 카탈로그
 - [x] 포터블 Client 설정·사용자 글꼴을 프로젝트 데이터와 분리하고 기존 설정을 검증 후 이동
-- [ ] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
+- [x] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필
