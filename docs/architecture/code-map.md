@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `persona-context-source-snapshots` |
+| 작업 단위 | `codex-sandbox-mode-protocol-fix` |
 | 상태 | `COMPLETED` |
-| 시작일 | `2026-07-28` |
-| 완료일 | `2026-07-28` |
-| 브랜치 | `codex/persona-context-source-snapshots` |
-| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.network-runtime`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `persona.version.manage`, `context.build.budget`, `context.source.snapshot`, `ui.persona-context`, `release.validation` |
-| 완료 결과 | 페르소나 버전·작업 프로필 전환, 예산 기반 컨텍스트, 재현 가능한 실제 출처 snapshot UI와 전체 릴리스 검증 통과 |
-| 다음 작업 | `chat-branches-and-long-term-memory` |
+| 시작일 | `2026-07-29` |
+| 완료일 | `2026-07-29` |
+| 브랜치 | `codex/codex-sandbox-enum-fix` |
+| 활성 컴포넌트 | `gongpil.core`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `ai.provider.codex`, `architecture.code-map.track`, `architecture.code-map.validate` |
+| 완료 결과 | Codex App Server `thread/start.sandbox=read-only`와 `turn/start.sandboxPolicy.type=readOnly`의 서로 다른 enum 표현을 회귀 테스트로 고정 |
+| 다음 작업 | `chat-history-context-selection` |
 
 ## 상태 라벨
 

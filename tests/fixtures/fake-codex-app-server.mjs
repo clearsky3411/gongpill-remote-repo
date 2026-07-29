@@ -33,10 +33,18 @@ input.on("line", (line) => {
     return;
   }
   if (request.method === "thread/start") {
+    if (request.params?.sandbox !== "read-only") {
+      send({ id: request.id, error: { message: `unexpected sandbox: ${request.params?.sandbox}` } });
+      return;
+    }
     send({ id: request.id, result: { thread: { id: "thread-test" } } });
     return;
   }
   if (request.method === "turn/start") {
+    if (request.params?.sandboxPolicy?.type !== "readOnly") {
+      send({ id: request.id, error: { message: `unexpected sandbox policy: ${request.params?.sandboxPolicy?.type}` } });
+      return;
+    }
     send({ id: request.id, result: { turn: { id: "turn-test" } } });
     setTimeout(() => {
       const output = JSON.stringify({

@@ -1,29 +1,25 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-28",
+  "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "persona-context-source-snapshots",
+    "activeWorkUnit": "codex-sandbox-mode-protocol-fix",
     "status": "COMPLETED",
-    "startedAt": "2026-07-28",
-    "completedAt": "2026-07-28",
-    "branch": "codex/persona-context-source-snapshots",
+    "startedAt": "2026-07-29",
+    "completedAt": "2026-07-29",
+    "branch": "codex/codex-sandbox-enum-fix",
     "activeComponentIds": [
       "gongpil.core",
-      "gongpil.browser",
-      "gongpil.network-runtime",
       "gongpil.tests",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "persona.version.manage",
-      "context.build.budget",
-      "context.source.snapshot",
-      "ui.persona-context",
-      "release.validation"
+      "ai.provider.codex",
+      "architecture.code-map.track",
+      "architecture.code-map.validate"
     ],
-    "summary": "프로젝트별 페르소나 버전과 작업 프로필을 전환하고 토큰 예산·중복 제거·누락 경고가 있는 컨텍스트를 조립하며 실제 사용 출처의 revision·좌표·내용 snapshot을 채팅에 보존한다.",
-    "nextRecommendedWorkUnit": "chat-branches-and-long-term-memory"
+    "summary": "Codex App Server thread/start의 sandbox 모드를 read-only로 직렬화하고 turn/start의 readOnly 정책과 서로 다른 enum 표현을 회귀 테스트로 고정했다.",
+    "nextRecommendedWorkUnit": "chat-history-context-selection"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
