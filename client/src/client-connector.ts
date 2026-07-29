@@ -15,6 +15,16 @@ export interface GongpilClientConnectorInput {
   settingsPath: string;
 }
 
+export interface GongpilClientReleaseNotes {
+  schemaVersion: 1;
+  productVersion: string;
+  releasedAt: string;
+  title: string;
+  summary: string;
+  capabilities: string[];
+  changes: string[];
+}
+
 export interface GongpilClientConnectorResult {
   action: "start" | "cancel";
   settings: GongpilClientSettings;
@@ -27,7 +37,8 @@ export async function ShowClientConnector(
   const inputPath = join(exchangeRoot, "input.json");
   const outputPath = join(exchangeRoot, "output.json");
   const scriptPath = join(input.appRoot, "client", "windows", "GongpilConnector.ps1");
-  await writeFile(inputPath, JSON.stringify(input), "utf8");
+  const releaseNotes = await LoadClientReleaseNotes(input.appRoot);
+  await writeFile(inputPath, JSON.stringify({ ...input, releaseNotes }), "utf8");
   try {
     const exitCode = await RunPowerShell(scriptPath, inputPath, outputPath);
     if (exitCode !== 0) {
@@ -85,6 +96,41 @@ export async function ShowClientConnector(
   }
 }
 
+export async function LoadClientReleaseNotes(appRoot: string): Promise<GongpilClientReleaseNotes> {
+  const notesPath = join(appRoot, "client", "src", "client-release-notes.json");
+  let value: unknown;
+  try {
+    value = JSON.parse(RemoveByteOrderMark(await readFile(notesPath, "utf8")));
+  }
+  catch (error) {
+    throw new Error("클라이언트 릴리스 정보를 읽지 못했습니다.", { cause: error });
+  }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("클라이언트 릴리스 정보 형식이 올바르지 않습니다.");
+  }
+  const notes = value as Readonly<Record<string, unknown>>;
+  if (
+    notes.schemaVersion !== 1
+    || !IsDisplayText(notes.productVersion, 64)
+    || !IsDisplayText(notes.releasedAt, 32)
+    || !IsDisplayText(notes.title, 200)
+    || !IsDisplayText(notes.summary, 500)
+    || !IsDisplayTextArray(notes.capabilities, 20, 300)
+    || !IsDisplayTextArray(notes.changes, 20, 300)
+  ) {
+    throw new Error("클라이언트 릴리스 정보 형식이 올바르지 않습니다.");
+  }
+  return {
+    schemaVersion: 1,
+    productVersion: notes.productVersion,
+    releasedAt: notes.releasedAt,
+    title: notes.title,
+    summary: notes.summary,
+    capabilities: [...notes.capabilities],
+    changes: [...notes.changes],
+  };
+}
+
 function RunPowerShell(scriptPath: string, inputPath: string, outputPath: string): Promise<number | null> {
   const systemRoot = process.env.SystemRoot ?? process.env.WINDIR;
   const executable = systemRoot === undefined
@@ -111,4 +157,15 @@ function RunPowerShell(scriptPath: string, inputPath: string, outputPath: string
 
 function RemoveByteOrderMark(value: string): string {
   return value.charCodeAt(0) === 0xfeff ? value.slice(1) : value;
+}
+
+function IsDisplayText(value: unknown, maxLength: number): value is string {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= maxLength;
+}
+
+function IsDisplayTextArray(value: unknown, maxItems: number, maxLength: number): value is string[] {
+  return Array.isArray(value)
+    && value.length > 0
+    && value.length <= maxItems
+    && value.every((item) => IsDisplayText(item, maxLength));
 }

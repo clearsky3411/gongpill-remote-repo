@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `browser-presence-lifecycle` |
+| 작업 단위 | `client-home-dashboard` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/browser-presence-lifecycle` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.runtime.lifecycle`, `browser.presence.lifecycle`, `bootstrap.core.lifecycle`, `ui.shell`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Browser heartbeat 응답이 끊기면 Instance Runtime만 정상 종료하고 Client Runtime은 다시 시작 가능한 idle 상태로 유지 |
-| 다음 작업 | `client-home-dashboard` |
+| 브랜치 | `codex/client-home-dashboard` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `client.connector.settings`, `client.home.dashboard`, `client.release-notes`, `distribution.portable`, `install.windows`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | 상주 Client Runtime 접속기에 상태, 사용 가능 기능, 패치노트, 설정과 실행 정보를 구분해 표시 |
+| 다음 작업 | `instance-workspace-layout` |
 
 ## 상태 라벨
 
@@ -64,6 +64,8 @@ flowchart TD
 | Code Map 검증 | Code Map Tooling | `scripts/validate-code-map.ps1` | `CURRENT` |
 | 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
 | Windows 클라이언트 접속기와 설정 | Client | `client/src/client-connector.ts` | `CURRENT` |
+| Client Runtime 홈과 상태·작업 선택 | Client | `client/windows/GongpilConnector.ps1` | `CURRENT` |
+| Client Package 구조화 릴리스 정보 | Client | `client/src/client-release-notes.json` | `CURRENT` |
 | 상주 Client Runtime과 Instance Runtime 재시작 | Client | `client/src/client-runtime.ts` | `CURRENT` |
 | Browser 생존 임대와 자동 Instance 종료 | Core | `core/src/browser-presence-monitor.ts` | `CURRENT` |
 | Core 프로세스 수명 관리 | Client | `client/src/core-process-manager.ts` | `CURRENT` |

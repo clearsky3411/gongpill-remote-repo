@@ -110,6 +110,7 @@ async function AssertInstalledLayout(installRoot: string): Promise<void> {
     access(join(installRoot, "runtime", "node.exe")),
     access(join(installRoot, "runtime", "NODE_LICENSE.txt")),
     access(join(installRoot, "client", "src", "client-process.ts")),
+    access(join(installRoot, "client", "src", "client-release-notes.json")),
     access(join(installRoot, "client", "windows", "GongpilConnector.ps1")),
     access(join(installRoot, "Gongpil.vbs")),
     access(join(installRoot, "Gongpil.cmd")),

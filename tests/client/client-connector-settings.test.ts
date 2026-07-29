@@ -10,6 +10,27 @@ import {
   ResolveClientSettingsPath,
   SaveClientSettings,
 } from "../../client/src/client-settings-store.ts";
+import { LoadClientReleaseNotes } from "../../client/src/client-connector.ts";
+
+const APP_ROOT = process.cwd();
+
+test("Client Package 릴리스 정보가 버전·가능 기능·패치노트를 제공한다", async () => {
+  const releaseNotes = await LoadClientReleaseNotes(APP_ROOT);
+  assert.equal(releaseNotes.schemaVersion, 1);
+  assert.match(releaseNotes.productVersion, /^\d+\.\d+\.\d+/);
+  assert.ok(releaseNotes.capabilities.length >= 5);
+  assert.ok(releaseNotes.changes.some((change) => change.includes("heartbeat")));
+});
+
+test("Windows 접속기 UI가 홈·설정·정보와 Runtime 상태를 구분한다", async () => {
+  const script = await readFile(join(APP_ROOT, "client", "windows", "GongpilConnector.ps1"), "utf8");
+  assert.match(script, /\$homeTab\.Text = '홈'/);
+  assert.match(script, /\$settingsTab\.Text = '설정'/);
+  assert.match(script, /\$infoTab\.Text = '정보'/);
+  assert.match(script, /Client Runtime 실행 중/);
+  assert.match(script, /지금 가능한 작업/);
+  assert.match(script, /패치노트/);
+});
 
 test("설치형 첫 실행은 기본 dataRoot와 접속기 표시 옵션을 준비한다", async () => {
   const testRoot = await mkdtemp(join(tmpdir(), "gongpil-client-settings-default-"));
@@ -196,6 +217,7 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
       lifecycleReason: "startup",
       appRoot,
       settingsPath: join(testRoot, "settings", "client-settings.json"),
+      releaseNotes: await LoadClientReleaseNotes(APP_ROOT),
     }), "utf8");
     const systemRoot = process.env.SystemRoot ?? process.env.WINDIR;
     assert.ok(systemRoot, "SystemRoot가 필요합니다.");
