@@ -77,7 +77,7 @@ Invalid request: unknown variant `readOnly`, expected one of `read-only`, `works
 5. [x] 실제 포함 기록을 기존 `GongpilContextSnapshot`에 대화 출처로 확장
 6. [x] 기존 채팅 JSON 호환, 중복 제거, 예산 초과, 프로젝트 격리, UI 계약 테스트
 7. [x] 설치형·포터블 재빌드와 전체 릴리스 검증
-8. [ ] `codex/chat-history-context-ui` PR diff 확인과 squash 병합
+8. [x] `codex/chat-history-context-ui` PR #16 생성과 GitHub diff 확인
 
 다음 작업 단위는 `chat-history-summary-modes`다. 원문·요약본·선택 청크 전환, 요약 생성 시점, 캐시 무효화, 별도 AI 호출 비용 표시를 먼저 설계한다.
 

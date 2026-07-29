@@ -523,13 +523,13 @@ function RenderChatHistorySelection() {
   const selectedChunks = state.chatHistory.chunks.filter((chunk) => state.selectedHistoryChunkIds.has(chunk.chunkId));
   const selectedTokens = selectedChunks.reduce((total, chunk) => total + Number(chunk.estimatedTokens ?? 0), 0);
   elements.historySelectionSummary.textContent = `선택 ${selectedChunks.length.toLocaleString("ko-KR")}개 · 약 ${selectedTokens.toLocaleString("ko-KR")} tok`;
+  PopulateHistoryClassificationFilter();
   elements.selectRecentHistoryButton.disabled = state.activeProject === undefined || state.chatHistory.turns.length === 0;
   elements.clearHistorySelectionButton.disabled = state.selectedHistoryChunkIds.size === 0;
   elements.selectFilteredHistoryButton.disabled = GetVisibleHistoryTurns().length === 0;
   elements.historyRecentCount.disabled = state.activeProject === undefined;
   elements.historyClassificationFilter.disabled = state.activeProject === undefined;
   elements.historySearchInput.disabled = state.activeProject === undefined;
-  PopulateHistoryClassificationFilter();
 
   const truncatedCount = Number(state.chatHistory.truncatedMessageCount ?? 0);
   elements.historyTruncationNotice.hidden = truncatedCount === 0;
