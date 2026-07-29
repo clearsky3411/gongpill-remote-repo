@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `chat-history-context-ui` |
+| 작업 단위 | `terminology-guidelines` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/chat-history-context-ui` |
-| 활성 컴포넌트 | `gongpil.browser`, `gongpil.installer`, `gongpil.distribution`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `ui.context-selection`, `ui.chat-history-context`, `release.validation`, `distribution.portable`, `install.windows`, `architecture.code-map.track`, `architecture.code-map.validate` |
-| 작업 목표 | 최근 10개·턴·개별 대화 청크와 분류 필터 선택, 문서·대화 통합 토큰·포함 순서·누락 사유 미리보기 |
-| 다음 작업 | `chat-history-summary-modes` |
+| 브랜치 | `codex/terminology-guidelines` |
+| 활성 컴포넌트 | `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `architecture.terminology`, `architecture.code-map.track`, `architecture.code-map.validate` |
+| 작업 목표 | 개발 패키지, 저장소, 서버·클라이언트·인스턴스·Core·Host Adapter의 Package/Runtime 용어와 수명·업데이트 경계 고정 |
+| 다음 작업 | `persistent-client-lifecycle` |
 
 ## 상태 라벨
 
@@ -59,6 +59,7 @@ flowchart TD
 
 | 기능 | 소유 컴포넌트 | 현재 경로 | 상태 |
 |---|---|---|---|
+| 개발 패키지·저장소·Package/Runtime 용어 기준 | Architecture | `docs/architecture/terminology.md` | `CURRENT` |
 | 기능·작업 위치 추적 | Architecture | `docs/architecture/component-registry.json` | `CURRENT` |
 | Code Map 검증 | Code Map Tooling | `scripts/validate-code-map.ps1` | `CURRENT` |
 | 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |

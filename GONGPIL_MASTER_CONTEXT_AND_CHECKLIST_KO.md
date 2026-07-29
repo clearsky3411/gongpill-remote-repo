@@ -1502,7 +1502,7 @@ interface GongpilError {
 - [ ] `docs/architecture/target-state.md`
 - [ ] `docs/architecture/migration-plan.md`
 - [ ] ADR 템플릿
-- [ ] 용어집
+- [x] 용어집: `docs/architecture/terminology.md`
 - [ ] 데이터 소유권 표
 
 ### 완료 조건

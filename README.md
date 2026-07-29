@@ -5,9 +5,10 @@
 ## 현재 단계
 
 - 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 청크·검색 + 페르소나·출처 snapshot
-- 최근 작업 브랜치: `codex/persona-context-source-snapshots`
+- 최근 작업 브랜치: `codex/terminology-guidelines`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
+- 개발 용어 기준: `docs/architecture/terminology.md`
 - 기계 판독 Code Map: `docs/architecture/component-registry.json`
 - 기계 판독 부트스트랩 계약: `packages/contracts/bootstrap/bootstrap-contracts.schema.json`
 - 기계 판독 네트워크 계약: `packages/contracts/network/network-contracts.schema.json`
@@ -280,7 +281,9 @@ npm run validate:release
 - [x] Code Map 구조·경로·대칭 관계 검증기 작성
 - [ ] 기존 구현과 목표 구조의 차이를 별도 문서로 정리
 - [ ] 재사용·폐기 대상과 기술 부채 목록 작성
-- [ ] ADR 템플릿, 용어집과 데이터 소유권 표 작성
+- [ ] ADR 템플릿 작성
+- [x] 개발 패키지·저장소·Package/Runtime 용어집 작성
+- [ ] 데이터 소유권 표 작성
 
 ### Phase 1. 공통 계약과 실행 가능한 골격
 
