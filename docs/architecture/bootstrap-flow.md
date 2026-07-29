@@ -15,7 +15,11 @@ Installer가 프로그램과 포함 런타임을 배치
 → Client의 NetworkRuntime이 후보 연결을 검증하고 원자적으로 교체
 → Client가 Browser 창을 연다
 → Browser는 same-origin NetworkRuntime으로 Core API를 사용한다
+→ Instance Runtime 종료 뒤 Client Runtime은 접속기로 돌아간다
+→ 사용자가 새 Instance Runtime을 시작하거나 Client Runtime을 종료한다
 ```
+
+현재 `CURRENT` 범위는 한 번에 하나의 Instance Runtime을 실행하고 정상·비정상 종료 뒤 다시 시작하는 수명 분리다. 여러 Instance Runtime 동시 실행, 자동 재시작, updater와 Update Channel 연동은 후속 `TARGET`이다. 자동화용 `--no-open`과 명시적인 데이터 루트 override 실행은 기존 패키지 검증을 위해 한 번의 Instance Runtime 종료 뒤 Client Runtime도 끝나는 one-shot 경계를 유지한다.
 
 기계 판독 계약과 호환성 규칙은 `bootstrap-contract.md`와 `packages/contracts/bootstrap/bootstrap-contracts.schema.json`에 정의한다.
 

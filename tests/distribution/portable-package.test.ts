@@ -51,7 +51,7 @@ test("포터블 패키지가 포함 Node만으로 실행되고 앱 옆에 데이
       content: "포터블 데이터",
     });
     assert.equal(documentResult.state, "succeeded");
-    await SendCommand(session, "system.shutdown.request", {});
+    await SendCommand(session, "instance.shutdown.request", {});
     assert.equal(await firstRun.WaitForExit(), 0, firstRun.ReadStderr());
   }
   finally {
@@ -68,7 +68,7 @@ test("포터블 패키지가 포함 Node만으로 실행되고 앱 옆에 데이
       projectId: projects.payload.projects[0].projectId,
     });
     assert.equal(opened.payload.documents.some((document: { path: string }) => document.path === "검증.md"), true);
-    await SendCommand(session, "system.shutdown.request", {});
+    await SendCommand(session, "instance.shutdown.request", {});
     assert.equal(await secondRun.WaitForExit(), 0, secondRun.ReadStderr());
   }
   finally {

@@ -587,11 +587,20 @@ async function RunCoreProcess(): Promise<void> {
       throw NormalizeDomainError(error);
     }
   });
-  host.RegisterCommand("system.shutdown.request", () => {
-    const shutdownTimer = setTimeout(() => process.kill(process.pid, "SIGTERM"), 100);
+  let shutdownInstance: (() => Promise<void>) | undefined;
+  const requestInstanceShutdown = (): { accepted: true } => {
+    const shutdownTimer = setTimeout(() => {
+      if (shutdownInstance === undefined) {
+        process.kill(process.pid, "SIGTERM");
+        return;
+      }
+      void shutdownInstance();
+    }, 100);
     shutdownTimer.unref();
     return { accepted: true };
-  });
+  };
+  host.RegisterCommand("instance.shutdown.request", requestInstanceShutdown);
+  host.RegisterCommand("system.shutdown.request", requestInstanceShutdown);
 
   const networkProfile = await host.Start();
   const readyInfo: GongpilCoreReadyInfo = {
@@ -627,12 +636,13 @@ async function RunCoreProcess(): Promise<void> {
       "chat.message.send",
       "proposal.apply",
       "proposal.reject",
+      "instance.shutdown.request",
       "system.shutdown.request",
     ],
   };
 
   await WriteReadyInfo(readyInfo);
-  InstallShutdownHandlers(host, async () => {
+  shutdownInstance = InstallShutdownHandlers(host, async () => {
     await codexClient?.Stop();
   });
 }
@@ -994,7 +1004,7 @@ function WriteReadyInfo(readyInfo: GongpilCoreReadyInfo): Promise<void> {
 function InstallShutdownHandlers(
   host: GongpilLoopbackHttpHost,
   cleanup?: () => Promise<void>,
-): void {
+): () => Promise<void> {
   let stopping = false;
   const parentProcessId = process.ppid;
   const stop = async (): Promise<void> => {
@@ -1024,6 +1034,7 @@ function InstallShutdownHandlers(
 
   process.once("SIGINT", () => void stop());
   process.once("SIGTERM", () => void stop());
+  return stop;
 }
 
 RunCoreProcess().catch(() => {

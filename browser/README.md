@@ -26,7 +26,7 @@ Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebV
 
 ## 현재 구현
 
-- `src/index.html`: 프로젝트, 문서, 편집기, 공동 집필 채팅과 종료 화면 구조
+- `src/index.html`: 프로젝트, 문서, 편집기, 공동 집필 채팅과 Instance Runtime 종료 화면 구조
 - `src/styles.css`: 4열 작업 레이아웃, 채팅·이전 대화 선택, 컨텍스트 미리보기와 proposal 변경 전후 표시
 - `src/app.js`: 프로젝트·문서 CRUD, AI delta 표시, proposal 적용·거절, 이전 대화 분류·선택과 revision 저장
 - `platform/network-runtime/browser/network-runtime.js`: same-origin HTTP JSON/SSE 전용 facade
@@ -42,4 +42,6 @@ Browser는 사용자가 `인스턴스`라고 부르는 작업 화면이며, WebV
 
 원문·자동 요약·선택 청크를 전환하는 요약 모드는 다음 작업 단위다. 자동 요약은 별도 AI 호출과 비용이 발생할 수 있으므로 생성 시점과 비용 표기를 먼저 설계한다.
 
-`npm start`로 클라이언트(접속기)를 거쳐 실제 Core와 함께 기본 브라우저에서 열린다. 인스턴스 기능 코드는 파일 시스템과 endpoint를 직접 다루지 않는다.
+현재 프로젝트·문서·편집·공동 집필 영역은 고정 4열 레이아웃이다. 각 영역 접기·펼치기와 창처럼 이동·도킹하는 작업공간 레이아웃은 `ui.workspace.layout`에 등록된 후속 `TARGET`이다.
+
+`npm start`로 클라이언트(접속기)를 거쳐 실제 Core와 함께 기본 브라우저에서 열린다. `인스턴스 종료`는 현재 Instance Runtime만 끝내며 Client Runtime은 접속기로 돌아간다. 인스턴스 기능 코드는 파일 시스템과 endpoint를 직접 다루지 않는다.

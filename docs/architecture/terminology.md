@@ -76,7 +76,7 @@ Client Runtime
 
 Installer는 최초 Client Package 설치와 복구·제거를 담당한다. 설치 이후의 일반 업데이트는 Client Runtime과 updater의 책임이다.
 
-Instance Runtime 종료는 Client Runtime 종료를 뜻하지 않는다. 장기 목표에서 Client Runtime은 상주하며 여러 차례 Instance Runtime을 열고 닫을 수 있다. 현재 구현은 Browser 종료 요청과 함께 Client·Core도 종료하므로, 이 분리는 아직 `TARGET`이다.
+Instance Runtime 종료는 Client Runtime 종료를 뜻하지 않는다. 현재 단일 Instance 구현에서 Client Runtime은 상주하며 Instance Runtime 정상·비정상 종료 뒤 접속기로 돌아가 새 Instance Runtime을 시작할 수 있다. Client Runtime 자체는 접속기의 `클라이언트 종료` 또는 운영체제 종료 신호로 끝난다. 여러 Instance Runtime의 동시 관리와 updater 연동은 아직 `TARGET`이다.
 
 ## 6. Browser와 실행 호스트
 
@@ -107,6 +107,6 @@ Instance Runtime 종료는 Client Runtime 종료를 뜻하지 않는다. 장기 
 ## 9. 현재와 목표를 구분하는 표현
 
 - 이미 존재하고 검증된 동작만 `CURRENT`라고 쓴다.
-- 용어로 구조를 확정했지만 구현되지 않은 상주 Client Runtime, 독립 Instance Runtime 수명, Update Channel, 서명 검증, 클라우드 Server Runtime은 `TARGET`이라고 쓴다.
+- 상주 Client Runtime과 단일 Instance Runtime의 독립 수명은 `CURRENT`다. 여러 Instance Runtime 동시 관리, Update Channel, 서명 검증, 클라우드 Server Runtime은 `TARGET`이라고 쓴다.
 - 설계 문장에서 `Client Runtime이 Instance Package를 수정한다`는 표현은 피한다. 개발 도구가 소스를 수정하는 것과 런타임이 새 버전을 설치·활성화하는 것을 구분한다.
 - `Client Instance`라는 표현은 쓰지 않고 `Client Runtime`이라고 쓴다.

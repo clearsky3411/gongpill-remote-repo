@@ -1334,13 +1334,13 @@ elements.selectFilteredHistoryButton.addEventListener("click", () => {
   ScheduleContextPreview();
 });
 elements.shutdownButton.addEventListener("click", () => {
-  if (!confirm("공필 Core를 종료하시겠습니까?")) {
+  if (!confirm("현재 인스턴스를 종료하시겠습니까? Client Runtime은 계속 실행됩니다.")) {
     return;
   }
   void RunAction(async () => {
-    RequirePayload(await runtime.Send("system.shutdown.request", {}));
+    RequirePayload(await runtime.Send("instance.shutdown.request", {}));
     runtime.Disconnect();
-    document.body.innerHTML = "<main class='empty-state'><h1>공필이 종료됐습니다.</h1><p>이 창을 닫아도 됩니다.</p></main>";
+    document.body.innerHTML = "<main class='empty-state'><h1>인스턴스가 종료됐습니다.</h1><p>Client Runtime에서 다시 시작할 수 있습니다. 이 창은 닫아도 됩니다.</p></main>";
   });
 });
 

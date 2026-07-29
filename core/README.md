@@ -34,4 +34,4 @@ Core는 공필 데이터와 권한을 최종 집행하는 프로세스다.
 
 원문 변경은 계속 `proposal.apply`만 expected revision 검사 뒤 `document-store`를 통해 집행한다. `proposal.reject`는 원문을 건드리지 않는다.
 
-현재 명령은 health/readiness, Browser session, 프로젝트·문서 CRUD, 채팅 읽기·전송, `chat.history.list`, `chat.context.preview`, `chat.message.classification.update`, proposal 적용·거절과 종료 요청이다. 읽기 전용 잠금, 기존 폴더 연결, rename/move/delete, 부분 diff 승인과 원복은 후속 목표다.
+현재 명령은 health/readiness, Browser session, 프로젝트·문서 CRUD, 채팅 읽기·전송, `chat.history.list`, `chat.context.preview`, `chat.message.classification.update`, proposal 적용·거절과 `instance.shutdown.request`다. 이전 Browser 호환을 위해 `system.shutdown.request`도 같은 Instance Runtime 종료 별칭으로 유지한다. 읽기 전용 잠금, 기존 폴더 연결, rename/move/delete, 부분 diff 승인과 원복은 후속 목표다.

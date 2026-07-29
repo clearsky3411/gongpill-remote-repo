@@ -193,6 +193,7 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
       mode: "installed",
       settings: { schemaVersion: 1, dataRoot, showConnectorOnStartup: true },
       isFirstRun: true,
+      lifecycleReason: "startup",
       appRoot,
       settingsPath: join(testRoot, "settings", "client-settings.json"),
     }), "utf8");

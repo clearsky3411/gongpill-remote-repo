@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `terminology-guidelines` |
+| 작업 단위 | `persistent-client-lifecycle` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/terminology-guidelines` |
-| 활성 컴포넌트 | `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `architecture.terminology`, `architecture.code-map.track`, `architecture.code-map.validate` |
-| 작업 목표 | 개발 패키지, 저장소, 서버·클라이언트·인스턴스·Core·Host Adapter의 Package/Runtime 용어와 수명·업데이트 경계 고정 |
-| 다음 작업 | `persistent-client-lifecycle` |
+| 브랜치 | `codex/persistent-client-lifecycle` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `client.runtime.lifecycle`, `bootstrap.core.lifecycle`, `client.connector.settings`, `ui.shell`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Client Runtime을 상주시켜 Instance Runtime 종료 뒤 다시 시작할 수 있게 하고 Client와 Instance 수명 경계를 분리 |
+| 다음 작업 | `instance-workspace-layout` |
 
 ## 상태 라벨
 
@@ -64,6 +64,7 @@ flowchart TD
 | Code Map 검증 | Code Map Tooling | `scripts/validate-code-map.ps1` | `CURRENT` |
 | 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
 | Windows 클라이언트 접속기와 설정 | Client | `client/src/client-connector.ts` | `CURRENT` |
+| 상주 Client Runtime과 Instance Runtime 재시작 | Client | `client/src/client-runtime.ts` | `CURRENT` |
 | Core 프로세스 수명 관리 | Client | `client/src/core-process-manager.ts` | `CURRENT` |
 | Core 버전 선택·활성화·롤백 | Client | `client/src/client-bootstrap.ts` | `CURRENT` |
 | Client-Core 부트스트랩 계약 | Contracts | `packages/contracts/bootstrap/bootstrap-contracts.schema.json` | `CURRENT` |
@@ -97,6 +98,7 @@ flowchart TD
 | AI 요청 실제 문서·대화 출처 좌표·내용 snapshot | Core | `core/src/chat-store.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
+| Instance 작업 영역 접기·펼치기·이동·도킹 | Browser | `browser/src/index.html` | `TARGET` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 문서·청크 검색과 명시 선택 UI | Browser | `browser/src/index.html` | `CURRENT` |

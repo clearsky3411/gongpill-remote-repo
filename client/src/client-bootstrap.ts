@@ -16,6 +16,7 @@ import { GongpilLoopbackHttpTransport } from "../../platform/network-runtime/src
 import {
   GongpilCoreProcessError,
   GongpilCoreProcessManager,
+  type GongpilCoreProcessExit,
   type GongpilManagedCoreProcess,
 } from "./core-process-manager.ts";
 
@@ -152,8 +153,19 @@ export class GongpilClientBootstrap {
     return new URL(launchPath, activeCore.readyInfo.networkProfile.origin).toString();
   }
 
-  public async WaitForActiveCoreExit(): Promise<void> {
-    await this.activeCore?.process.WaitForExit();
+  public async WaitForActiveCoreExit(): Promise<GongpilCoreProcessExit | undefined> {
+    const activeCore = this.activeCore;
+    if (activeCore === undefined) {
+      return undefined;
+    }
+
+    const exit = await activeCore.process.WaitForExit();
+    if (this.activeCore === activeCore) {
+      this.activeCore = undefined;
+      this.sessionTokens.delete(activeCore.readyInfo.networkProfile.profileId);
+      await this.networkRuntime.Disconnect();
+    }
+    return exit;
   }
 
   private CreateBrowserSession(
