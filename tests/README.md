@@ -27,7 +27,7 @@ npm run validate:release
 
 부트스트랩 통합 테스트는 실제 Core 자식 프로세스와 loopback HTTP/SSE 연결, 후보 롤백, 시작 실패, 잔류 프로세스 정리를 검증한다.
 
-MVP 통합 테스트는 프로젝트·문서 생성, 경로 경계, revision 충돌, 원자 저장과 history, 일회용 Browser 쿠키 세션, favicon, 실제 Client 진입점과 종료 정리를 검증한다. `tests/client`는 클라이언트(접속기)의 설치형·포터블 설정, 원자 덮어쓰기, 경로 경계와 실제 PowerShell 응답을 검증한다.
+MVP 통합 테스트는 프로젝트·문서 생성, 경로 경계, revision 충돌, 원자 저장과 history, 일회용 Browser 쿠키 세션, favicon, 실제 Client 진입점과 자동화 one-shot 종료 정리를 검증한다. `tests/client`는 클라이언트(접속기)의 설치형·포터블 설정, 원자 덮어쓰기, 경로 경계와 실제 PowerShell 응답에 더해 장기 실행 Client Runtime이 Instance Runtime 정상·비정상 종료 뒤 다시 시작되는 흐름을 검증한다.
 
 컨텍스트 테스트는 페르소나 버전, 이전 대화 턴·UTF-8 byte 청크, 최근/개별 선택, 프로젝트 격리, 분류 저장, 문서·대화 중복 제거, 예산 누락과 snapshot 비재귀 포함을 검증한다. AI 통합 테스트는 이 기능의 실제 loopback 명령과 공급자 입력까지 확인한다.
 
@@ -38,6 +38,7 @@ Installer 테스트는 Setup.exe를 임시 경로에 silent 설치하고 포함 
 구현 위치:
 
 - `tests/bootstrap/client-core-loopback-bootstrap.test.ts`
+- `tests/client/persistent-client-lifecycle.test.ts`
 - `tests/mvp/project-document-mvp.test.ts`
 - `tests/ai/openai-chat-proposal.test.ts`
 - `tests/context/persona-context-source.test.ts`

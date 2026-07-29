@@ -14,6 +14,7 @@ Add-Type -AssemblyName System.Drawing
 
 $inputModel = Get-Content -LiteralPath $InputPath -Raw | ConvertFrom-Json
 $isPortable = $inputModel.mode -eq 'portable'
+$lifecycleReason = if ($null -eq $inputModel.PSObject.Properties['lifecycleReason']) { 'startup' } else { [string]$inputModel.lifecycleReason }
 $resultAction = 'cancel'
 
 $form = New-Object System.Windows.Forms.Form
@@ -26,7 +27,18 @@ $form.ClientSize = New-Object System.Drawing.Size(660, 770)
 $form.Font = New-Object System.Drawing.Font('Malgun Gothic', 9)
 
 $titleLabel = New-Object System.Windows.Forms.Label
-$titleLabel.Text = if ($inputModel.isFirstRun) { '처음 사용할 위치를 정해주세요.' } else { '인스턴스를 시작하거나 저장 위치를 바꿀 수 있습니다.' }
+$titleLabel.Text = if ($inputModel.isFirstRun) {
+    '처음 사용할 위치를 정해주세요.'
+}
+elseif ($lifecycleReason -eq 'instance-crashed') {
+    '인스턴스가 비정상 종료되었습니다.'
+}
+elseif ($lifecycleReason -eq 'instance-stopped') {
+    '인스턴스가 종료되었습니다. 클라이언트는 실행 중입니다.'
+}
+else {
+    '인스턴스를 시작하거나 저장 위치를 바꿀 수 있습니다.'
+}
 $titleLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 14, [System.Drawing.FontStyle]::Bold)
 $titleLabel.AutoSize = $true
 $titleLabel.Location = New-Object System.Drawing.Point(24, 22)
@@ -217,7 +229,7 @@ $openFolderButton.Add_Click({
 $form.Controls.Add($openFolderButton)
 
 $cancelButton = New-Object System.Windows.Forms.Button
-$cancelButton.Text = '취소'
+$cancelButton.Text = if ($lifecycleReason -eq 'startup') { '취소' } else { '클라이언트 종료' }
 $cancelButton.Location = New-Object System.Drawing.Point(438, 710)
 $cancelButton.Size = New-Object System.Drawing.Size(90, 36)
 $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel

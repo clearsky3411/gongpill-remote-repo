@@ -1135,7 +1135,7 @@ GongpilClient.exe
 ## 15.2 종료 흐름
 
 ```text
-창 종료 요청
+Instance Runtime 종료 요청
 → 새 작업 차단
 → 진행 중 작업 확인
 → 취소/대기 정책
@@ -1143,8 +1143,12 @@ GongpilClient.exe
 → Core flush
 → 세션 파일 제거
 → 자식 프로세스 잔류 확인
-→ Launcher 종료
+→ Client Runtime idle
+→ 접속기에서 새 Instance Runtime 시작 또는 Client Runtime 종료
+→ Client Runtime 종료 시 Launcher 종료
 ```
+
+현재 구현은 한 번에 하나의 Instance Runtime을 실행하며, 정상·비정상 종료 뒤 상주 Client Runtime이 접속기로 돌아가 새 Instance Runtime을 시작할 수 있다. 여러 Instance Runtime 동시 실행, 자동 재시작, updater 연동은 후속 목표다.
 
 ## 15.3 체크리스트
 
@@ -1158,6 +1162,8 @@ GongpilClient.exe
 - [ ] 이전 crash 감지
 - [ ] 중복 실행 정책
 - [ ] 여러 창/여러 프로젝트 정책
+- [x] 단일 Instance Runtime 종료와 Client Runtime 종료 분리
+- [x] Instance Runtime 정상·비정상 종료 뒤 수동 재시작
 - [ ] Windows 재부팅·로그오프 처리
 
 ---
@@ -1179,6 +1185,8 @@ Shell은 공통 작업공간만 제공한다.
 - [ ] diff 승인 화면
 - [ ] 플러그인 관리자
 - [ ] 설정
+- [ ] 프로젝트·패키지·작업·공필 영역 접기와 펼치기
+- [ ] 영역 이동, 크기 조절과 도킹 레이아웃 저장
 
 ## 16.2 UI 상태
 
@@ -1538,7 +1546,8 @@ interface GongpilError {
 - [ ] session 인증
 - [ ] health check
 - [ ] Shell 창
-- [ ] 정상 종료
+- [x] 단일 Instance Runtime 정상 종료와 Client Runtime 생존
+- [x] Instance Runtime 재시작과 명시적 Client Runtime 종료
 - [ ] 강제 종료 복구
 - [ ] 잔류 프로세스 검사
 - [ ] portable.marker
@@ -1547,7 +1556,7 @@ interface GongpilError {
 
 - [ ] 시스템 Node가 없어도 실행
 - [ ] PATH/CODEX_HOME/서비스 미변경
-- [ ] 종료 뒤 공필 자식 프로세스 없음
+- [x] Client Runtime 최종 종료 뒤 공필 자식 프로세스 없음
 - [ ] 포터블 폴더 밖에 공필 설정을 남기지 않음
 
 ## Phase 3. 프로젝트와 데이터 루트

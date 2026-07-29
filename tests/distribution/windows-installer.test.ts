@@ -41,7 +41,7 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
         content: "제거 뒤에도 보존할 데이터",
       });
       assert.equal(documentResult.state, "succeeded");
-      await SendCommand(session, "system.shutdown.request", {});
+      await SendCommand(session, "instance.shutdown.request", {});
       assert.equal(await firstRun.WaitForExit(), 0, firstRun.ReadStderr());
     }
     finally {
@@ -65,7 +65,7 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
         projectId: projects.payload.projects[0].projectId,
       });
       assert.equal(opened.payload.documents.some((document: { path: string }) => document.path === "설치검증.md"), true);
-      await SendCommand(session, "system.shutdown.request", {});
+      await SendCommand(session, "instance.shutdown.request", {});
       assert.equal(await secondRun.WaitForExit(), 0, secondRun.ReadStderr());
     }
     finally {

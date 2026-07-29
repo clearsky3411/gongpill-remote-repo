@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 청크·검색 + 페르소나·출처 snapshot
-- 최근 작업 브랜치: `codex/terminology-guidelines`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 청크·검색 + 페르소나·출처 snapshot + 상주 Client Runtime
+- 최근 작업 브랜치: `codex/persistent-client-lifecycle`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -21,7 +21,7 @@
 npm start
 ```
 
-처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다.
+처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 끝내며, 상주 Client Runtime의 접속기에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
 
 OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 API 키를 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일을 선택한다. 키는 Git 저장소나 Browser에 넣지 않는다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. Codex 인증은 선택한 `dataRoot/integrations/codex` 아래의 공필 전용 `CODEX_HOME`에 격리된다.
 
@@ -78,6 +78,7 @@ npm run validate:release
 - [x] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
 - [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
 - [x] Windows 클라이언트(접속기)의 데이터 폴더·시작 옵션 관리
+- [x] 상주 Client Runtime과 단일 Instance Runtime 종료·재시작
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필
@@ -91,6 +92,7 @@ npm run validate:release
 - [ ] 실행 Flow/Scope/Trace, 진행률, 취소와 오류 추적
 - [ ] 플러그인 계약·SDK·권한·설치 관리자
 - [ ] 플러그인별 backend 프로세스와 sandboxed UI 격리
+- [ ] 프로젝트·문서·편집·공동 집필 영역 접기·펼치기와 이동·도킹
 - [ ] 지도 뷰어 검증 플러그인
 - [ ] 채팅, 브랜치, 페르소나, 장기 기억과 출처 추적
 - [ ] Markdown 편집기와 검색 플러그인
@@ -112,7 +114,8 @@ npm run validate:release
 - [x] 같은 볼륨 임시 파일·flush·rename으로 원자 저장한다
 - [x] 저장 전 revision별 history 사본을 남긴다
 - [x] Browser에는 endpoint·token·절대 데이터 경로를 공개하지 않는다
-- [x] 화면 종료 요청 뒤 Client와 Core가 잔류 프로세스 없이 끝난다
+- [x] 화면의 Instance 종료 요청 뒤 Core가 끝나고 Client Runtime은 접속기로 돌아간다
+- [x] Client Runtime 최종 종료 뒤 Core 자식 프로세스가 남지 않는다
 - [x] 실제 Core API와 실제 Client 진입점을 사용하는 MVP 테스트 5개가 통과한다
 
 ### 현재 완료 보고: Windows 클라이언트(접속기)
@@ -126,7 +129,7 @@ npm run validate:release
 - [x] 접속기에서 현재 데이터 폴더를 탐색기로 열 수 있다
 - [x] 접속기 표시 여부를 저장하고 언제든 `Gongpil 설정`으로 다시 연다
 - [x] 인스턴스 favicon을 제공해 `/favicon.svg` 요청이 200을 반환한다
-- [x] 설정·PowerShell 응답 테스트 6개와 사용자 지정 경로 Installer E2E가 통과한다
+- [x] 설정·PowerShell 응답·Instance 재시작 테스트 8개와 사용자 지정 경로 Installer E2E가 통과한다
 
 ### 현재 완료 보고: OpenAI 공동 집필 수직 슬라이스
 
@@ -212,6 +215,8 @@ npm run validate:release
 - [ ] 시작 메뉴의 `Gongpil`에서 접속기 창이 먼저 보이는지 확인
 - [ ] `찾아보기...`로 새 데이터 폴더를 선택하고 `인스턴스 시작`을 누른다
 - [ ] 프로젝트와 문서를 만든 뒤 종료하고, 다시 실행해 같은 내용이 보이는지 확인
+- [ ] `인스턴스 종료` 뒤 접속기가 다시 나타나고 같은 Client Runtime에서 인스턴스를 다시 시작하는지 확인
+- [ ] 접속기의 `클라이언트 종료`를 누르면 프로그램이 최종 종료되는지 확인
 - [ ] 시작 메뉴의 `Gongpil 설정`에서 경로와 접속기 표시 옵션을 다시 바꿔본다
 
 프로젝트·문서 기능을 사용자가 직접 확인할 항목:
@@ -309,6 +314,7 @@ npm run validate:release
 - [x] CoreReadyInfo 표준 출력 handoff
 - [x] 경로·연결 비밀정보 없는 Browser 논리 세션 공개
 - [x] 기본 브라우저에서 인스턴스 시작
+- [x] Client Runtime 상주와 단일 Instance Runtime 정상·비정상 종료 뒤 재시작
 - [x] 정상 종료·시작 실패·잔류 프로세스 정리
 - [ ] 비정상 종료 감지와 고아 프로세스 복구
 - [x] 시스템 PATH와 전역 `CODEX_HOME` 무변경 검증
@@ -511,6 +517,16 @@ npm run validate:release
 - [x] 설치형·포터블 공용 패키지에 runtime 배치
 - [x] `bundledRuntimePath`가 시스템 Node와 PATH 없이 실행되는지 검증
 - [ ] runtime 누락·손상 시 사용자 오류와 복구 경로 검증
+
+### 완료 작업: persistent Client Runtime lifecycle
+
+- [x] Client Runtime의 `idle`, `starting`, `running`, `stopping`, `stopped` 상태 경계
+- [x] Instance Runtime 정상 종료 뒤 Core 참조·세션 토큰·NetworkRuntime 연결 정리
+- [x] 같은 Client Runtime에서 새 launch ID·session ID로 Instance Runtime 재시작
+- [x] Core 비정상 종료 뒤 Client Runtime 생존과 수동 복구 재시작
+- [x] Browser의 `instance.shutdown.request`와 이전 `system.shutdown.request` 호환 별칭
+- [x] 일반 실행은 접속기로 복귀하고 자동화용 `--no-open`은 one-shot 호환 유지
+- [x] 최종 Client Runtime 종료 뒤 잔류 Core 프로세스 0개 확인
 
 ## 최상위 책임
 

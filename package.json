@@ -14,7 +14,7 @@
     "demo:network": "node platform/network-runtime/demo/network-runtime-demo.ts",
     "demo:network:loopback": "node platform/network-runtime/demo/loopback-network-runtime-demo.ts",
     "test:bootstrap": "node --test tests/bootstrap/client-core-loopback-bootstrap.test.ts",
-    "test:client": "node --test tests/client/client-connector-settings.test.ts",
+    "test:client": "node --test tests/client/client-connector-settings.test.ts tests/client/persistent-client-lifecycle.test.ts",
     "test:ai": "node --test tests/ai/openai-chat-proposal.test.ts tests/ai/codex-provider-usage.test.ts",
     "test:diagnostics": "node --test tests/diagnostics/developer-log.test.ts",
     "test:chunks": "node --test tests/chunks/chunk-index-search.test.ts",

@@ -16,6 +16,11 @@ export interface GongpilCoreProcessManagerOptions {
   coreEnvironment?: NodeJS.ProcessEnv;
 }
 
+export interface GongpilCoreProcessExit {
+  exitCode: number | null;
+  signal: NodeJS.Signals | null;
+}
+
 export class GongpilCoreProcessError extends Error {
   public constructor(code: string, message: string, cause?: unknown) {
     super(message, { cause });
@@ -79,11 +84,16 @@ export class GongpilManagedCoreProcess {
     };
   }
 
-  public WaitForExit(): Promise<void> {
+  public WaitForExit(): Promise<GongpilCoreProcessExit> {
     if (!this.IsRunning()) {
-      return Promise.resolve();
+      return Promise.resolve({
+        exitCode: this.childProcess.exitCode,
+        signal: this.childProcess.signalCode,
+      });
     }
-    return new Promise((resolve) => this.childProcess.once("exit", () => resolve()));
+    return new Promise((resolve) => this.childProcess.once("exit", (exitCode, signal) => {
+      resolve({ exitCode, signal });
+    }));
   }
 
   private WaitForExitWithin(timeoutMs: number): Promise<boolean> {
@@ -172,6 +182,16 @@ export class GongpilCoreProcessManager {
         error,
       );
     }
+  }
+
+  public SetCoreEnvironment(coreEnvironment: NodeJS.ProcessEnv): void {
+    if (this.GetRunningProcessIds().length > 0) {
+      throw new GongpilCoreProcessError(
+        "CORE_ENVIRONMENT_ACTIVE",
+        "실행 중인 Core가 있어 환경을 바꿀 수 없습니다.",
+      );
+    }
+    this.coreEnvironment = { ...coreEnvironment };
   }
 
   public GetRunningProcessIds(): number[] {
@@ -269,6 +289,6 @@ export class GongpilCoreProcessManager {
   private readonly coreEntryPath: string;
   private readonly startTimeoutMs: number;
   private readonly stopTimeoutMs: number;
-  private readonly coreEnvironment: NodeJS.ProcessEnv;
+  private coreEnvironment: NodeJS.ProcessEnv;
   private readonly processes = new Set<GongpilManagedCoreProcess>();
 }

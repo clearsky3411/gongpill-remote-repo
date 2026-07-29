@@ -10,6 +10,7 @@ export interface GongpilClientConnectorInput {
   mode: GongpilClientBootstrapConfig["mode"];
   settings: GongpilClientSettings;
   isFirstRun: boolean;
+  lifecycleReason: "startup" | "instance-stopped" | "instance-crashed";
   appRoot: string;
   settingsPath: string;
 }
