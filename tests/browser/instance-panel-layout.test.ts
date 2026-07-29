@@ -204,7 +204,7 @@ test("공동 집필 Part Section은 순서·접힘·높이 경계를 독립적�
   );
 });
 
-test("Instance 화면은 네 패널 배치 조작과 Core 저장 명령을 제공한다", async () => {
+test("Instance 화면은 네 Part Window와 공동 집필 Part Section 조작을 제공한다", async () => {
   const [html, styles, script] = await Promise.all([
     readFile(join(APP_ROOT, "browser", "src", "index.html"), "utf8"),
     readFile(join(APP_ROOT, "browser", "src", "styles.css"), "utf8"),
@@ -217,12 +217,24 @@ test("Instance 화면은 네 패널 배치 조작과 Core 저장 명령을 제�
   assert.equal((html.match(/data-panel-action="toggle"/g) ?? []).length, 4);
   assert.equal((html.match(/data-panel-action="move-left"/g) ?? []).length, 4);
   assert.equal((html.match(/data-panel-action="move-right"/g) ?? []).length, 4);
-  assert.match(styles, /\.panel\.is-collapsed/);
+  for (const partSectionId of ["context", "chat", "request"]) {
+    assert.match(html, new RegExp(`data-part-section-id="${partSectionId}"`));
+  }
+  assert.equal((html.match(/data-part-section-action="toggle"/g) ?? []).length, 3);
+  assert.equal((html.match(/data-part-section-action="move-up"/g) ?? []).length, 3);
+  assert.equal((html.match(/data-part-section-action="move-down"/g) ?? []).length, 3);
+  assert.match(styles, /\.panel\.is-minimized/);
   assert.match(styles, /\.panel-resizer/);
+  assert.match(styles, /\.part-section-resizer/);
+  assert.match(styles, /\.co-writer-part-sections/);
   assert.match(script, /instance\.layout\.read/);
   assert.match(script, /instance\.layout\.update/);
+  assert.match(script, /MoveInstancePartWindowToIndex/);
+  assert.match(script, /MoveCoWriterPartSectionToIndex/);
+  assert.match(script, /ResizeAdjacentCoWriterPartSections/);
   assert.match(script, /role", "separator"/);
   assert.match(script, /ArrowLeft/);
+  assert.match(script, /ArrowUp/);
   assert.match(script, /pointerdown/);
   assert.doesNotMatch(script, /localStorage|sessionStorage/);
 });

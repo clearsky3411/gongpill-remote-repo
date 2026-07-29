@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "instance-part-window-contract",
+    "activeWorkUnit": "instance-part-window-ux",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/instance-part-window-contract",
+    "branch": "codex/instance-part-window-ux",
     "activeComponentIds": [
       "gongpil.core",
       "gongpil.browser",
@@ -21,8 +21,8 @@
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Part Window와 공동 집필 Part Section의 순서, 크기, 표시 상태를 저장하는 v2 계약과 v1 마이그레이션을 확정한다.",
-    "nextRecommendedWorkUnit": "instance-part-window-ux"
+    "summary": "작은 제목 바, 화면 내부 스냅 재배치, 유연한 크기 배분과 공동 집필 Part Section 조작 UI를 구현한다.",
+    "nextRecommendedWorkUnit": "client-package-0.1.1"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -658,11 +658,11 @@
     },
     {
       "id": "ui.workspace.layout",
-      "name": "Instance 작업 영역 접기, 펼치기, 좌우 이동, 너비 조절과 전역 복원",
+      "name": "Instance Part Window 제목 바·스냅·최소화·크기 조절과 공동 집필 Part Section 배치",
       "status": "CURRENT",
       "ownerComponentId": "gongpil.browser",
       "path": "browser/src/index.html",
-      "entrypoints": ["browser/src/instance-layout.js", "RenderInstanceLayout", "LoadInstanceLayout", "ScheduleInstanceLayoutSave"],
+      "entrypoints": ["browser/src/instance-layout.js", "RenderInstanceLayout", "RenderCoWriterPartSections", "BeginPartWindowDrag", "BeginPartSectionDrag", "LoadInstanceLayout", "ScheduleInstanceLayoutSave"],
       "tests": ["tests/browser/instance-panel-layout.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["instance.layout.read", "instance.layout.update"], "events": [] }
     },
