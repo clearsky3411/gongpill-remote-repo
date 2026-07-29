@@ -52,6 +52,7 @@ import {
   GongpilPersonaStoreError,
 } from "./persona-store.ts";
 import { BuildWritingContext } from "./context-builder.ts";
+import { GongpilBrowserPresenceMonitor } from "./browser-presence-monitor.ts";
 
 const LOOPBACK_SESSION_TOKEN_ENV = "GONGPIL_LOOPBACK_SESSION_TOKEN";
 const CORE_API_VERSION = "1.0.0";
@@ -109,6 +110,36 @@ async function RunCoreProcess(): Promise<void> {
       "network-runtime.js",
     ),
   });
+  let shutdownInstance: (() => Promise<void>) | undefined;
+  let shutdownRequested = false;
+  const requestInstanceShutdown = (): { accepted: true } => {
+    if (shutdownRequested) {
+      return { accepted: true };
+    }
+    shutdownRequested = true;
+    const shutdownTimer = setTimeout(() => {
+      if (shutdownInstance === undefined) {
+        process.kill(process.pid, "SIGTERM");
+        return;
+      }
+      void shutdownInstance();
+    }, 100);
+    shutdownTimer.unref();
+    return { accepted: true };
+  };
+  const browserPresence = new GongpilBrowserPresenceMonitor({
+    leaseTimeoutMs: ReadDurationEnvironment("GONGPIL_BROWSER_PRESENCE_TIMEOUT_MS", 30_000),
+    startupGraceMs: ReadDurationEnvironment("GONGPIL_BROWSER_STARTUP_GRACE_MS", 60_000),
+    resumeDelayToleranceMs: ReadDurationEnvironment("GONGPIL_BROWSER_RESUME_TOLERANCE_MS", 5_000, true),
+    onExpired: () => {
+      void diagnosticLogs.Append({
+        level: "info",
+        source: "core",
+        code: "BROWSER_PRESENCE_EXPIRED",
+        message: "Browser 생존 응답이 끊겨 Instance Runtime을 종료합니다.",
+      }).catch(() => undefined).then(() => requestInstanceShutdown());
+    },
+  });
   host.RegisterCommand("system.health.read", () => ({
     status: "ready",
     coreVersion: config.selectedCoreVersion,
@@ -119,9 +150,13 @@ async function RunCoreProcess(): Promise<void> {
     launchId: config.launchId,
     sessionId: config.sessionId,
   }));
-  host.RegisterCommand("browser.session.create", () => ({
-    launchPath: host.CreateBrowserLaunchPath(),
-  }));
+  host.RegisterCommand("browser.session.create", () => {
+    browserPresence.Start();
+    return { launchPath: host.CreateBrowserLaunchPath() };
+  });
+  host.RegisterCommand("browser.presence.ack", (payload) => (
+    browserPresence.Acknowledge(RequireString(payload, "heartbeatId"))
+  ));
   host.RegisterCommand("ai.provider.status", async () => ({
     status: await ReadProviderStatus(providerKind, codexClient, openAiConfig),
   }));
@@ -587,18 +622,6 @@ async function RunCoreProcess(): Promise<void> {
       throw NormalizeDomainError(error);
     }
   });
-  let shutdownInstance: (() => Promise<void>) | undefined;
-  const requestInstanceShutdown = (): { accepted: true } => {
-    const shutdownTimer = setTimeout(() => {
-      if (shutdownInstance === undefined) {
-        process.kill(process.pid, "SIGTERM");
-        return;
-      }
-      void shutdownInstance();
-    }, 100);
-    shutdownTimer.unref();
-    return { accepted: true };
-  };
   host.RegisterCommand("instance.shutdown.request", requestInstanceShutdown);
   host.RegisterCommand("system.shutdown.request", requestInstanceShutdown);
 
@@ -615,6 +638,7 @@ async function RunCoreProcess(): Promise<void> {
       "system.health.read",
       "system.readiness.verify",
       "browser.session.create",
+      "browser.presence.ack",
       "ai.provider.status",
       "ai.provider.login.start",
       "ai.usage.read",
@@ -643,6 +667,7 @@ async function RunCoreProcess(): Promise<void> {
 
   await WriteReadyInfo(readyInfo);
   shutdownInstance = InstallShutdownHandlers(host, async () => {
+    browserPresence.Stop();
     await codexClient?.Stop();
   });
 }
@@ -673,6 +698,19 @@ function ReadSessionToken(): string {
     throw new Error("LOOPBACK_SESSION_TOKEN_MISSING");
   }
   return sessionToken;
+}
+
+function ReadDurationEnvironment(name: string, fallback: number, allowZero = false): number {
+  const rawValue = process.env[name];
+  if (rawValue === undefined) {
+    return fallback;
+  }
+  const value = Number(rawValue);
+  const minimum = allowZero ? 0 : 1;
+  if (!Number.isInteger(value) || value < minimum || value > 300_000) {
+    throw new Error(`${name} 값이 올바르지 않습니다.`);
+  }
+  return value;
 }
 
 function RequireString(

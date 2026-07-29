@@ -1148,7 +1148,7 @@ Instance Runtime 종료 요청
 → Client Runtime 종료 시 Launcher 종료
 ```
 
-현재 구현은 한 번에 하나의 Instance Runtime을 실행하며, 정상·비정상 종료 뒤 상주 Client Runtime이 접속기로 돌아가 새 Instance Runtime을 시작할 수 있다. 여러 Instance Runtime 동시 실행, 자동 재시작, updater 연동은 후속 목표다.
+현재 구현은 한 번에 하나의 Instance Runtime을 실행하며, 정상·비정상 종료 뒤 상주 Client Runtime이 접속기로 돌아가 새 Instance Runtime을 시작할 수 있다. Browser는 SSE heartbeat에 ACK하고, 응답이 3회 연속 끊기면 Instance Runtime만 정상 종료한다. 여러 Instance Runtime 동시 실행, 자동 재시작, updater 연동은 후속 목표다.
 
 ## 15.3 체크리스트
 
@@ -1164,6 +1164,7 @@ Instance Runtime 종료 요청
 - [ ] 여러 창/여러 프로젝트 정책
 - [x] 단일 Instance Runtime 종료와 Client Runtime 종료 분리
 - [x] Instance Runtime 정상·비정상 종료 뒤 수동 재시작
+- [x] Browser heartbeat ACK 만료 시 Instance Runtime 자동 종료와 Client Runtime 생존
 - [ ] Windows 재부팅·로그오프 처리
 
 ---

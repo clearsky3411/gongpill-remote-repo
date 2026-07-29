@@ -74,6 +74,8 @@ protocolVersion
 
 Browser는 연결 프로필을 메시지로 받지 않는다. Client는 Core가 제공하는 same-origin Browser UI를 열며, Browser 내부 Network Runtime이 현재 origin을 사용한다. 일반 기능 코드는 origin을 읽지 않는다.
 
+Core host는 단일 SSE stream으로 10초마다 내부 `gongpil-heartbeat` ping을 보내고 Browser Network Runtime은 `browser.presence.ack`로 응답한다. 이 내부 ping은 공개 기능 이벤트로 전달하지 않는다. Browser 세션을 만든 뒤 시작 유예 동안 첫 ACK가 없거나 마지막 ACK 이후 3회 분량의 heartbeat가 누락되면 Core가 Instance Runtime을 정상 종료한다. PC 절전처럼 송신자와 수신자의 이벤트 루프가 함께 오래 멈춘 경우에는 재개 직후 바로 만료시키지 않고 새 heartbeat 기회를 준다. Client Runtime은 이 정책의 종료 대상이 아니다.
+
 클라우드는 동일한 route를 HTTPS로 노출한다. Gateway가 TLS와 외부 인증을 종료하더라도 Core 명령·결과·이벤트 계약은 바뀌지 않는다.
 
 ## 상태 관측
@@ -109,4 +111,4 @@ ready/degraded → reconnecting → ready
 6. 후보 Core 접속 교체 실패 시 기존 연결 유지 여부를 장애 주입으로 확인한다.
 7. 로컬 reverse proxy로 cloud profile과 같은 계약을 확인한다.
 
-현재는 1~4단계와 6단계인 계약, 상태 reducer, 단일 facade, 실제 loopback HTTP JSON, 세션당 단일 SSE 재접속과 후보 실패 롤백까지 구현했다. `npm run demo:network:loopback`에서 OS가 할당한 포트와 상태 전이를 직접 확인하고, `npm run test:network`에서 단위·통합 검증을 함께 실행한다. Browser 표시와 cloud adapter는 이 수직 슬라이스의 범위 밖이다.
+현재는 1~4단계와 6단계인 계약, 상태 reducer, 단일 facade, 실제 loopback HTTP JSON, 세션당 단일 SSE 재접속, Browser heartbeat ACK와 후보 실패 롤백까지 구현했다. `npm run demo:network:loopback`에서 OS가 할당한 포트와 상태 전이를 직접 확인하고, `npm run test:network`에서 단위·통합 검증을 함께 실행한다. cloud adapter는 이 수직 슬라이스의 범위 밖이다.

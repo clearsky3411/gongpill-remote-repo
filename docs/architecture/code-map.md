@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `persistent-client-lifecycle` |
+| 작업 단위 | `browser-presence-lifecycle` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/persistent-client-lifecycle` |
+| 브랜치 | `codex/browser-presence-lifecycle` |
 | 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.runtime.lifecycle`, `bootstrap.core.lifecycle`, `client.connector.settings`, `ui.shell`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Client Runtime을 상주시켜 Instance Runtime 종료 뒤 다시 시작할 수 있게 하고 Client와 Instance 수명 경계를 분리 |
-| 다음 작업 | `instance-workspace-layout` |
+| 활성 기능 | `client.runtime.lifecycle`, `browser.presence.lifecycle`, `bootstrap.core.lifecycle`, `ui.shell`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Browser heartbeat 응답이 끊기면 Instance Runtime만 정상 종료하고 Client Runtime은 다시 시작 가능한 idle 상태로 유지 |
+| 다음 작업 | `client-home-dashboard` |
 
 ## 상태 라벨
 
@@ -65,6 +65,7 @@ flowchart TD
 | 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
 | Windows 클라이언트 접속기와 설정 | Client | `client/src/client-connector.ts` | `CURRENT` |
 | 상주 Client Runtime과 Instance Runtime 재시작 | Client | `client/src/client-runtime.ts` | `CURRENT` |
+| Browser 생존 임대와 자동 Instance 종료 | Core | `core/src/browser-presence-monitor.ts` | `CURRENT` |
 | Core 프로세스 수명 관리 | Client | `client/src/core-process-manager.ts` | `CURRENT` |
 | Core 버전 선택·활성화·롤백 | Client | `client/src/client-bootstrap.ts` | `CURRENT` |
 | Client-Core 부트스트랩 계약 | Contracts | `packages/contracts/bootstrap/bootstrap-contracts.schema.json` | `CURRENT` |

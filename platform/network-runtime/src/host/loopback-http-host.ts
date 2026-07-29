@@ -380,9 +380,10 @@ export class GongpilLoopbackHttpHost {
     this.eventStreamResponse = response;
     this.sseConnectionOpenCount += 1;
     this.maxSseConnectionCount = Math.max(this.maxSseConnectionCount, 1);
+    this.WriteBrowserHeartbeat(response);
     this.heartbeatTimer = setInterval(() => {
       if (!response.destroyed) {
-        response.write(`: heartbeat ${Date.now()}\n\n`);
+        this.WriteBrowserHeartbeat(response);
       }
     }, 10_000);
     this.heartbeatTimer.unref();
@@ -426,6 +427,13 @@ export class GongpilLoopbackHttpHost {
 
   private FormatEvent(event: GongpilNetworkEvent): string {
     return `id: ${event.eventId}\nevent: gongpil\ndata: ${JSON.stringify(event)}\n\n`;
+  }
+
+  private WriteBrowserHeartbeat(response: ServerResponse): void {
+    response.write(`event: gongpil-heartbeat\ndata: ${JSON.stringify({
+      heartbeatId: randomUUID(),
+      sentAt: new Date().toISOString(),
+    })}\n\n`);
   }
 
   private IsAuthorized(request: IncomingMessage): boolean {

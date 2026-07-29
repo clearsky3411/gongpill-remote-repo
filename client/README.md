@@ -13,6 +13,7 @@ Client는 인스턴스(브라우저 작업 화면)가 열리기 전에 데이터
 - 포함 런타임 위치 결정
 - Core 프로세스 시작, health check, 종료와 잔류 프로세스 검사
 - Client Runtime 상주와 단일 Instance Runtime 정상·비정상 종료 뒤 재시작
+- Browser heartbeat ACK 만료 시 Instance Runtime만 정상 종료하고 Client Runtime은 유지
 - 후보 Core의 protocol·버전·health 검사 후 활성화 또는 이전 버전 유지
 - Core 표준 출력에서 후보 NetworkConnectionProfile 수신
 - 단일 NetworkRuntime으로 후보 접속 검증, 활성 교체와 기존 접속 유지
@@ -41,4 +42,4 @@ Client는 인스턴스(브라우저 작업 화면)가 열리기 전에 데이터
 - `src/client-process.ts`: `npm start` 사용자 진입점, 접속기 반복 표시, 새 세션 생성, 기본 Browser 실행과 Client 최종 종료
 - `demo/client-core-loopback-bootstrap-demo.ts`: 실제 자식 프로세스, HTTP/SSE 접속, 롤백과 잔류 프로세스 0개 확인
 
-개발용 `npm start`는 시스템 Node를 사용한다. 포터블 ZIP은 공식 checksum을 검증한 Node 24.18.0 LTS를 포함하며 `process.execPath`로 같은 runtime의 Core를 시작한다. 일반 실행에서는 `인스턴스 종료` 뒤 Client Runtime과 접속기가 남아 같은 데이터 설정으로 새 Instance Runtime을 만들 수 있다. 현재 MVP 클라이언트 UI는 Windows PowerShell WinForms이며, 단일 네이티브 `GongpilClient.exe`, 내장 WebView, 여러 Instance Runtime 동시 관리는 후속 작업이다.
+개발용 `npm start`는 시스템 Node를 사용한다. 포터블 ZIP은 공식 checksum을 검증한 Node 24.18.0 LTS를 포함하며 `process.execPath`로 같은 runtime의 Core를 시작한다. 일반 실행에서는 `인스턴스 종료` 뒤 Client Runtime과 접속기가 남아 같은 데이터 설정으로 새 Instance Runtime을 만들 수 있다. Browser 창을 닫아 heartbeat ACK가 3회 연속 누락돼도 Instance Runtime만 정상 종료하고 접속기로 돌아온다. 현재 MVP 클라이언트 UI는 Windows PowerShell WinForms이며, 단일 네이티브 `GongpilClient.exe`, 내장 WebView, 여러 Instance Runtime 동시 관리는 후속 작업이다.

@@ -75,6 +75,9 @@ export class GongpilBrowserNetworkRuntime {
     this.eventSource = eventSource;
     eventSource.addEventListener("open", () => this.NotifyStatus("ready"));
     eventSource.addEventListener("error", () => this.NotifyStatus("reconnecting"));
+    eventSource.addEventListener("gongpil-heartbeat", (message) => {
+      void this.AcknowledgeHeartbeat(message.data);
+    });
     eventSource.addEventListener("gongpil", (message) => {
       try {
         const event = JSON.parse(message.data);
@@ -86,6 +89,33 @@ export class GongpilBrowserNetworkRuntime {
         this.NotifyStatus("degraded");
       }
     });
+  }
+
+  async AcknowledgeHeartbeat(data) {
+    try {
+      const heartbeat = JSON.parse(data);
+      if (typeof heartbeat?.heartbeatId !== "string") {
+        return;
+      }
+      const requestId = crypto.randomUUID();
+      await fetch("/api/v1/commands/browser.presence.ack", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: JSON.stringify({
+          protocolVersion: GONGPIL_NETWORK_PROTOCOL_VERSION,
+          requestId,
+          commandName: "browser.presence.ack",
+          payload: { heartbeatId: heartbeat.heartbeatId },
+        }),
+      });
+    }
+    catch {
+      // EventSource 재접속과 다음 heartbeat가 생존 임대를 다시 갱신한다.
+    }
   }
 
   NotifyStatus(state) {

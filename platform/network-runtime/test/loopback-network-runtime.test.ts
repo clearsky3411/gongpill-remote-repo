@@ -8,6 +8,7 @@ import type {
   GongpilNetworkStatus,
 } from "../src/contracts.ts";
 import { GongpilLoopbackHttpHost } from "../src/host/loopback-http-host.ts";
+import { GongpilBrowserNetworkRuntime } from "../browser/network-runtime.js";
 import {
   GongpilNetworkRuntime,
   GongpilNetworkRuntimeError,
@@ -16,6 +17,27 @@ import { GongpilLoopbackHttpTransport } from "../src/transports/loopback-http-tr
 
 const PRIMARY_SESSION_TOKEN = "test-primary-session-token-0001";
 const CANDIDATE_SESSION_TOKEN = "test-candidate-session-token-0002";
+
+test("Browser NetworkRuntime이 heartbeat를 사용자 상태 변경 없이 ACK한다", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody: Record<string, unknown> | undefined;
+  globalThis.fetch = async (_input, init) => {
+    requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    const runtime = new GongpilBrowserNetworkRuntime();
+    await runtime.AcknowledgeHeartbeat(JSON.stringify({ heartbeatId: "heartbeat-1" }));
+
+    assert.equal(requestBody?.commandName, "browser.presence.ack");
+    assert.deepEqual(requestBody?.payload, { heartbeatId: "heartbeat-1" });
+    assert.equal(runtime.status, "starting");
+  }
+  finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 async function WaitForCondition(
   predicate: () => boolean,

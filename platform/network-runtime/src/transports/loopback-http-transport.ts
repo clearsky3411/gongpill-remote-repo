@@ -292,15 +292,19 @@ export class GongpilLoopbackHttpTransport implements GongpilNetworkTransport {
     }
 
     const dataLines: string[] = [];
+    let eventType = "message";
     for (const line of frame.split("\n")) {
       if (line.startsWith("id:")) {
         this.lastEventId = line.slice(3).trimStart();
+      }
+      else if (line.startsWith("event:")) {
+        eventType = line.slice(6).trimStart();
       }
       else if (line.startsWith("data:")) {
         dataLines.push(line.slice(5).trimStart());
       }
     }
-    if (dataLines.length === 0) {
+    if (eventType !== "gongpil" || dataLines.length === 0) {
       return;
     }
 
