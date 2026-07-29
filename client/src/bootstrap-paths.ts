@@ -13,6 +13,18 @@ export interface GongpilBootstrapPathOptions {
   bundledRuntimePath?: string;
 }
 
+export interface GongpilClientStoragePathOptions {
+  mode: GongpilClientBootstrapConfig["mode"];
+  appRoot: string;
+  settingsRoot?: string;
+}
+
+export interface GongpilClientStoragePaths {
+  clientConfigRoot: string;
+  settingsPath: string;
+  userFontRoot: string;
+}
+
 export function ResolveBootstrapPaths(
   options: GongpilBootstrapPathOptions,
 ): GongpilBootstrapPaths {
@@ -37,6 +49,22 @@ export function ResolveBootstrapPaths(
     versionRoot: WindowsPath.join(appRoot, "versions"),
     sessionTemp: WindowsPath.join(dataRoot, "sessions", options.sessionId),
     bundledRuntimePath,
+  };
+}
+
+export function ResolveClientStoragePaths(
+  options: GongpilClientStoragePathOptions,
+): GongpilClientStoragePaths {
+  const appRoot = RequireAbsolutePath(options.appRoot, "appRoot");
+  const clientConfigRoot = options.settingsRoot === undefined
+    ? options.mode === "portable"
+      ? WindowsPath.join(appRoot, "GongpilClient")
+      : WindowsPath.join(WindowsPath.dirname(appRoot), "GongpilConfig")
+    : RequireAbsolutePath(options.settingsRoot, "settingsRoot");
+  return {
+    clientConfigRoot,
+    settingsPath: WindowsPath.join(clientConfigRoot, "client-settings.json"),
+    userFontRoot: WindowsPath.join(clientConfigRoot, "fonts"),
   };
 }
 

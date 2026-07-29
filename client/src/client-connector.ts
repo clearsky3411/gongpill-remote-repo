@@ -73,7 +73,7 @@ export async function ShowClientConnector(
       return {
         action: "start",
         settings: {
-          schemaVersion: 1,
+          schemaVersion: 2,
           dataRoot: output.dataRoot,
           showConnectorOnStartup: output.showConnectorOnStartup,
           aiProvider: output.aiProvider,
@@ -81,6 +81,7 @@ export async function ShowClientConnector(
           codexModel: output.codexModel,
           openAiEnvFile: output.openAiEnvFile === "" ? undefined : output.openAiEnvFile,
           openAiModel: output.openAiModel,
+          appearance: input.settings.appearance,
         },
       };
     }

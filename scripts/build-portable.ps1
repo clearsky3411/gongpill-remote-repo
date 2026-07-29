@@ -131,6 +131,7 @@ New-Item -ItemType Directory -Path $packageRoot | Out-Null
 
 Copy-ProjectTree -RelativePath 'browser\src'
 Copy-ProjectTree -RelativePath 'client\src'
+Copy-ProjectTree -RelativePath 'client\resources'
 Copy-ProjectTree -RelativePath 'client\windows'
 Copy-ProjectTree -RelativePath 'core\src'
 Copy-ProjectTree -RelativePath 'packages\contracts'
@@ -159,10 +160,13 @@ $manifest = [ordered]@{
     nodeVersion = $nodeVersion
     nodeArchive = $nodeArchiveName
     nodeArchiveSha256 = $nodeArchiveSha256
+    bundledFontManifest = 'client/resources/fonts/font-manifest.json'
     entrypoint = 'Gongpil.vbs'
     diagnosticEntrypoint = 'Gongpil.cmd'
 }
-$manifest | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $packageRoot 'build-manifest.json') -Encoding utf8
+$manifestJson = $manifest | ConvertTo-Json
+$utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText((Join-Path $packageRoot 'build-manifest.json'), $manifestJson, $utf8WithoutBom)
 
 $zipPath = Join-Path $OutputRoot "$packageName.zip"
 $zipChecksumPath = "$zipPath.sha256"
