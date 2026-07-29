@@ -42,6 +42,8 @@ test("Windows 접속기 UI가 홈·설정·정보와 Runtime 상태를 구분한
   assert.match(script, /System\.Drawing\.Text\.PrivateFontCollection/);
   assert.match(script, /SetProcessDpiAwarenessContext/);
   assert.match(script, /AutoScaleMode.*Dpi/);
+  assert.match(script, /System\.Drawing\.Point/);
+  assert.doesNotMatch(script, /\.CenterToScreen\(/);
   assert.doesNotMatch(script, /Malgun Gothic/);
 });
 
@@ -405,6 +407,20 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
       openAiModel: "gpt-5.6-terra",
       appearance,
     });
+    const shownProbeOutputPath = join(testRoot, "shown-probe-output.json");
+    const shownProbe = spawnSync(
+      join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+      [
+        "-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-STA",
+        "-File", join(process.cwd(), "client", "windows", "GongpilConnector.ps1"),
+        "-InputPath", inputPath,
+        "-OutputPath", shownProbeOutputPath,
+        "-AutomationAction", "ProbeShown",
+      ],
+      { encoding: "utf8", windowsHide: true, timeout: 15_000 },
+    );
+    assert.equal(shownProbe.status, 0, `${shownProbe.stdout}\n${shownProbe.stderr}`);
+    assert.equal(JSON.parse(await readFile(shownProbeOutputPath, "utf8")).action, "cancel");
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });

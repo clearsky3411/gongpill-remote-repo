@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$InputPath,
     [Parameter(Mandatory = $true)][string]$OutputPath,
-    [ValidateSet('Start', 'Cancel')][string]$AutomationAction
+    [ValidateSet('Start', 'Cancel', 'ProbeShown')][string]$AutomationAction
 )
 
 Set-StrictMode -Version Latest
@@ -817,11 +817,20 @@ $form.Add_Shown({
             [Math]::Min($form.ClientSize.Height, $maximumClientHeight)
         )
     }
-    $form.CenterToScreen()
+    $centerX = $workingArea.Left + [Math]::Max(0, [Math]::Floor(($workingArea.Width - $form.Width) / 2))
+    $centerY = $workingArea.Top + [Math]::Max(0, [Math]::Floor(($workingArea.Height - $form.Height) / 2))
+    $form.Location = New-Object System.Drawing.Point($centerX, $centerY)
 })
 
 if ([string]::IsNullOrWhiteSpace($AutomationAction)) {
     $null = $form.ShowDialog()
+}
+elseif ($AutomationAction -eq 'ProbeShown') {
+    $form.Opacity = 0
+    $form.ShowInTaskbar = $false
+    $form.Show()
+    [System.Windows.Forms.Application]::DoEvents()
+    $form.Close()
 }
 else {
     $resultAction = $AutomationAction.ToLowerInvariant()

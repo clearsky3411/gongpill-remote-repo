@@ -2,29 +2,26 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "instance-panel-layout-ui",
+    "activeWorkUnit": "client-center-screen-hotfix",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/instance-panel-layout-ui",
+    "branch": "codex/client-center-screen-hotfix",
     "activeComponentIds": [
       "gongpil.client",
-      "gongpil.core",
-      "gongpil.browser",
       "gongpil.tests",
       "gongpil.repository",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "client.release-notes",
-      "instance.layout.persistence",
-      "ui.workspace.layout",
+      "client.appearance.ui",
+      "client.home.dashboard",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "프로젝트·문서·편집기·공동 집필 영역을 접고 펼치며 순서와 너비를 조절하고 재시작 뒤 복원한다.",
-    "nextRecommendedWorkUnit": "instance-floating-panel-layout"
+    "summary": "Client 접속기 실제 표시 경로에서 protected CenterToScreen 호출로 발생하는 예외를 제거하고 회귀 테스트를 추가한다.",
+    "nextRecommendedWorkUnit": "instance-part-window-contract"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",

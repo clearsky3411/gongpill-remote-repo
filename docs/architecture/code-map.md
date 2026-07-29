@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `instance-panel-layout-ui` |
+| 작업 단위 | `client-center-screen-hotfix` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/instance-panel-layout-ui` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.release-notes`, `instance.layout.persistence`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | 프로젝트·문서·편집기·공동 집필 영역을 접고 펼치며 순서와 너비를 조절하고 재시작 뒤 복원 |
-| 다음 작업 | `instance-floating-panel-layout` |
+| 브랜치 | `codex/client-center-screen-hotfix` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `client.appearance.ui`, `client.home.dashboard`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Client 접속기 실제 표시 경로의 화면 중앙 정렬 예외 제거와 회귀 테스트 추가 |
+| 다음 작업 | `instance-part-window-contract` |
 
 ## 상태 라벨
 
