@@ -36,6 +36,7 @@ test("포터블 패키지가 포함 Node만으로 실행되고 앱 옆에 데이
     access(join(packageRoot, "Gongpil.cmd")),
     access(join(packageRoot, "Gongpil.vbs")),
     access(join(packageRoot, "client", "windows", "GongpilConnector.ps1")),
+    access(join(packageRoot, "client", "src", "client-release-notes.json")),
     access(join(packageRoot, "runtime", "NODE_LICENSE.txt")),
   ]);
 

@@ -2,30 +2,30 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "browser-presence-lifecycle",
+    "activeWorkUnit": "client-home-dashboard",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/browser-presence-lifecycle",
+    "branch": "codex/client-home-dashboard",
     "activeComponentIds": [
       "gongpil.client",
-      "gongpil.core",
-      "gongpil.browser",
+      "gongpil.installer",
       "gongpil.tests",
       "gongpil.repository",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "client.runtime.lifecycle",
-      "browser.presence.lifecycle",
-      "bootstrap.core.lifecycle",
-      "ui.shell",
+      "client.connector.settings",
+      "client.home.dashboard",
+      "client.release-notes",
+      "distribution.portable",
+      "install.windows",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Browser heartbeat 응답이 끊기면 Instance Runtime만 정상 종료하고 Client Runtime은 다시 시작 가능한 idle 상태로 유지한다.",
-    "nextRecommendedWorkUnit": "client-home-dashboard"
+    "summary": "상주 Client Runtime 접속기에 상태, 사용 가능 기능, 패치노트, 설정과 실행 정보를 구분해 표시한다.",
+    "nextRecommendedWorkUnit": "instance-workspace-layout"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -58,10 +58,10 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "인스턴스 실행 전 모드·경로·옵션·런타임·세션 기준 결정과 Core 수명 관리",
-      "owns": ["bootstrap-paths", "client-settings", "connector-ui", "client-runtime-lifecycle", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch"],
+      "owns": ["bootstrap-paths", "client-settings", "connector-ui", "client-home-dashboard", "client-release-notes", "client-runtime-lifecycle", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": ["client/src/client-process.ts", "client/src/client-runtime.ts", "client/src/client-settings-store.ts", "client/src/client-connector.ts", "client/windows/GongpilConnector.ps1", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
+      "publicInterfaces": ["client/src/client-process.ts", "client/src/client-runtime.ts", "client/src/client-settings-store.ts", "client/src/client-connector.ts", "client/src/client-release-notes.json", "client/windows/GongpilConnector.ps1", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
       "tests": ["tests/client/client-connector-settings.test.ts", "tests/client/persistent-client-lifecycle.test.ts", "tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["client/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
@@ -296,6 +296,26 @@
       "ownerComponentId": "gongpil.client",
       "path": "client/src/client-connector.ts",
       "entrypoints": ["client/src/client-process.ts", "ShowClientConnector", "LoadClientSettings", "SaveClientSettings", "client/windows/GongpilConnector.ps1"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.home.dashboard",
+      "name": "Client Runtime 홈과 상태·작업 선택",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/windows/GongpilConnector.ps1",
+      "entrypoints": ["ShowClientConnector", "GongpilConnector.ps1", "homeTab", "settingsTab", "infoTab"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.release-notes",
+      "name": "Client Package 구조화 릴리스 정보",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/src/client-release-notes.json",
+      "entrypoints": ["LoadClientReleaseNotes", "client-release-notes.json"],
       "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },

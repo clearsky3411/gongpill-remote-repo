@@ -7,7 +7,7 @@ Client는 인스턴스(브라우저 작업 화면)가 열리기 전에 데이터
 ## 책임
 
 - 설치형과 포터블 실행 모드 판정
-- 첫 실행·설정 바로가기에서 데이터 폴더, OpenAI 환경파일·모델과 접속기 표시 옵션 제공
+- 첫 실행·설정 바로가기에서 Runtime 상태, 사용 가능 기능, 패치노트와 데이터 폴더·AI 옵션 제공
 - 설치 폴더 옆 `GongpilConfig` 설정 검증·원자 저장과 기존 LOCALAPPDATA 설정 이전, 포터블 `GongpilData` 고정
 - 프로그램·데이터·활성 버전·세션 임시 루트 결정
 - 포함 런타임 위치 결정
@@ -35,11 +35,12 @@ Client는 인스턴스(브라우저 작업 화면)가 열리기 전에 데이터
 - `src/bootstrap-paths.ts`: 설치형·포터블 app/data/version/session/runtime 경로 결정
 - `src/client-settings-store.ts`: 설치형·포터블 설정 로드, 경로·쓰기 가능성 검증과 원자 저장
 - `src/client-connector.ts`: Node 프로세스와 Windows 접속기 UI의 JSON 교환·수명 관리
-- `windows/GongpilConnector.ps1`: 폴더 선택, 시작 옵션, 실행 정보와 인스턴스 시작 WinForms UI
+- `src/client-release-notes.json`: Client Package 버전, 현재 가능 기능과 패치노트 정본
+- `windows/GongpilConnector.ps1`: 홈·설정·정보, 폴더 선택과 인스턴스 시작 WinForms UI
 - `src/core-process-manager.ts`: 지정된 runtime으로 Core 시작, stdout 한 줄 준비 계약 수신, 정상·강제 종료
 - `src/client-bootstrap.ts`: protocol·버전·health 검증, NetworkRuntime 후보 교체, 실패 시 기존 Core 유지
 - `src/client-runtime.ts`: 장기 실행 Client Runtime 상태와 Instance Runtime 시작·종료·재시작 경계
 - `src/client-process.ts`: `npm start` 사용자 진입점, 접속기 반복 표시, 새 세션 생성, 기본 Browser 실행과 Client 최종 종료
 - `demo/client-core-loopback-bootstrap-demo.ts`: 실제 자식 프로세스, HTTP/SSE 접속, 롤백과 잔류 프로세스 0개 확인
 
-개발용 `npm start`는 시스템 Node를 사용한다. 포터블 ZIP은 공식 checksum을 검증한 Node 24.18.0 LTS를 포함하며 `process.execPath`로 같은 runtime의 Core를 시작한다. 일반 실행에서는 `인스턴스 종료` 뒤 Client Runtime과 접속기가 남아 같은 데이터 설정으로 새 Instance Runtime을 만들 수 있다. Browser 창을 닫아 heartbeat ACK가 3회 연속 누락돼도 Instance Runtime만 정상 종료하고 접속기로 돌아온다. 현재 MVP 클라이언트 UI는 Windows PowerShell WinForms이며, 단일 네이티브 `GongpilClient.exe`, 내장 WebView, 여러 Instance Runtime 동시 관리는 후속 작업이다.
+개발용 `npm start`는 시스템 Node를 사용한다. 포터블 ZIP은 공식 checksum을 검증한 Node 24.18.0 LTS를 포함하며 `process.execPath`로 같은 runtime의 Core를 시작한다. 일반 실행에서는 `인스턴스 종료` 뒤 Client Runtime 홈이 다시 나타나 같은 데이터 설정으로 새 Instance Runtime을 만들 수 있다. Browser 창을 닫아 heartbeat ACK가 3회 연속 누락돼도 Instance Runtime만 정상 종료하고 홈으로 돌아온다. 현재 MVP 클라이언트 UI는 Windows PowerShell WinForms이며 Instance 실행 중에는 숨겨진다. 항상 표시되는 네이티브 창·트레이, 내장 WebView, 여러 Instance Runtime 동시 관리는 후속 작업이다.

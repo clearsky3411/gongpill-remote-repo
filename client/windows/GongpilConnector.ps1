@@ -15,15 +15,28 @@ Add-Type -AssemblyName System.Drawing
 $inputModel = Get-Content -LiteralPath $InputPath -Raw | ConvertFrom-Json
 $isPortable = $inputModel.mode -eq 'portable'
 $lifecycleReason = if ($null -eq $inputModel.PSObject.Properties['lifecycleReason']) { 'startup' } else { [string]$inputModel.lifecycleReason }
+$releaseNotes = if ($null -eq $inputModel.PSObject.Properties['releaseNotes']) {
+    [pscustomobject]@{
+        productVersion = '0.1.0'
+        releasedAt = ''
+        title = '공필 클라이언트'
+        summary = '인스턴스를 시작하고 설정할 수 있습니다.'
+        capabilities = @('프로젝트와 문서 작업')
+        changes = @('클라이언트 홈을 준비했습니다.')
+    }
+}
+else {
+    $inputModel.releaseNotes
+}
 $resultAction = 'cancel'
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = '공필 클라이언트(접속기)'
+$form.Text = "공필 클라이언트 $($releaseNotes.productVersion)"
 $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
 $form.MinimizeBox = $false
-$form.ClientSize = New-Object System.Drawing.Size(660, 770)
+$form.ClientSize = New-Object System.Drawing.Size(760, 720)
 $form.Font = New-Object System.Drawing.Font('Malgun Gothic', 9)
 
 $titleLabel = New-Object System.Windows.Forms.Label
@@ -50,6 +63,100 @@ $modeLabel.AutoSize = $true
 $modeLabel.ForeColor = [System.Drawing.Color]::DimGray
 $modeLabel.Location = New-Object System.Drawing.Point(27, 62)
 $form.Controls.Add($modeLabel)
+
+$tabControl = New-Object System.Windows.Forms.TabControl
+$tabControl.Location = New-Object System.Drawing.Point(20, 90)
+$tabControl.Size = New-Object System.Drawing.Size(720, 535)
+$form.Controls.Add($tabControl)
+
+$homeTab = New-Object System.Windows.Forms.TabPage
+$homeTab.Text = '홈'
+$homeTab.BackColor = [System.Drawing.Color]::White
+$tabControl.TabPages.Add($homeTab)
+
+$settingsTab = New-Object System.Windows.Forms.TabPage
+$settingsTab.Text = '설정'
+$settingsTab.BackColor = [System.Drawing.Color]::White
+$tabControl.TabPages.Add($settingsTab)
+
+$infoTab = New-Object System.Windows.Forms.TabPage
+$infoTab.Text = '정보'
+$infoTab.BackColor = [System.Drawing.Color]::White
+$tabControl.TabPages.Add($infoTab)
+
+$runtimeGroup = New-Object System.Windows.Forms.GroupBox
+$runtimeGroup.Text = '현재 상태'
+$runtimeGroup.Location = New-Object System.Drawing.Point(18, 18)
+$runtimeGroup.Size = New-Object System.Drawing.Size(674, 100)
+$homeTab.Controls.Add($runtimeGroup)
+
+$runtimeStatusLabel = New-Object System.Windows.Forms.Label
+$runtimeStatusLabel.Text = 'Client Runtime 실행 중'
+$runtimeStatusLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 12, [System.Drawing.FontStyle]::Bold)
+$runtimeStatusLabel.ForeColor = [System.Drawing.Color]::SeaGreen
+$runtimeStatusLabel.AutoSize = $true
+$runtimeStatusLabel.Location = New-Object System.Drawing.Point(16, 24)
+$runtimeGroup.Controls.Add($runtimeStatusLabel)
+
+$instanceStatusLabel = New-Object System.Windows.Forms.Label
+$instanceStatusLabel.Text = if ($lifecycleReason -eq 'instance-crashed') {
+    'Instance Runtime: 비정상 종료 · 다시 시작할 수 있습니다.'
+}
+elseif ($lifecycleReason -eq 'instance-stopped') {
+    'Instance Runtime: 종료됨 · 다시 시작할 수 있습니다.'
+}
+else {
+    'Instance Runtime: 시작 대기 중'
+}
+$instanceStatusLabel.AutoSize = $true
+$instanceStatusLabel.Location = New-Object System.Drawing.Point(18, 59)
+$runtimeGroup.Controls.Add($instanceStatusLabel)
+
+$versionLabel = New-Object System.Windows.Forms.Label
+$versionLabel.Text = "버전 $($releaseNotes.productVersion) · $($releaseNotes.releasedAt)"
+$versionLabel.AutoSize = $true
+$versionLabel.ForeColor = [System.Drawing.Color]::DimGray
+$versionLabel.Location = New-Object System.Drawing.Point(500, 28)
+$runtimeGroup.Controls.Add($versionLabel)
+
+$capabilityLabel = New-Object System.Windows.Forms.Label
+$capabilityLabel.Text = '지금 가능한 작업'
+$capabilityLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 10, [System.Drawing.FontStyle]::Bold)
+$capabilityLabel.AutoSize = $true
+$capabilityLabel.Location = New-Object System.Drawing.Point(18, 138)
+$homeTab.Controls.Add($capabilityLabel)
+
+$capabilityBox = New-Object System.Windows.Forms.RichTextBox
+$capabilityBox.ReadOnly = $true
+$capabilityBox.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$capabilityBox.BackColor = [System.Drawing.Color]::WhiteSmoke
+$capabilityBox.Location = New-Object System.Drawing.Point(18, 164)
+$capabilityBox.Size = New-Object System.Drawing.Size(674, 145)
+$capabilityBox.Text = (@($releaseNotes.capabilities | ForEach-Object { "• $_" }) -join "`r`n")
+$homeTab.Controls.Add($capabilityBox)
+
+$changesLabel = New-Object System.Windows.Forms.Label
+$changesLabel.Text = "패치노트 · $($releaseNotes.title)"
+$changesLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 10, [System.Drawing.FontStyle]::Bold)
+$changesLabel.AutoSize = $true
+$changesLabel.Location = New-Object System.Drawing.Point(18, 329)
+$homeTab.Controls.Add($changesLabel)
+
+$summaryLabel = New-Object System.Windows.Forms.Label
+$summaryLabel.Text = [string]$releaseNotes.summary
+$summaryLabel.AutoEllipsis = $true
+$summaryLabel.Location = New-Object System.Drawing.Point(18, 355)
+$summaryLabel.Size = New-Object System.Drawing.Size(674, 40)
+$homeTab.Controls.Add($summaryLabel)
+
+$changesBox = New-Object System.Windows.Forms.RichTextBox
+$changesBox.ReadOnly = $true
+$changesBox.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$changesBox.BackColor = [System.Drawing.Color]::WhiteSmoke
+$changesBox.Location = New-Object System.Drawing.Point(18, 400)
+$changesBox.Size = New-Object System.Drawing.Size(674, 88)
+$changesBox.Text = (@($releaseNotes.changes | ForEach-Object { "• $_" }) -join "`r`n")
+$homeTab.Controls.Add($changesBox)
 
 $dataLabel = New-Object System.Windows.Forms.Label
 $dataLabel.Text = '공필 데이터 폴더'
@@ -199,23 +306,36 @@ $startupCheckBox.AutoSize = $true
 $startupCheckBox.Location = New-Object System.Drawing.Point(30, 522)
 $form.Controls.Add($startupCheckBox)
 
+$settingsControls = @(
+    $dataLabel, $dataTextBox, $browseButton, $warningLabel,
+    $providerLabel, $providerComboBox,
+    $codexLabel, $codexTextBox, $codexBrowseButton,
+    $codexModelLabel, $codexModelComboBox,
+    $apiLabel, $apiTextBox, $apiBrowseButton,
+    $modelLabel, $modelComboBox, $startupCheckBox
+)
+foreach ($control in $settingsControls) {
+    $control.Top -= 80
+    $settingsTab.Controls.Add($control)
+}
+
 $detailsGroup = New-Object System.Windows.Forms.GroupBox
 $detailsGroup.Text = '실행 정보'
-$detailsGroup.Location = New-Object System.Drawing.Point(30, 560)
-$detailsGroup.Size = New-Object System.Drawing.Size(604, 105)
-$form.Controls.Add($detailsGroup)
+$detailsGroup.Location = New-Object System.Drawing.Point(18, 18)
+$detailsGroup.Size = New-Object System.Drawing.Size(674, 120)
+$infoTab.Controls.Add($detailsGroup)
 
 $detailsLabel = New-Object System.Windows.Forms.Label
 $detailsLabel.Text = "클라이언트 설치 위치`r`n$($inputModel.appRoot)`r`n설정 파일`r`n$($inputModel.settingsPath)"
 $detailsLabel.AutoEllipsis = $true
 $detailsLabel.Location = New-Object System.Drawing.Point(12, 24)
-$detailsLabel.Size = New-Object System.Drawing.Size(575, 72)
+$detailsLabel.Size = New-Object System.Drawing.Size(640, 88)
 $detailsLabel.ForeColor = [System.Drawing.Color]::DimGray
 $detailsGroup.Controls.Add($detailsLabel)
 
 $openFolderButton = New-Object System.Windows.Forms.Button
 $openFolderButton.Text = '데이터 폴더 열기'
-$openFolderButton.Location = New-Object System.Drawing.Point(30, 710)
+$openFolderButton.Location = New-Object System.Drawing.Point(20, 650)
 $openFolderButton.Size = New-Object System.Drawing.Size(140, 36)
 $openFolderButton.Add_Click({
     try {
@@ -230,7 +350,7 @@ $form.Controls.Add($openFolderButton)
 
 $cancelButton = New-Object System.Windows.Forms.Button
 $cancelButton.Text = if ($lifecycleReason -eq 'startup') { '취소' } else { '클라이언트 종료' }
-$cancelButton.Location = New-Object System.Drawing.Point(438, 710)
+$cancelButton.Location = New-Object System.Drawing.Point(538, 650)
 $cancelButton.Size = New-Object System.Drawing.Size(90, 36)
 $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 $form.CancelButton = $cancelButton
@@ -238,7 +358,7 @@ $form.Controls.Add($cancelButton)
 
 $startButton = New-Object System.Windows.Forms.Button
 $startButton.Text = '인스턴스 시작'
-$startButton.Location = New-Object System.Drawing.Point(538, 710)
+$startButton.Location = New-Object System.Drawing.Point(638, 650)
 $startButton.Size = New-Object System.Drawing.Size(96, 36)
 $startButton.Add_Click({
     try {
@@ -293,6 +413,10 @@ $startButton.Add_Click({
 })
 $form.AcceptButton = $startButton
 $form.Controls.Add($startButton)
+
+if ($inputModel.isFirstRun) {
+    $tabControl.SelectedTab = $settingsTab
+}
 
 if ([string]::IsNullOrWhiteSpace($AutomationAction)) {
     $null = $form.ShowDialog()

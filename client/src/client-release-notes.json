@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "productVersion": "0.1.0",
+  "releasedAt": "2026-07-29",
+  "title": "상주 클라이언트와 안전한 Browser 종료",
+  "summary": "프로젝트 작업을 끝내도 Client Runtime은 남아 있고, Browser가 닫히면 Instance Runtime만 정리됩니다.",
+  "capabilities": [
+    "프로젝트와 Markdown, text, JSON 문서 생성·편집·revision 저장",
+    "Codex 또는 OpenAI API를 이용한 공동 집필 채팅과 변경 승인",
+    "문서·대화 청크 검색, 선택과 통합 토큰 미리보기",
+    "페르소나 버전과 작업 프로필 관리",
+    "상주 Client Runtime에서 Instance Runtime 종료·재시작"
+  ],
+  "changes": [
+    "Browser heartbeat 응답이 끊기면 Instance Runtime만 자동 종료합니다.",
+    "Instance Runtime 정상·비정상 종료 뒤 Client Runtime에서 다시 시작할 수 있습니다.",
+    "설치형과 포터블 패키지의 기존 사용자 데이터와 설정을 유지합니다."
+  ]
+}
