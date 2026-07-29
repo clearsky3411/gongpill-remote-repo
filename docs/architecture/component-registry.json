@@ -2,12 +2,13 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "instance-panel-layout-contract",
+    "activeWorkUnit": "instance-panel-layout-ui",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/instance-panel-layout-contract",
+    "branch": "codex/instance-panel-layout-ui",
     "activeComponentIds": [
+      "gongpil.client",
       "gongpil.core",
       "gongpil.browser",
       "gongpil.tests",
@@ -16,13 +17,14 @@
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
+      "client.release-notes",
       "instance.layout.persistence",
       "ui.workspace.layout",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Instance 작업 영역 레이아웃을 dataRoot에 검증·원자 저장하고 Browser가 읽고 쓸 명령 계약을 만든다.",
-    "nextRecommendedWorkUnit": "instance-panel-layout-ui"
+    "summary": "프로젝트·문서·편집기·공동 집필 영역을 접고 펼치며 순서와 너비를 조절하고 재시작 뒤 복원한다.",
+    "nextRecommendedWorkUnit": "instance-floating-panel-layout"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -83,11 +85,11 @@
       "kind": "ui",
       "status": "CURRENT",
       "responsibility": "절대 저장 경로를 알지 않는 WebView와 브라우저 공통 사용자 인터페이스",
-      "owns": ["ui-state", "project-navigation", "document-editor", "connection-status", "approval-view", "persona-context-view", "source-snapshot-view", "chat-history-selector", "context-preview"],
+      "owns": ["ui-state", "workspace-panel-layout", "project-navigation", "document-editor", "connection-status", "approval-view", "persona-context-view", "source-snapshot-view", "chat-history-selector", "context-preview"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/styles.css", "browser/src/favicon.svg"],
-      "tests": ["tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-ui.test.ts"],
+      "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/instance-layout.js", "browser/src/styles.css", "browser/src/favicon.svg"],
+      "tests": ["tests/browser/instance-panel-layout.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-ui.test.ts"],
       "relatedDocs": ["browser/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -658,13 +660,13 @@
     },
     {
       "id": "ui.workspace.layout",
-      "name": "Instance 작업 영역 접기, 펼치기, 이동과 도킹",
-      "status": "TARGET",
+      "name": "Instance 작업 영역 접기, 펼치기, 좌우 이동, 너비 조절과 전역 복원",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.browser",
       "path": "browser/src/index.html",
-      "entrypoints": [],
-      "tests": [],
-      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+      "entrypoints": ["browser/src/instance-layout.js", "RenderInstanceLayout", "LoadInstanceLayout", "ScheduleInstanceLayoutSave"],
+      "tests": ["tests/browser/instance-panel-layout.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["instance.layout.read", "instance.layout.update"], "events": [] }
     },
     {
       "id": "plugin.runtime",

@@ -1,4 +1,11 @@
 import { GongpilBrowserNetworkRuntime } from "/network-runtime.js";
+import {
+  CloneInstanceLayout,
+  CreateDefaultInstanceLayout,
+  MoveInstancePanel,
+  ResizeAdjacentInstancePanels,
+  ToggleInstancePanel,
+} from "./instance-layout.js";
 
 const runtime = new GongpilBrowserNetworkRuntime();
 const state = {
@@ -25,10 +32,15 @@ const state = {
   contextPreviewSequence: 0,
   chatSending: false,
   streamingText: "",
+  instanceLayout: CreateDefaultInstanceLayout(),
+  savedInstanceLayout: CreateDefaultInstanceLayout(),
+  instanceLayoutRevision: 0,
 };
 
 const elements = {
   networkStatus: document.querySelector("#networkStatus"),
+  workspace: document.querySelector("#workspace"),
+  layoutResetButton: document.querySelector("#layoutResetButton"),
   usageButton: document.querySelector("#usageButton"),
   logsButton: document.querySelector("#logsButton"),
   shutdownButton: document.querySelector("#shutdownButton"),
@@ -97,6 +109,138 @@ function RequirePayload(result) {
     throw new Error(result.error?.userMessage ?? "요청을 처리하지 못했습니다.");
   }
   return result.payload ?? {};
+}
+
+const instancePanelElements = new Map(
+  [...document.querySelectorAll("[data-panel-id]")].map((panel) => [panel.dataset.panelId, panel]),
+);
+let instanceLayoutSaveTimer;
+
+async function LoadInstanceLayout() {
+  const payload = RequirePayload(await runtime.Send("instance.layout.read", {}));
+  state.instanceLayout = CloneInstanceLayout(payload.layout);
+  state.savedInstanceLayout = CloneInstanceLayout(payload.layout);
+  RenderInstanceLayout();
+}
+
+function RenderInstanceLayout(rebuildResizers = true) {
+  const columns = [];
+  if (rebuildResizers) {
+    elements.workspace.querySelectorAll(".panel-resizer").forEach((resizer) => resizer.remove());
+  }
+  state.instanceLayout.panelOrder.forEach((panelId, index) => {
+    const panel = instancePanelElements.get(panelId);
+    const panelState = state.instanceLayout.panels[panelId];
+    panel.style.gridColumn = String((index * 2) + 1);
+    panel.style.gridRow = "1";
+    panel.classList.toggle("is-collapsed", panelState.collapsed);
+    const toggleButton = panel.querySelector('[data-panel-action="toggle"]');
+    toggleButton.textContent = panelState.collapsed ? "펼치기" : "접기";
+    toggleButton.setAttribute("aria-expanded", String(!panelState.collapsed));
+    panel.querySelector('[data-panel-action="move-left"]').disabled = index === 0;
+    panel.querySelector('[data-panel-action="move-right"]').disabled = index === state.instanceLayout.panelOrder.length - 1;
+    columns.push(panelState.collapsed ? "var(--collapsed-panel-width)" : `${panelState.widthCssPx}px`);
+    if (index < state.instanceLayout.panelOrder.length - 1) {
+      const rightPanelId = state.instanceLayout.panelOrder[index + 1];
+      if (rebuildResizers) {
+        const resizer = CreatePanelResizer(panelId, rightPanelId, (index * 2) + 2);
+        elements.workspace.append(resizer);
+      }
+      columns.push("var(--panel-resizer-width)");
+    }
+  });
+  elements.workspace.style.gridTemplateColumns = columns.join(" ");
+}
+
+function CreatePanelResizer(leftPanelId, rightPanelId, gridColumn) {
+  const resizer = document.createElement("div");
+  const disabled = state.instanceLayout.panels[leftPanelId].collapsed
+    || state.instanceLayout.panels[rightPanelId].collapsed;
+  resizer.className = "panel-resizer";
+  resizer.style.gridColumn = String(gridColumn);
+  resizer.tabIndex = disabled ? -1 : 0;
+  resizer.setAttribute("role", "separator");
+  resizer.setAttribute("aria-orientation", "vertical");
+  resizer.setAttribute("aria-label", `${PanelLabel(leftPanelId)}와 ${PanelLabel(rightPanelId)} 영역 크기 조절`);
+  resizer.setAttribute("aria-disabled", String(disabled));
+  if (!disabled) {
+    resizer.addEventListener("pointerdown", (event) => BeginPanelResize(event, resizer, leftPanelId, rightPanelId));
+    resizer.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+        return;
+      }
+      event.preventDefault();
+      const delta = event.key === "ArrowLeft" ? -16 : 16;
+      ApplyInstanceLayout(ResizeAdjacentInstancePanels(state.instanceLayout, leftPanelId, rightPanelId, delta), false);
+      ScheduleInstanceLayoutSave();
+    });
+  }
+  return resizer;
+}
+
+function BeginPanelResize(event, resizer, leftPanelId, rightPanelId) {
+  if (event.button !== 0) {
+    return;
+  }
+  event.preventDefault();
+  const startX = event.clientX;
+  const startLayout = CloneInstanceLayout(state.instanceLayout);
+  resizer.classList.add("is-resizing");
+  resizer.setPointerCapture?.(event.pointerId);
+  const Move = (moveEvent) => {
+    state.instanceLayout = ResizeAdjacentInstancePanels(
+      startLayout,
+      leftPanelId,
+      rightPanelId,
+      moveEvent.clientX - startX,
+    );
+    state.instanceLayoutRevision += 1;
+    RenderInstanceLayout(false);
+  };
+  const End = () => {
+    window.removeEventListener("pointermove", Move);
+    window.removeEventListener("pointerup", End);
+    window.removeEventListener("pointercancel", End);
+    ScheduleInstanceLayoutSave(0);
+  };
+  window.addEventListener("pointermove", Move);
+  window.addEventListener("pointerup", End, { once: true });
+  window.addEventListener("pointercancel", End, { once: true });
+}
+
+function ApplyInstanceLayout(layout, rebuildResizers = true) {
+  state.instanceLayout = layout;
+  state.instanceLayoutRevision += 1;
+  RenderInstanceLayout(rebuildResizers);
+}
+
+function ScheduleInstanceLayoutSave(delayMs = 250) {
+  clearTimeout(instanceLayoutSaveTimer);
+  instanceLayoutSaveTimer = setTimeout(() => void RunAction(SaveInstanceLayout), delayMs);
+}
+
+async function SaveInstanceLayout() {
+  const attemptedLayout = CloneInstanceLayout(state.instanceLayout);
+  const attemptedRevision = state.instanceLayoutRevision;
+  try {
+    const payload = RequirePayload(await runtime.Send("instance.layout.update", { layout: attemptedLayout }));
+    state.savedInstanceLayout = CloneInstanceLayout(payload.layout);
+    if (state.instanceLayoutRevision === attemptedRevision) {
+      state.instanceLayout = CloneInstanceLayout(payload.layout);
+      RenderInstanceLayout();
+    }
+  }
+  catch (error) {
+    if (state.instanceLayoutRevision === attemptedRevision) {
+      state.instanceLayout = CloneInstanceLayout(state.savedInstanceLayout);
+      RenderInstanceLayout();
+    }
+    throw error;
+  }
+}
+
+function PanelLabel(panelId) {
+  return instancePanelElements.get(panelId)?.querySelector("h2")?.textContent ?? panelId;
 }
 
 async function LoadProjects() {
@@ -1333,6 +1477,33 @@ elements.selectFilteredHistoryButton.addEventListener("click", () => {
   RenderChatHistorySelection();
   ScheduleContextPreview();
 });
+elements.workspace.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-panel-action]");
+  const panel = button?.closest("[data-panel-id]");
+  if (button === null || panel === null || button.disabled) {
+    return;
+  }
+  const panelId = panel.dataset.panelId;
+  const action = button.dataset.panelAction;
+  if (action === "toggle") {
+    ApplyInstanceLayout(ToggleInstancePanel(state.instanceLayout, panelId));
+  }
+  else if (action === "move-left") {
+    ApplyInstanceLayout(MoveInstancePanel(state.instanceLayout, panelId, -1));
+  }
+  else if (action === "move-right") {
+    ApplyInstanceLayout(MoveInstancePanel(state.instanceLayout, panelId, 1));
+  }
+  else {
+    return;
+  }
+  ScheduleInstanceLayoutSave(0);
+});
+elements.layoutResetButton.addEventListener("click", () => {
+  ApplyInstanceLayout(CreateDefaultInstanceLayout());
+  ScheduleInstanceLayoutSave(0);
+  ShowToast("작업 영역 배치를 기본값으로 되돌렸습니다.");
+});
 elements.shutdownButton.addEventListener("click", () => {
   if (!confirm("현재 인스턴스를 종료하시겠습니까? Client Runtime은 계속 실행됩니다.")) {
     return;
@@ -1383,7 +1554,9 @@ window.addEventListener("beforeunload", (event) => {
   }
 });
 
+RenderInstanceLayout();
 void RunAction(async () => {
+  await LoadInstanceLayout();
   await Promise.all([LoadProjects(), LoadProviderStatus()]);
   RenderPersonaWorkspace();
   RenderContextSelection();

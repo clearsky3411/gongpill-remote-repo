@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `instance-panel-layout-contract` |
+| 작업 단위 | `instance-panel-layout-ui` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/instance-panel-layout-contract` |
-| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `instance.layout.persistence`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Instance 작업 영역 레이아웃을 dataRoot에 검증·원자 저장하고 Browser가 읽고 쓸 명령 계약 생성 |
-| 다음 작업 | `instance-panel-layout-ui` |
+| 브랜치 | `codex/instance-panel-layout-ui` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `client.release-notes`, `instance.layout.persistence`, `ui.workspace.layout`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | 프로젝트·문서·편집기·공동 집필 영역을 접고 펼치며 순서와 너비를 조절하고 재시작 뒤 복원 |
+| 다음 작업 | `instance-floating-panel-layout` |
 
 ## 상태 라벨
 
@@ -106,7 +106,7 @@ flowchart TD
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | Instance 작업 영역 레이아웃 저장 계약 | Core | `core/src/instance-layout-store.ts` | `CURRENT` |
-| Instance 작업 영역 접기·펼치기·이동·도킹 | Browser | `browser/src/index.html` | `TARGET` |
+| Instance 작업 영역 접기·펼치기·좌우 이동·너비 조절·전역 복원 | Browser | `browser/src/index.html`, `browser/src/instance-layout.js` | `CURRENT` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 문서·청크 검색과 명시 선택 UI | Browser | `browser/src/index.html` | `CURRENT` |
