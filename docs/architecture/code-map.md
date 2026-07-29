@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `client-private-font-ui` |
+| 작업 단위 | `installer-appearance-seed` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/client-private-font-ui` |
+| 브랜치 | `codex/installer-appearance-seed` |
 | 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.connector.settings`, `client.appearance.settings`, `client.font.catalog`, `client.appearance.ui`, `client.release-notes`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | WinForms Client Runtime에 Client Package 비공개 글꼴과 96 DPI 기준 크기·배율 설정 적용 |
-| 다음 작업 | `installer-appearance-seed` |
+| 활성 기능 | `client.appearance.settings`, `install.appearance.seed`, `install.windows`, `client.release-notes`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Windows Installer가 Client Runtime appearance 최초값을 설정하되 기존 사용자 설정을 덮어쓰지 않도록 함 |
+| 다음 작업 | `instance-panel-layout-contract` |
 
 ## 상태 라벨
 
@@ -113,7 +113,7 @@ flowchart TD
 | 페르소나·작업 프로필 전환과 요청 출처 확인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |
-| Installer Client appearance 최초 설정 | Installer | `installer/windows/Gongpil.iss` | `TARGET` |
+| Installer Client appearance 최초 설정 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |
 | 자기완결 Windows 포터블 ZIP | Installer | `scripts/build-portable.ps1` | `CURRENT` |
 | MVP 전체 릴리스 검증 | Code Map Tooling | `scripts/validate-release.ps1` | `CURRENT` |
 | Markdown 편집기 | Built-in Plugins | `builtin-plugins/` | `TARGET` |
