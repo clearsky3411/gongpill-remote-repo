@@ -8,11 +8,145 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class GongpilDpiAwareness
+{
+    [DllImport("user32.dll")]
+    private static extern bool SetProcessDpiAwarenessContext(IntPtr dpiContext);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetProcessDPIAware();
+
+    public static void Enable()
+    {
+        try
+        {
+            if (SetProcessDpiAwarenessContext(new IntPtr(-4)))
+            {
+                return;
+            }
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
+
+        try
+        {
+            SetProcessDPIAware();
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
+    }
+}
+'@
+[GongpilDpiAwareness]::Enable()
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $inputModel = Get-Content -LiteralPath $InputPath -Raw | ConvertFrom-Json
+
+function Get-ClientFontRuntime {
+    param(
+        [Parameter(Mandatory = $true)]$FontCatalog,
+        [Parameter(Mandatory = $true)]$UserFontFiles
+    )
+
+    $collection = New-Object System.Drawing.Text.PrivateFontCollection
+    $options = @()
+    $warnings = @()
+    foreach ($font in @($FontCatalog.fonts)) {
+        $probe = New-Object System.Drawing.Text.PrivateFontCollection
+        try {
+            foreach ($file in @($font.files)) {
+                $fontPath = [System.IO.Path]::Combine([string]$FontCatalog.fontsRoot, [string]$file.fileName)
+                $probe.AddFontFile($fontPath)
+                $collection.AddFontFile($fontPath)
+            }
+            $family = @($probe.Families | Where-Object { $_.Name -eq [string]$font.preferredFamily }) | Select-Object -First 1
+            if ($null -eq $family) {
+                $family = @($probe.Families | Sort-Object Name) | Select-Object -First 1
+            }
+            if ($null -eq $family) {
+                throw "글꼴 패밀리를 찾지 못했습니다: $($font.preferredFamily)"
+            }
+            $options += [pscustomobject]@{
+                Id = "bundled:$($font.id)"
+                DisplayName = "$($font.displayName) (포함)"
+                FamilyName = $family.Name
+                Role = [string]$font.role
+            }
+        }
+        catch {
+            $warnings += "$($font.displayName): $($_.Exception.Message)"
+        }
+        finally {
+            $probe.Dispose()
+        }
+    }
+    foreach ($file in @($UserFontFiles)) {
+        $probe = New-Object System.Drawing.Text.PrivateFontCollection
+        try {
+            $probe.AddFontFile([string]$file.path)
+            $family = @($probe.Families | Sort-Object Name) | Select-Object -First 1
+            if ($null -eq $family) {
+                throw '글꼴 패밀리를 찾지 못했습니다.'
+            }
+            $collection.AddFontFile([string]$file.path)
+            $options += [pscustomobject]@{
+                Id = [string]$file.id
+                DisplayName = "$($family.Name) (사용자)"
+                FamilyName = $family.Name
+                Role = 'user'
+            }
+        }
+        catch {
+            $warnings += "$($file.fileName): $($_.Exception.Message)"
+        }
+        finally {
+            $probe.Dispose()
+        }
+    }
+    return [pscustomobject]@{
+        Collection = $collection
+        Options = @($options)
+        Warnings = @($warnings)
+    }
+}
+
+function Get-SelectedFontOption {
+    param(
+        [Parameter(Mandatory = $true)]$Options,
+        [Parameter(Mandatory = $true)][string]$SelectedId,
+        [Parameter(Mandatory = $true)][string]$FallbackId
+    )
+
+    $selected = @($Options | Where-Object { $_.Id -eq $SelectedId }) | Select-Object -First 1
+    if ($null -eq $selected) {
+        $selected = @($Options | Where-Object { $_.Id -eq $FallbackId }) | Select-Object -First 1
+    }
+    if ($null -eq $selected) {
+        $availableIds = @($Options | ForEach-Object { $_.Id }) -join ', '
+        throw "Client Package 기본 글꼴을 불러오지 못했습니다: $FallbackId (available=$availableIds)"
+    }
+    return $selected
+}
+
+function New-ClientFont {
+    param(
+        [Parameter(Mandatory = $true)][System.Drawing.FontFamily]$Family,
+        [Parameter(Mandatory = $true)][single]$Size,
+        [Parameter(Mandatory = $true)][System.Drawing.FontStyle]$Style
+    )
+
+    $resolvedStyle = if ($Family.IsStyleAvailable($Style)) { $Style } else { [System.Drawing.FontStyle]::Regular }
+    return New-Object System.Drawing.Font -ArgumentList @($Family, $Size, $resolvedStyle, [System.Drawing.GraphicsUnit]::Point)
+}
+
 $isPortable = $inputModel.mode -eq 'portable'
 $lifecycleReason = if ($null -eq $inputModel.PSObject.Properties['lifecycleReason']) { 'startup' } else { [string]$inputModel.lifecycleReason }
 $releaseNotes = if ($null -eq $inputModel.PSObject.Properties['releaseNotes']) {
@@ -29,6 +163,19 @@ else {
     $inputModel.releaseNotes
 }
 $resultAction = 'cancel'
+$appearance = $inputModel.settings.appearance
+$fontRuntime = Get-ClientFontRuntime -FontCatalog $inputModel.fontCatalog -UserFontFiles $inputModel.userFontFiles
+try {
+    $uiFontOption = Get-SelectedFontOption -Options $fontRuntime.Options -SelectedId ([string]$appearance.uiFontId) -FallbackId 'bundled:nanum-gothic'
+}
+catch {
+    throw "$($_.Exception.Message) warnings=$(@($fontRuntime.Warnings) -join ' | ')"
+}
+$monospaceFontOption = Get-SelectedFontOption -Options $fontRuntime.Options -SelectedId ([string]$appearance.monospaceFontId) -FallbackId 'bundled:d2coding'
+$uiFontFamily = @($fontRuntime.Collection.Families | Where-Object { $_.Name -eq $uiFontOption.FamilyName }) | Select-Object -First 1
+$baseFontSizePt = [single]$appearance.baseFontSizePt
+$uiScale = [single]$appearance.uiScalePercent / 100.0
+$ownedFonts = @()
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "공필 클라이언트 $($releaseNotes.productVersion)"
@@ -36,8 +183,13 @@ $form.StartPosition = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
 $form.MinimizeBox = $false
-$form.ClientSize = New-Object System.Drawing.Size(760, 720)
-$form.Font = New-Object System.Drawing.Font('Malgun Gothic', 9)
+$form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi
+$form.AutoScaleDimensions = New-Object System.Drawing.SizeF(96, 96)
+$form.AutoScroll = $true
+$form.ClientSize = New-Object System.Drawing.Size([int]$appearance.windowWidthDip, [int]$appearance.windowHeightDip)
+$baseFont = New-ClientFont -Family $uiFontFamily -Size $baseFontSizePt -Style ([System.Drawing.FontStyle]::Regular)
+$ownedFonts += $baseFont
+$form.Font = $baseFont
 
 $titleLabel = New-Object System.Windows.Forms.Label
 $titleLabel.Text = if ($inputModel.isFirstRun) {
@@ -52,7 +204,9 @@ elseif ($lifecycleReason -eq 'instance-stopped') {
 else {
     '인스턴스를 시작하거나 저장 위치를 바꿀 수 있습니다.'
 }
-$titleLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 14, [System.Drawing.FontStyle]::Bold)
+$titleFont = New-ClientFont -Family $uiFontFamily -Size 14 -Style ([System.Drawing.FontStyle]::Bold)
+$ownedFonts += $titleFont
+$titleLabel.Font = $titleFont
 $titleLabel.AutoSize = $true
 $titleLabel.Location = New-Object System.Drawing.Point(24, 22)
 $form.Controls.Add($titleLabel)
@@ -79,6 +233,11 @@ $settingsTab.Text = '설정'
 $settingsTab.BackColor = [System.Drawing.Color]::White
 $tabControl.TabPages.Add($settingsTab)
 
+$appearanceTab = New-Object System.Windows.Forms.TabPage
+$appearanceTab.Text = '화면'
+$appearanceTab.BackColor = [System.Drawing.Color]::White
+$tabControl.TabPages.Add($appearanceTab)
+
 $infoTab = New-Object System.Windows.Forms.TabPage
 $infoTab.Text = '정보'
 $infoTab.BackColor = [System.Drawing.Color]::White
@@ -92,7 +251,9 @@ $homeTab.Controls.Add($runtimeGroup)
 
 $runtimeStatusLabel = New-Object System.Windows.Forms.Label
 $runtimeStatusLabel.Text = 'Client Runtime 실행 중'
-$runtimeStatusLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 12, [System.Drawing.FontStyle]::Bold)
+$runtimeStatusFont = New-ClientFont -Family $uiFontFamily -Size 12 -Style ([System.Drawing.FontStyle]::Bold)
+$ownedFonts += $runtimeStatusFont
+$runtimeStatusLabel.Font = $runtimeStatusFont
 $runtimeStatusLabel.ForeColor = [System.Drawing.Color]::SeaGreen
 $runtimeStatusLabel.AutoSize = $true
 $runtimeStatusLabel.Location = New-Object System.Drawing.Point(16, 24)
@@ -121,7 +282,9 @@ $runtimeGroup.Controls.Add($versionLabel)
 
 $capabilityLabel = New-Object System.Windows.Forms.Label
 $capabilityLabel.Text = '지금 가능한 작업'
-$capabilityLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 10, [System.Drawing.FontStyle]::Bold)
+$sectionFont = New-ClientFont -Family $uiFontFamily -Size 10 -Style ([System.Drawing.FontStyle]::Bold)
+$ownedFonts += $sectionFont
+$capabilityLabel.Font = $sectionFont
 $capabilityLabel.AutoSize = $true
 $capabilityLabel.Location = New-Object System.Drawing.Point(18, 138)
 $homeTab.Controls.Add($capabilityLabel)
@@ -137,7 +300,7 @@ $homeTab.Controls.Add($capabilityBox)
 
 $changesLabel = New-Object System.Windows.Forms.Label
 $changesLabel.Text = "패치노트 · $($releaseNotes.title)"
-$changesLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 10, [System.Drawing.FontStyle]::Bold)
+$changesLabel.Font = $sectionFont
 $changesLabel.AutoSize = $true
 $changesLabel.Location = New-Object System.Drawing.Point(18, 329)
 $homeTab.Controls.Add($changesLabel)
@@ -319,6 +482,187 @@ foreach ($control in $settingsControls) {
     $settingsTab.Controls.Add($control)
 }
 
+$fontGroup = New-Object System.Windows.Forms.GroupBox
+$fontGroup.Text = 'Client Runtime 자체 글꼴'
+$fontGroup.Location = New-Object System.Drawing.Point(18, 18)
+$fontGroup.Size = New-Object System.Drawing.Size(674, 260)
+$appearanceTab.Controls.Add($fontGroup)
+
+$uiFontLabel = New-Object System.Windows.Forms.Label
+$uiFontLabel.Text = 'UI 글꼴'
+$uiFontLabel.AutoSize = $true
+$uiFontLabel.Location = New-Object System.Drawing.Point(16, 30)
+$fontGroup.Controls.Add($uiFontLabel)
+
+$uiFontComboBox = New-Object System.Windows.Forms.ComboBox
+$uiFontComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$uiFontComboBox.DisplayMember = 'DisplayName'
+$uiFontComboBox.Location = New-Object System.Drawing.Point(18, 53)
+$uiFontComboBox.Size = New-Object System.Drawing.Size(300, 27)
+foreach ($option in @($fontRuntime.Options)) {
+    $null = $uiFontComboBox.Items.Add($option)
+}
+for ($index = 0; $index -lt $uiFontComboBox.Items.Count; $index++) {
+    if ($uiFontComboBox.Items[$index].Id -eq $uiFontOption.Id) {
+        $uiFontComboBox.SelectedIndex = $index
+        break
+    }
+}
+$fontGroup.Controls.Add($uiFontComboBox)
+
+$monospaceFontLabel = New-Object System.Windows.Forms.Label
+$monospaceFontLabel.Text = '고정폭 글꼴'
+$monospaceFontLabel.AutoSize = $true
+$monospaceFontLabel.Location = New-Object System.Drawing.Point(338, 30)
+$fontGroup.Controls.Add($monospaceFontLabel)
+
+$monospaceFontComboBox = New-Object System.Windows.Forms.ComboBox
+$monospaceFontComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$monospaceFontComboBox.DisplayMember = 'DisplayName'
+$monospaceFontComboBox.Location = New-Object System.Drawing.Point(340, 53)
+$monospaceFontComboBox.Size = New-Object System.Drawing.Size(300, 27)
+foreach ($option in @($fontRuntime.Options)) {
+    $null = $monospaceFontComboBox.Items.Add($option)
+}
+for ($index = 0; $index -lt $monospaceFontComboBox.Items.Count; $index++) {
+    if ($monospaceFontComboBox.Items[$index].Id -eq $monospaceFontOption.Id) {
+        $monospaceFontComboBox.SelectedIndex = $index
+        break
+    }
+}
+$fontGroup.Controls.Add($monospaceFontComboBox)
+
+$fontRootLabel = New-Object System.Windows.Forms.Label
+$fontRootLabel.Text = '사용자 글꼴 폴더 (.ttf, .otf, .ttc)'
+$fontRootLabel.AutoSize = $true
+$fontRootLabel.Location = New-Object System.Drawing.Point(16, 98)
+$fontGroup.Controls.Add($fontRootLabel)
+
+$fontRootTextBox = New-Object System.Windows.Forms.TextBox
+$fontRootTextBox.Text = [string]$appearance.fontRoot
+$fontRootTextBox.Location = New-Object System.Drawing.Point(18, 121)
+$fontRootTextBox.Size = New-Object System.Drawing.Size(500, 27)
+$fontGroup.Controls.Add($fontRootTextBox)
+
+$fontBrowseButton = New-Object System.Windows.Forms.Button
+$fontBrowseButton.Text = '찾아보기...'
+$fontBrowseButton.Location = New-Object System.Drawing.Point(528, 119)
+$fontBrowseButton.Size = New-Object System.Drawing.Size(112, 31)
+$fontBrowseButton.Add_Click({
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $dialog.Description = 'Client Runtime에서 읽을 사용자 글꼴 폴더를 선택하세요.'
+    $dialog.ShowNewFolderButton = $true
+    if ([System.IO.Directory]::Exists($fontRootTextBox.Text)) {
+        $dialog.SelectedPath = $fontRootTextBox.Text
+    }
+    if ($dialog.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
+        $fontRootTextBox.Text = $dialog.SelectedPath
+    }
+    $dialog.Dispose()
+})
+$fontGroup.Controls.Add($fontBrowseButton)
+
+$fontInfoLabel = New-Object System.Windows.Forms.Label
+$fontInfoLabel.Text = '포함 글꼴은 Windows에 설치하지 않습니다. 사용자 폴더를 바꾸면 다음 접속기 실행부터 목록을 다시 읽습니다.'
+$fontInfoLabel.AutoEllipsis = $true
+$fontInfoLabel.ForeColor = [System.Drawing.Color]::DimGray
+$fontInfoLabel.Location = New-Object System.Drawing.Point(18, 161)
+$fontInfoLabel.Size = New-Object System.Drawing.Size(622, 42)
+$fontGroup.Controls.Add($fontInfoLabel)
+
+$fontWarningLabel = New-Object System.Windows.Forms.Label
+$fontWarningLabel.Text = if ($fontRuntime.Warnings.Count -eq 0) {
+    "포함 글꼴 3개 검증됨 · 사용자 글꼴 $($inputModel.userFontFiles.Count)개"
+}
+else {
+    "읽지 못한 글꼴 $($fontRuntime.Warnings.Count)개 · 안전한 포함 글꼴로 대체"
+}
+$fontWarningLabel.AutoSize = $true
+$fontWarningLabel.ForeColor = if ($fontRuntime.Warnings.Count -eq 0) { [System.Drawing.Color]::SeaGreen } else { [System.Drawing.Color]::DarkGoldenrod }
+$fontWarningLabel.Location = New-Object System.Drawing.Point(18, 217)
+$fontGroup.Controls.Add($fontWarningLabel)
+
+$layoutGroup = New-Object System.Windows.Forms.GroupBox
+$layoutGroup.Text = '논리 화면 기준'
+$layoutGroup.Location = New-Object System.Drawing.Point(18, 294)
+$layoutGroup.Size = New-Object System.Drawing.Size(674, 190)
+$appearanceTab.Controls.Add($layoutGroup)
+
+$fontSizeLabel = New-Object System.Windows.Forms.Label
+$fontSizeLabel.Text = '기본 글자 크기 (pt)'
+$fontSizeLabel.AutoSize = $true
+$fontSizeLabel.Location = New-Object System.Drawing.Point(16, 30)
+$layoutGroup.Controls.Add($fontSizeLabel)
+
+$fontSizeNumeric = New-Object System.Windows.Forms.NumericUpDown
+$fontSizeNumeric.DecimalPlaces = 1
+$fontSizeNumeric.Increment = [decimal]0.5
+$fontSizeNumeric.Minimum = [decimal]8
+$fontSizeNumeric.Maximum = [decimal]24
+$fontSizeNumeric.Value = [decimal]$appearance.baseFontSizePt
+$fontSizeNumeric.Location = New-Object System.Drawing.Point(18, 53)
+$fontSizeNumeric.Size = New-Object System.Drawing.Size(130, 27)
+$layoutGroup.Controls.Add($fontSizeNumeric)
+
+$uiScaleLabel = New-Object System.Windows.Forms.Label
+$uiScaleLabel.Text = '사용자 UI 배율 (%)'
+$uiScaleLabel.AutoSize = $true
+$uiScaleLabel.Location = New-Object System.Drawing.Point(178, 30)
+$layoutGroup.Controls.Add($uiScaleLabel)
+
+$uiScaleComboBox = New-Object System.Windows.Forms.ComboBox
+$uiScaleComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$uiScaleComboBox.Items.AddRange(@(80, 90, 100, 110, 125, 150))
+$uiScaleComboBox.SelectedItem = [int]$appearance.uiScalePercent
+$uiScaleComboBox.Location = New-Object System.Drawing.Point(180, 53)
+$uiScaleComboBox.Size = New-Object System.Drawing.Size(130, 27)
+$layoutGroup.Controls.Add($uiScaleComboBox)
+
+$widthLabel = New-Object System.Windows.Forms.Label
+$widthLabel.Text = '창 너비 (DIP)'
+$widthLabel.AutoSize = $true
+$widthLabel.Location = New-Object System.Drawing.Point(340, 30)
+$layoutGroup.Controls.Add($widthLabel)
+
+$widthNumeric = New-Object System.Windows.Forms.NumericUpDown
+$widthNumeric.Minimum = [decimal]640
+$widthNumeric.Maximum = [decimal]2560
+$widthNumeric.Increment = [decimal]20
+$widthNumeric.Value = [decimal]$appearance.windowWidthDip
+$widthNumeric.Location = New-Object System.Drawing.Point(342, 53)
+$widthNumeric.Size = New-Object System.Drawing.Size(130, 27)
+$layoutGroup.Controls.Add($widthNumeric)
+
+$heightLabel = New-Object System.Windows.Forms.Label
+$heightLabel.Text = '창 높이 (DIP)'
+$heightLabel.AutoSize = $true
+$heightLabel.Location = New-Object System.Drawing.Point(502, 30)
+$layoutGroup.Controls.Add($heightLabel)
+
+$heightNumeric = New-Object System.Windows.Forms.NumericUpDown
+$heightNumeric.Minimum = [decimal]560
+$heightNumeric.Maximum = [decimal]1600
+$heightNumeric.Increment = [decimal]20
+$heightNumeric.Value = [decimal]$appearance.windowHeightDip
+$heightNumeric.Location = New-Object System.Drawing.Point(504, 53)
+$heightNumeric.Size = New-Object System.Drawing.Size(130, 27)
+$layoutGroup.Controls.Add($heightNumeric)
+
+$dpiInfoLabel = New-Object System.Windows.Forms.Label
+$dpiInfoLabel.Text = '저장값은 96 DPI 기준 DIP입니다. Windows 실제 DPI와 사용자 배율을 함께 적용하며, 화면보다 크면 스크롤 가능한 크기로 제한합니다.'
+$dpiInfoLabel.AutoEllipsis = $true
+$dpiInfoLabel.ForeColor = [System.Drawing.Color]::DimGray
+$dpiInfoLabel.Location = New-Object System.Drawing.Point(18, 104)
+$dpiInfoLabel.Size = New-Object System.Drawing.Size(616, 44)
+$layoutGroup.Controls.Add($dpiInfoLabel)
+
+$applyInfoLabel = New-Object System.Windows.Forms.Label
+$applyInfoLabel.Text = '변경한 화면 옵션은 저장 후 다음 Client Runtime 접속기부터 적용됩니다.'
+$applyInfoLabel.AutoSize = $true
+$applyInfoLabel.ForeColor = [System.Drawing.Color]::DarkGoldenrod
+$applyInfoLabel.Location = New-Object System.Drawing.Point(18, 156)
+$layoutGroup.Controls.Add($applyInfoLabel)
+
 $detailsGroup = New-Object System.Windows.Forms.GroupBox
 $detailsGroup.Text = '실행 정보'
 $detailsGroup.Location = New-Object System.Drawing.Point(18, 18)
@@ -326,10 +670,10 @@ $detailsGroup.Size = New-Object System.Drawing.Size(674, 120)
 $infoTab.Controls.Add($detailsGroup)
 
 $detailsLabel = New-Object System.Windows.Forms.Label
-$detailsLabel.Text = "클라이언트 설치 위치`r`n$($inputModel.appRoot)`r`n설정 파일`r`n$($inputModel.settingsPath)"
+$detailsLabel.Text = "클라이언트 설치 위치`r`n$($inputModel.appRoot)`r`n설정 파일`r`n$($inputModel.settingsPath)`r`n비공개 UI 글꼴: $($uiFontOption.DisplayName)"
 $detailsLabel.AutoEllipsis = $true
 $detailsLabel.Location = New-Object System.Drawing.Point(12, 24)
-$detailsLabel.Size = New-Object System.Drawing.Size(640, 88)
+$detailsLabel.Size = New-Object System.Drawing.Size(640, 92)
 $detailsLabel.ForeColor = [System.Drawing.Color]::DimGray
 $detailsGroup.Controls.Add($detailsLabel)
 
@@ -383,6 +727,29 @@ $startButton.Add_Click({
         [System.IO.File]::WriteAllText($probePath, 'gongpil')
         Remove-Item -LiteralPath $probePath -Force
         $dataTextBox.Text = $fullPath
+        $selectedFontRoot = $fontRootTextBox.Text.Trim()
+        if (-not [System.IO.Path]::IsPathRooted($selectedFontRoot)) {
+            throw '사용자 글꼴 폴더는 드라이브 문자를 포함한 절대 경로여야 합니다.'
+        }
+        $fullFontRoot = [System.IO.Path]::GetFullPath($selectedFontRoot).TrimEnd('\')
+        $fontPathRoot = [System.IO.Path]::GetPathRoot($fullFontRoot).TrimEnd('\')
+        if ($fullFontRoot.Equals($fontPathRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw '드라이브 루트는 사용자 글꼴 폴더로 사용할 수 없습니다.'
+        }
+        if (-not $isPortable -and (
+            $fullFontRoot.Equals($appRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+            $fullFontRoot.StartsWith("$appRoot\", [System.StringComparison]::OrdinalIgnoreCase)
+        )) {
+            throw '설치 폴더 내부는 사용자 글꼴 폴더로 사용할 수 없습니다.'
+        }
+        [System.IO.Directory]::CreateDirectory($fullFontRoot) | Out-Null
+        $fontProbePath = [System.IO.Path]::Combine($fullFontRoot, ".gongpil-font-probe-$([System.Guid]::NewGuid())")
+        [System.IO.File]::WriteAllText($fontProbePath, 'gongpil')
+        Remove-Item -LiteralPath $fontProbePath -Force
+        $fontRootTextBox.Text = $fullFontRoot
+        if ($null -eq $uiFontComboBox.SelectedItem -or $null -eq $monospaceFontComboBox.SelectedItem) {
+            throw 'UI 글꼴과 고정폭 글꼴을 선택해야 합니다.'
+        }
         $apiPath = $apiTextBox.Text.Trim()
         if (-not [string]::IsNullOrWhiteSpace($apiPath)) {
             if (-not [System.IO.Path]::IsPathRooted($apiPath) -or -not [System.IO.File]::Exists($apiPath)) {
@@ -418,6 +785,41 @@ if ($inputModel.isFirstRun) {
     $tabControl.SelectedTab = $settingsTab
 }
 
+if ([Math]::Abs($uiScale - 1.0) -gt 0.001) {
+    $form.Scale((New-Object System.Drawing.SizeF($uiScale, $uiScale)))
+}
+$form.ClientSize = New-Object System.Drawing.Size(
+    [int][Math]::Round([single]$appearance.windowWidthDip * $uiScale),
+    [int][Math]::Round([single]$appearance.windowHeightDip * $uiScale)
+)
+$scaledBaseFont = New-ClientFont -Family $uiFontFamily -Size ([single]($baseFontSizePt * $uiScale)) -Style ([System.Drawing.FontStyle]::Regular)
+$scaledTitleFont = New-ClientFont -Family $uiFontFamily -Size ([single](14 * $uiScale)) -Style ([System.Drawing.FontStyle]::Bold)
+$scaledRuntimeFont = New-ClientFont -Family $uiFontFamily -Size ([single](12 * $uiScale)) -Style ([System.Drawing.FontStyle]::Bold)
+$scaledSectionFont = New-ClientFont -Family $uiFontFamily -Size ([single](10 * $uiScale)) -Style ([System.Drawing.FontStyle]::Bold)
+$ownedFonts += $scaledBaseFont
+$ownedFonts += $scaledTitleFont
+$ownedFonts += $scaledRuntimeFont
+$ownedFonts += $scaledSectionFont
+$form.Font = $scaledBaseFont
+$titleLabel.Font = $scaledTitleFont
+$runtimeStatusLabel.Font = $scaledRuntimeFont
+$capabilityLabel.Font = $scaledSectionFont
+$changesLabel.Font = $scaledSectionFont
+$form.Add_Shown({
+    $workingArea = [System.Windows.Forms.Screen]::FromControl($form).WorkingArea
+    $nonClientWidth = $form.Width - $form.ClientSize.Width
+    $nonClientHeight = $form.Height - $form.ClientSize.Height
+    $maximumClientWidth = [Math]::Max(480, $workingArea.Width - $nonClientWidth - 40)
+    $maximumClientHeight = [Math]::Max(420, $workingArea.Height - $nonClientHeight - 40)
+    if ($form.ClientSize.Width -gt $maximumClientWidth -or $form.ClientSize.Height -gt $maximumClientHeight) {
+        $form.ClientSize = New-Object System.Drawing.Size(
+            [Math]::Min($form.ClientSize.Width, $maximumClientWidth),
+            [Math]::Min($form.ClientSize.Height, $maximumClientHeight)
+        )
+    }
+    $form.CenterToScreen()
+})
+
 if ([string]::IsNullOrWhiteSpace($AutomationAction)) {
     $null = $form.ShowDialog()
 }
@@ -433,7 +835,21 @@ $outputModel = [ordered]@{
     codexModel = $codexModelComboBox.Text
     openAiEnvFile = $apiTextBox.Text
     openAiModel = $modelComboBox.Text
+    appearance = [ordered]@{
+        baselineDpi = 96
+        fontRoot = $fontRootTextBox.Text
+        uiFontId = [string]$uiFontComboBox.SelectedItem.Id
+        monospaceFontId = [string]$monospaceFontComboBox.SelectedItem.Id
+        baseFontSizePt = [double]$fontSizeNumeric.Value
+        uiScalePercent = [int]$uiScaleComboBox.SelectedItem
+        windowWidthDip = [int]$widthNumeric.Value
+        windowHeightDip = [int]$heightNumeric.Value
+    }
 }
 $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($OutputPath, ($outputModel | ConvertTo-Json), $utf8WithoutBom)
 $form.Dispose()
+foreach ($font in $ownedFonts) {
+    $font.Dispose()
+}
+$fontRuntime.Collection.Dispose()

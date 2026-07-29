@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { GongpilClientBootstrapConfig } from "../../packages/contracts/bootstrap/contracts.ts";
+import { ListClientUserFontFiles, LoadClientFontCatalog } from "./client-font-catalog.ts";
 import type { GongpilClientSettings } from "./client-settings-store.ts";
 
 export interface GongpilClientConnectorInput {
@@ -38,7 +39,9 @@ export async function ShowClientConnector(
   const outputPath = join(exchangeRoot, "output.json");
   const scriptPath = join(input.appRoot, "client", "windows", "GongpilConnector.ps1");
   const releaseNotes = await LoadClientReleaseNotes(input.appRoot);
-  await writeFile(inputPath, JSON.stringify({ ...input, releaseNotes }), "utf8");
+  const fontCatalog = await LoadClientFontCatalog(input.appRoot);
+  const userFontFiles = await ListClientUserFontFiles(input.settings.appearance.fontRoot);
+  await writeFile(inputPath, JSON.stringify({ ...input, releaseNotes, fontCatalog, userFontFiles }), "utf8");
   try {
     const exitCode = await RunPowerShell(scriptPath, inputPath, outputPath);
     if (exitCode !== 0) {
@@ -54,6 +57,7 @@ export async function ShowClientConnector(
         codexModel?: unknown;
         openAiEnvFile?: unknown;
         openAiModel?: unknown;
+        appearance?: unknown;
       };
       if (output.action === "cancel") {
         return { action: "cancel", settings: input.settings };
@@ -67,6 +71,7 @@ export async function ShowClientConnector(
         || typeof output.codexModel !== "string"
         || (output.openAiEnvFile !== undefined && typeof output.openAiEnvFile !== "string")
         || typeof output.openAiModel !== "string"
+        || !IsAppearanceResponse(output.appearance)
       ) {
         throw new Error("클라이언트 접속기의 응답 형식이 올바르지 않습니다.");
       }
@@ -81,7 +86,7 @@ export async function ShowClientConnector(
           codexModel: output.codexModel,
           openAiEnvFile: output.openAiEnvFile === "" ? undefined : output.openAiEnvFile,
           openAiModel: output.openAiModel,
-          appearance: input.settings.appearance,
+          appearance: output.appearance,
         },
       };
     }
@@ -95,6 +100,21 @@ export async function ShowClientConnector(
   finally {
     await rm(exchangeRoot, { recursive: true, force: true });
   }
+}
+
+function IsAppearanceResponse(value: unknown): value is GongpilClientSettings["appearance"] {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const appearance = value as Readonly<Record<string, unknown>>;
+  return appearance.baselineDpi === 96
+    && typeof appearance.fontRoot === "string"
+    && typeof appearance.uiFontId === "string"
+    && typeof appearance.monospaceFontId === "string"
+    && typeof appearance.baseFontSizePt === "number"
+    && typeof appearance.uiScalePercent === "number"
+    && typeof appearance.windowWidthDip === "number"
+    && typeof appearance.windowHeightDip === "number";
 }
 
 export async function LoadClientReleaseNotes(appRoot: string): Promise<GongpilClientReleaseNotes> {

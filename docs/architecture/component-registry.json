@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "client-appearance-contract",
+    "activeWorkUnit": "client-private-font-ui",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/client-appearance-contract",
+    "branch": "codex/client-private-font-ui",
     "activeComponentIds": [
       "gongpil.client",
       "gongpil.installer",
@@ -17,15 +17,15 @@
     ],
     "activeFeatureIds": [
       "client.connector.settings",
-      "client.config.root",
       "client.appearance.settings",
       "client.font.catalog",
-      "distribution.portable",
+      "client.appearance.ui",
+      "client.release-notes",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Client Runtime 설정 루트와 appearance 계약을 분리하고 나눔고딕·D2Coding 자체 글꼴 카탈로그를 패키지에 등록한다.",
-    "nextRecommendedWorkUnit": "client-private-font-ui"
+    "summary": "WinForms Client Runtime에 Client Package 비공개 글꼴과 96 DPI 기준 크기·배율 설정을 적용한다.",
+    "nextRecommendedWorkUnit": "installer-appearance-seed"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -332,11 +332,11 @@
     {
       "id": "client.appearance.ui",
       "name": "Client Runtime 비공개 글꼴·DPI·창 크기 적용 UI",
-      "status": "TARGET",
+      "status": "CURRENT",
       "ownerComponentId": "gongpil.client",
       "path": "client/windows/GongpilConnector.ps1",
-      "entrypoints": [],
-      "tests": [],
+      "entrypoints": ["GongpilDpiAwareness.Enable", "Get-ClientFontRuntime", "New-ClientFont", "appearanceTab"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `client-appearance-contract` |
+| 작업 단위 | `client-private-font-ui` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/client-appearance-contract` |
+| 브랜치 | `codex/client-private-font-ui` |
 | 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.connector.settings`, `client.config.root`, `client.appearance.settings`, `client.font.catalog`, `distribution.portable`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Client Runtime 설정 루트와 appearance 계약을 분리하고 나눔고딕·D2Coding 자체 글꼴 카탈로그를 패키지에 등록 |
-| 다음 작업 | `client-private-font-ui` |
+| 활성 기능 | `client.connector.settings`, `client.appearance.settings`, `client.font.catalog`, `client.appearance.ui`, `client.release-notes`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | WinForms Client Runtime에 Client Package 비공개 글꼴과 96 DPI 기준 크기·배율 설정 적용 |
+| 다음 작업 | `installer-appearance-seed` |
 
 ## 상태 라벨
 
@@ -67,7 +67,7 @@ flowchart TD
 | Client Runtime 설정·사용자 글꼴 전용 루트 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
 | Client Runtime appearance 설정 계약과 마이그레이션 | Client | `client/src/client-settings-store.ts` | `CURRENT` |
 | 자기완결 Client Package 글꼴 카탈로그와 라이선스 | Client | `client/src/client-font-catalog.ts` | `CURRENT` |
-| Client Runtime 비공개 글꼴·DPI·창 크기 적용 UI | Client | `client/windows/GongpilConnector.ps1` | `TARGET` |
+| Client Runtime 비공개 글꼴·DPI·창 크기 적용 UI | Client | `client/windows/GongpilConnector.ps1` | `CURRENT` |
 | Client Runtime 홈과 상태·작업 선택 | Client | `client/windows/GongpilConnector.ps1` | `CURRENT` |
 | Client Package 구조화 릴리스 정보 | Client | `client/src/client-release-notes.json` | `CURRENT` |
 | 상주 Client Runtime과 Instance Runtime 재시작 | Client | `client/src/client-runtime.ts` | `CURRENT` |
