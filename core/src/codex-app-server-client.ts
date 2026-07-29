@@ -118,7 +118,7 @@ export class GongpilCodexAppServerClient {
       model: this.options.model,
       cwd: this.options.workspaceRoot,
       approvalPolicy: "never",
-      sandbox: "readOnly",
+      sandbox: "read-only",
       serviceName: "gongpil",
       ephemeral: true,
     });
