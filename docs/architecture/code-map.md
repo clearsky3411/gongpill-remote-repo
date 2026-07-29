@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `codex-sandbox-mode-protocol-fix` |
+| 작업 단위 | `chat-history-context-core` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/codex-sandbox-enum-fix` |
+| 브랜치 | `codex/chat-history-context-core` |
 | 활성 컴포넌트 | `gongpil.core`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `ai.provider.codex`, `architecture.code-map.track`, `architecture.code-map.validate` |
-| 완료 결과 | Codex App Server `thread/start.sandbox=read-only`와 `turn/start.sandboxPolicy.type=readOnly`의 서로 다른 enum 표현을 회귀 테스트로 고정 |
-| 다음 작업 | `chat-history-context-selection` |
+| 활성 기능 | `chat.session.persist`, `chat.history.classify`, `context.history.select`, `context.build.budget`, `context.source.snapshot`, `architecture.code-map.track`, `architecture.code-map.validate` |
+| 완료 결과 | 프로젝트 채팅의 턴·메시지·UTF-8 byte 청크 분류, 최근·턴·개별 선택, 문서 통합 토큰 미리보기, 중복·누락 사유와 재현 가능한 snapshot 제공 |
+| 다음 작업 | `chat-history-context-ui` |
 
 ## 상태 라벨
 
@@ -89,9 +89,11 @@ flowchart TD
 | 공급자 토큰·한도·API 예상 비용 관측 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 민감정보 제거 구조화 개발 로그 | Core | `core/src/diagnostic-log-store.ts` | `CURRENT` |
 | 프로젝트 공동 집필 채팅과 제안 저장 | Core | `core/src/chat-store.ts` | `CURRENT` |
+| 프로젝트 대화 주제·작업·세션 분류 | Core | `core/src/chat-store.ts` | `CURRENT` |
+| 이전 대화 턴·메시지·청크 선택과 토큰 미리보기 | Core | `core/src/chat-history-context.ts` | `CURRENT` |
 | 프로젝트 페르소나 버전과 작업 프로필 관리 | Core | `core/src/persona-store.ts` | `CURRENT` |
 | 토큰 예산·중복 제거·누락 경고 컨텍스트 조립 | Core | `core/src/context-builder.ts` | `CURRENT` |
-| AI 요청 실제 출처 revision·좌표·내용 snapshot | Core | `core/src/chat-store.ts` | `CURRENT` |
+| AI 요청 실제 문서·대화 출처 좌표·내용 snapshot | Core | `core/src/chat-store.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |

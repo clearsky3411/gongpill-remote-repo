@@ -19,8 +19,15 @@ import {
 import {
   GongpilChatStore,
   GongpilChatStoreError,
+  type GongpilChatClassification,
   type GongpilDocumentProposal,
 } from "./chat-store.ts";
+import {
+  CreateChatHistoryIndex,
+  GongpilChatHistoryContextError,
+  ResolveChatHistorySelection,
+  type GongpilChatHistoryChunk,
+} from "./chat-history-context.ts";
 import {
   GongpilDocumentStore,
   GongpilDocumentStoreError,
@@ -336,6 +343,73 @@ async function RunCoreProcess(): Promise<void> {
       throw NormalizeDomainError(error);
     }
   });
+  host.RegisterCommand("chat.history.list", async (payload) => {
+    try {
+      const projectId = RequireString(payload, "projectId");
+      await projectStore.GetProject(projectId);
+      const session = await chatStore.ReadSession(projectId);
+      return {
+        history: CreateChatHistoryIndex(session.messages, {
+          maxMessages: OptionalNumber(payload, "maxMessages"),
+        }),
+      };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("chat.message.classification.update", async (payload) => {
+    try {
+      const projectId = RequireString(payload, "projectId");
+      await projectStore.GetProject(projectId);
+      return {
+        message: await chatStore.UpdateMessageClassification(
+          projectId,
+          RequireString(payload, "messageId"),
+          RequireClassification(payload),
+        ),
+      };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
+  host.RegisterCommand("chat.context.preview", async (payload) => {
+    try {
+      const projectId = RequireString(payload, "projectId");
+      const project = await projectStore.GetProject(projectId);
+      const documentPath = OptionalString(payload, "documentPath");
+      const document = documentPath === undefined
+        ? undefined
+        : await documentStore.ReadDocument(projectId, documentPath);
+      const chunkIds = OptionalStringArray(payload, "chunkIds", 50) ?? [];
+      const selectedChunks = chunkIds.length === 0
+        ? []
+        : await chunkIndexStore.Resolve(projectId, chunkIds);
+      const session = await chatStore.ReadSession(projectId);
+      const history = CreateChatHistoryIndex(session.messages);
+      const selectedHistoryChunks = ResolveChatHistorySelection(history, {
+        chunkIds: OptionalStringArray(payload, "historyChunkIds", 500),
+        turnIds: OptionalStringArray(payload, "historyTurnIds", 200),
+        recentTurnCount: OptionalNumber(payload, "recentTurnCount"),
+      });
+      ValidateContextByteLimit(selectedChunks, selectedHistoryChunks);
+      const activePersona = await personaStore.GetActiveContext(projectId);
+      const writingContext = BuildWritingContext({
+        baseInstructions: CreateWritingInstructions(),
+        projectName: project.name,
+        userText: OptionalString(payload, "message") ?? "컨텍스트 미리보기",
+        activePersona,
+        selectedChunks,
+        selectedHistoryChunks,
+        activeDocument: document,
+      });
+      return { snapshot: writingContext.snapshot };
+    }
+    catch (error) {
+      throw NormalizeDomainError(error);
+    }
+  });
   host.RegisterCommand("chat.message.send", async (payload, context) => {
     try {
       if (providerKind === "openai-api" && openAiConfig === undefined) {
@@ -358,16 +432,14 @@ async function RunCoreProcess(): Promise<void> {
       const selectedChunks = chunkIds.length === 0
         ? []
         : await chunkIndexStore.Resolve(projectId, chunkIds);
-      const selectedBytes = selectedChunks.reduce(
-        (total, chunk) => total + Buffer.byteLength(chunk.content, "utf8"),
-        0,
-      );
-      if (selectedBytes > 1024 * 1024) {
-        throw new GongpilLoopbackCommandError(
-          "CHUNK_CONTEXT_TOO_LARGE",
-          "선택한 청크는 합계 1MB 이하여야 합니다.",
-        );
-      }
+      const session = await chatStore.ReadSession(projectId);
+      const history = CreateChatHistoryIndex(session.messages);
+      const selectedHistoryChunks = ResolveChatHistorySelection(history, {
+        chunkIds: OptionalStringArray(payload, "historyChunkIds", 500),
+        turnIds: OptionalStringArray(payload, "historyTurnIds", 200),
+        recentTurnCount: OptionalNumber(payload, "recentTurnCount"),
+      });
+      ValidateContextByteLimit(selectedChunks, selectedHistoryChunks);
       const activePersona = await personaStore.GetActiveContext(projectId);
       const writingContext = BuildWritingContext({
         baseInstructions: CreateWritingInstructions(),
@@ -375,6 +447,7 @@ async function RunCoreProcess(): Promise<void> {
         userText,
         activePersona,
         selectedChunks,
+        selectedHistoryChunks,
         activeDocument: document,
       });
       const userMessage = await chatStore.AppendMessage(projectId, "user", userText, {
@@ -655,6 +728,41 @@ function OptionalStringArray(
   return [...new Set(value)];
 }
 
+function RequireClassification(
+  payload: Readonly<Record<string, unknown>>,
+): GongpilChatClassification {
+  const value = payload.classification;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new GongpilLoopbackCommandError(
+      "INVALID_COMMAND_PAYLOAD",
+      "classification 값이 올바르지 않습니다.",
+    );
+  }
+  const classification = value as Readonly<Record<string, unknown>>;
+  return {
+    topic: OptionalString(classification, "topic"),
+    task: OptionalString(classification, "task"),
+    session: OptionalString(classification, "session"),
+    labels: OptionalStringArray(classification, "labels", 20),
+  };
+}
+
+function ValidateContextByteLimit(
+  selectedChunks: ReadonlyArray<{ content: string }>,
+  selectedHistoryChunks: readonly GongpilChatHistoryChunk[],
+): void {
+  const selectedBytes = [...selectedChunks, ...selectedHistoryChunks].reduce(
+    (total, chunk) => total + Buffer.byteLength(chunk.content, "utf8"),
+    0,
+  );
+  if (selectedBytes > 1024 * 1024) {
+    throw new GongpilLoopbackCommandError(
+      "CONTEXT_SELECTION_TOO_LARGE",
+      "선택한 문서와 이전 대화 청크는 합계 1MB 이하여야 합니다.",
+    );
+  }
+}
+
 function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
   if (error instanceof GongpilLoopbackCommandError) {
     return error;
@@ -666,6 +774,9 @@ function NormalizeDomainError(error: unknown): GongpilLoopbackCommandError {
     return new GongpilLoopbackCommandError(error.code, error.message);
   }
   if (error instanceof GongpilChatStoreError) {
+    return new GongpilLoopbackCommandError(error.code, error.message);
+  }
+  if (error instanceof GongpilChatHistoryContextError) {
     return new GongpilLoopbackCommandError(error.code, error.message);
   }
   if (error instanceof GongpilOpenAiResponsesError) {

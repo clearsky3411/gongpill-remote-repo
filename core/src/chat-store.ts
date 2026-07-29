@@ -4,6 +4,13 @@ import { dirname, join } from "node:path";
 
 import type { GongpilContextSnapshot } from "./context-builder.ts";
 
+export interface GongpilChatClassification {
+  topic?: string;
+  task?: string;
+  session?: string;
+  labels?: string[];
+}
+
 export interface GongpilChatMessage {
   messageId: string;
   role: "user" | "assistant";
@@ -11,6 +18,7 @@ export interface GongpilChatMessage {
   createdAt: string;
   contextSnapshot?: GongpilContextSnapshot;
   inReplyToMessageId?: string;
+  classification?: GongpilChatClassification;
 }
 
 export interface GongpilDocumentProposal {
@@ -56,7 +64,7 @@ export class GongpilChatStore {
     projectId: string,
     role: GongpilChatMessage["role"],
     content: string,
-    options: Pick<GongpilChatMessage, "contextSnapshot" | "inReplyToMessageId"> = {},
+    options: Pick<GongpilChatMessage, "contextSnapshot" | "inReplyToMessageId" | "classification"> = {},
   ): Promise<GongpilChatMessage> {
     return await this.RunMutation(projectId, async () => {
       const session = await this.ReadSessionUnsafe(projectId);
@@ -69,6 +77,33 @@ export class GongpilChatStore {
       };
       session.messages.push(message);
       session.updatedAt = message.createdAt;
+      await this.WriteSession(session);
+      return message;
+    });
+  }
+
+  public async UpdateMessageClassification(
+    projectId: string,
+    messageId: string,
+    classification: GongpilChatClassification,
+  ): Promise<GongpilChatMessage> {
+    return await this.RunMutation(projectId, async () => {
+      const session = await this.ReadSessionUnsafe(projectId);
+      const message = session.messages.find((candidate) => candidate.messageId === messageId);
+      if (message === undefined) {
+        throw new GongpilChatStoreError(
+          "CHAT_MESSAGE_NOT_FOUND",
+          "분류할 채팅 메시지가 없거나 현재 프로젝트에 속하지 않습니다.",
+        );
+      }
+      const normalized = NormalizeClassification(classification);
+      if (normalized === undefined) {
+        delete message.classification;
+      }
+      else {
+        message.classification = normalized;
+      }
+      session.updatedAt = new Date().toISOString();
       await this.WriteSession(session);
       return message;
     });
@@ -192,6 +227,7 @@ function IsChatMessage(value: unknown): value is GongpilChatMessage {
     && typeof message.content === "string"
     && typeof message.createdAt === "string"
     && (message.inReplyToMessageId === undefined || typeof message.inReplyToMessageId === "string")
+    && (message.classification === undefined || IsChatClassification(message.classification))
     && (message.contextSnapshot === undefined || IsContextSnapshot(message.contextSnapshot));
 }
 
@@ -215,19 +251,75 @@ function IsContextSnapshot(value: GongpilContextSnapshot): boolean {
     && Number.isSafeInteger(value.estimatedInputTokens)
     && Array.isArray(value.warnings)
     && value.warnings.every((warning) => typeof warning === "string")
+    && (value.omissions === undefined || (
+      Array.isArray(value.omissions)
+      && value.omissions.every((omission) => (
+        typeof omission.sourceReference === "string"
+        && (omission.sourceKind === "document" || omission.sourceKind === "conversation")
+        && (omission.reason === "duplicate" || omission.reason === "token-budget")
+      ))
+    ))
     && Array.isArray(value.sources)
-    && value.sources.every((source) => (
-      typeof source.sourceId === "string"
-      && (source.selectionKind === "explicit" || source.selectionKind === "active-document")
-      && typeof source.fileId === "string"
-      && typeof source.path === "string"
-      && typeof source.revision === "string"
-      && typeof source.title === "string"
-      && Number.isSafeInteger(source.byteStart)
-      && Number.isSafeInteger(source.byteEnd)
-      && Number.isSafeInteger(source.lineStart)
-      && Number.isSafeInteger(source.lineEnd)
-      && typeof source.content === "string"
-      && /^[a-f0-9]{64}$/.test(source.contentSha256)
+    && value.sources.every(IsSourceSnapshot);
+}
+
+function IsSourceSnapshot(source: GongpilContextSnapshot["sources"][number]): boolean {
+  const common = typeof source.sourceId === "string"
+    && Number.isSafeInteger(source.byteStart)
+    && Number.isSafeInteger(source.byteEnd)
+    && typeof source.content === "string"
+    && /^[a-f0-9]{64}$/.test(source.contentSha256);
+  if (!common) {
+    return false;
+  }
+  if (source.sourceKind === "conversation") {
+    return source.selectionKind === "conversation"
+      && typeof source.historyChunkId === "string"
+      && typeof source.messageId === "string"
+      && typeof source.turnId === "string"
+      && (source.role === "user" || source.role === "assistant")
+      && typeof source.createdAt === "string"
+      && (source.classification === undefined || IsChatClassification(source.classification));
+  }
+  return (source.sourceKind === undefined || source.sourceKind === "document")
+    && (source.selectionKind === "explicit" || source.selectionKind === "active-document")
+    && typeof source.fileId === "string"
+    && typeof source.path === "string"
+    && typeof source.revision === "string"
+    && typeof source.title === "string"
+    && Number.isSafeInteger(source.lineStart)
+    && Number.isSafeInteger(source.lineEnd);
+}
+
+function IsChatClassification(value: GongpilChatClassification): boolean {
+  return IsOptionalBoundedString(value.topic)
+    && IsOptionalBoundedString(value.task)
+    && IsOptionalBoundedString(value.session)
+    && (value.labels === undefined || (
+      Array.isArray(value.labels)
+      && value.labels.length <= 20
+      && value.labels.every((label) => IsOptionalBoundedString(label) && label.trim().length > 0)
     ));
+}
+
+function NormalizeClassification(
+  value: GongpilChatClassification,
+): GongpilChatClassification | undefined {
+  if (!IsChatClassification(value)) {
+    throw new GongpilChatStoreError("CHAT_CLASSIFICATION_INVALID", "대화 분류 값이 올바르지 않습니다.");
+  }
+  const topic = value.topic?.trim() || undefined;
+  const task = value.task?.trim() || undefined;
+  const session = value.session?.trim() || undefined;
+  const labels = value.labels === undefined
+    ? undefined
+    : [...new Set(value.labels.map((label) => label.trim()).filter(Boolean))];
+  if (topic === undefined && task === undefined && session === undefined && (labels?.length ?? 0) === 0) {
+    return undefined;
+  }
+  return { topic, task, session, labels: labels?.length === 0 ? undefined : labels };
+}
+
+function IsOptionalBoundedString(value: string | undefined): boolean {
+  return value === undefined || (typeof value === "string" && value.length <= 100);
 }

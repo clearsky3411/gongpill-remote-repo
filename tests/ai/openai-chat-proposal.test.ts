@@ -202,6 +202,53 @@ test("OpenAI 스트리밍 응답을 승인 전 제안으로 저장하고 승인 
       pricingLabel: "openai-standard-estimate",
       pricingSource: "https://developers.openai.com/api/docs/models/compare",
     });
+
+    const firstUserMessageId = sessionResult.payload?.session.messages[0].messageId as string;
+    const classificationResult = await runtime.Send("chat.message.classification.update", {
+      projectId: project.projectId,
+      messageId: firstUserMessageId,
+      classification: { topic: "긴장감", task: "장면 퇴고", session: "첫 작업", labels: ["중요"] },
+    });
+    assert.equal(classificationResult.state, "succeeded");
+    const historyResult = await runtime.Send("chat.history.list", { projectId: project.projectId });
+    assert.equal(historyResult.state, "succeeded");
+    assert.equal(historyResult.payload?.history.turns.length, 1);
+    assert.equal(historyResult.payload?.history.turns[0].classification.topic, "긴장감");
+    const firstTurnId = historyResult.payload?.history.turns[0].turnId as string;
+    const previewResult = await runtime.Send("chat.context.preview", {
+      projectId: project.projectId,
+      historyTurnIds: [firstTurnId],
+      message: "앞 대화를 이어서 검토해줘",
+    });
+    assert.equal(previewResult.state, "succeeded", JSON.stringify(previewResult.error));
+    assert.deepEqual(
+      previewResult.payload?.snapshot.sources.map((source: { sourceKind: string }) => source.sourceKind),
+      ["conversation", "conversation"],
+    );
+    const stalePreview = await runtime.Send("chat.context.preview", {
+      projectId: project.projectId,
+      historyChunkIds: ["history-chunk:other-project"],
+    });
+    assert.equal(stalePreview.state, "failed");
+    assert.equal(stalePreview.error?.code, "CHAT_HISTORY_SELECTION_STALE");
+
+    const followUpResult = await runtime.Send("chat.message.send", {
+      projectId: project.projectId,
+      documentPath: "draft/scene.md",
+      historyTurnIds: [firstTurnId],
+      message: "앞 대화를 반영해서 한 번 더 다듬어줘",
+    });
+    assert.equal(followUpResult.state, "succeeded", JSON.stringify(followUpResult.error));
+    assert.match(String(receivedBody?.input), /긴장감을 높여줘/);
+    assert.match(String(receivedBody?.input), /수정안을 준비했습니다/);
+    assert.doesNotMatch(String(receivedBody?.input), /contextSnapshot/);
+    const followedSession = await runtime.Send("chat.session.read", { projectId: project.projectId });
+    assert.equal(followedSession.payload?.session.messages.length, 4);
+    assert.equal(
+      followedSession.payload?.session.messages[2].contextSnapshot.sources
+        .filter((source: { sourceKind: string }) => source.sourceKind === "conversation").length,
+      2,
+    );
   }
   finally {
     await bootstrap.Stop();
