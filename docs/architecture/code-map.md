@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `chat-history-context-core` |
+| 작업 단위 | `chat-history-context-ui` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/chat-history-context-core` |
-| 활성 컴포넌트 | `gongpil.core`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `chat.session.persist`, `chat.history.classify`, `context.history.select`, `context.build.budget`, `context.source.snapshot`, `architecture.code-map.track`, `architecture.code-map.validate` |
-| 완료 결과 | 프로젝트 채팅의 턴·메시지·UTF-8 byte 청크 분류, 최근·턴·개별 선택, 문서 통합 토큰 미리보기, 중복·누락 사유와 재현 가능한 snapshot 제공 |
-| 다음 작업 | `chat-history-context-ui` |
+| 브랜치 | `codex/chat-history-context-ui` |
+| 활성 컴포넌트 | `gongpil.browser`, `gongpil.installer`, `gongpil.distribution`, `gongpil.tests`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `ui.context-selection`, `ui.chat-history-context`, `release.validation`, `distribution.portable`, `install.windows`, `architecture.code-map.track`, `architecture.code-map.validate` |
+| 작업 목표 | 최근 10개·턴·개별 대화 청크와 분류 필터 선택, 문서·대화 통합 토큰·포함 순서·누락 사유 미리보기 |
+| 다음 작업 | `chat-history-summary-modes` |
 
 ## 상태 라벨
 
@@ -99,6 +99,7 @@ flowchart TD
 | 공동 집필 채팅과 변경 승인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 작업 정보·사용량·개발 로그 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 공동 집필 문서·청크 검색과 명시 선택 UI | Browser | `browser/src/index.html` | `CURRENT` |
+| 이전 대화 최근·분류·턴·청크 선택과 통합 토큰 미리보기 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 페르소나·작업 프로필 전환과 요청 출처 확인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |

@@ -2,28 +2,30 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "chat-history-context-core",
+    "activeWorkUnit": "chat-history-context-ui",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/chat-history-context-core",
+    "branch": "codex/chat-history-context-ui",
     "activeComponentIds": [
-      "gongpil.core",
+      "gongpil.browser",
+      "gongpil.installer",
+      "gongpil.distribution",
       "gongpil.tests",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "chat.session.persist",
-      "chat.history.classify",
-      "context.history.select",
-      "context.build.budget",
-      "context.source.snapshot",
+      "ui.context-selection",
+      "ui.chat-history-context",
+      "release.validation",
+      "distribution.portable",
+      "install.windows",
       "architecture.code-map.track",
       "architecture.code-map.validate"
     ],
-    "summary": "프로젝트 채팅을 턴·메시지·UTF-8 byte 청크로 분류하고 최근·턴·개별 청크 선택, 문서와 통합된 토큰 미리보기, 중복·누락 사유와 재현 가능한 snapshot을 제공한다.",
-    "nextRecommendedWorkUnit": "chat-history-context-ui"
+    "summary": "인스턴스에서 최근 10개·턴·개별 대화 청크와 분류 필터를 선택하고 문서·대화 통합 토큰·포함 순서·누락 사유를 미리 본다.",
+    "nextRecommendedWorkUnit": "chat-history-summary-modes"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -84,11 +86,11 @@
       "kind": "ui",
       "status": "CURRENT",
       "responsibility": "절대 저장 경로를 알지 않는 WebView와 브라우저 공통 사용자 인터페이스",
-      "owns": ["ui-state", "project-navigation", "document-editor", "connection-status", "approval-view", "persona-context-view", "source-snapshot-view"],
+      "owns": ["ui-state", "project-navigation", "document-editor", "connection-status", "approval-view", "persona-context-view", "source-snapshot-view", "chat-history-selector", "context-preview"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
       "publicInterfaces": ["browser/src/index.html", "browser/src/app.js", "browser/src/styles.css", "browser/src/favicon.svg"],
-      "tests": ["tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/context/persona-context-source.test.ts"],
+      "tests": ["tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-ui.test.ts"],
       "relatedDocs": ["browser/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/network-runtime.md"]
     },
     {
@@ -210,11 +212,11 @@
       "kind": "test-group",
       "status": "CURRENT",
       "responsibility": "통합, E2E, 마이그레이션과 장애 주입 검증",
-      "owns": ["bootstrap-integration-tests", "project-document-mvp-tests", "persona-context-tests", "chat-history-context-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
+      "owns": ["bootstrap-integration-tests", "project-document-mvp-tests", "persona-context-tests", "chat-history-context-tests", "chat-history-ui-tests", "integration-tests", "e2e-tests", "fixtures", "migration-tests"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.installer", "gongpil.platform", "gongpil.network-runtime", "gongpil.packages", "gongpil.builtin-plugins"],
       "usedBy": [],
       "publicInterfaces": [],
-      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts", "tests/context/chat-history-ui.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "relatedDocs": ["tests/README.md"]
     },
     {
@@ -526,6 +528,16 @@
       "entrypoints": ["LoadChunks", "SearchChunks", "RenderContextSelection"],
       "tests": ["tests/chunks/chunk-index-search.test.ts", "tests/diagnostics/developer-log.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["chunk.list", "chunk.search", "chat.message.send"], "events": [] }
+    },
+    {
+      "id": "ui.chat-history-context",
+      "name": "이전 대화 최근·분류·턴·청크 선택과 통합 토큰 미리보기 UI",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.browser",
+      "path": "browser/src/index.html",
+      "entrypoints": ["LoadChatHistory", "RenderChatHistorySelection", "PreviewContext", "UpdateHistoryClassification"],
+      "tests": ["tests/context/chat-history-ui.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
+      "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.history.list", "chat.context.preview", "chat.message.classification.update", "chat.message.send"], "events": [] }
     },
     {
       "id": "ui.shell",

@@ -16,6 +16,13 @@ const state = {
   chunks: [],
   selectedChunkIds: new Set(),
   selectedChunkPaths: new Map(),
+  chatHistory: { turns: [], chunks: [], totalMessageCount: 0, truncatedMessageCount: 0 },
+  selectedHistoryChunkIds: new Set(),
+  historySelectionInitialized: false,
+  contextPreview: undefined,
+  contextPreviewError: undefined,
+  contextPreviewLoading: false,
+  contextPreviewSequence: 0,
   chatSending: false,
   streamingText: "",
 };
@@ -60,6 +67,19 @@ const elements = {
   contextSelectionSummary: document.querySelector("#contextSelectionSummary"),
   selectVisibleChunksButton: document.querySelector("#selectVisibleChunksButton"),
   clearChunkSelectionButton: document.querySelector("#clearChunkSelectionButton"),
+  historySelectionSummary: document.querySelector("#historySelectionSummary"),
+  historyRecentCount: document.querySelector("#historyRecentCount"),
+  selectRecentHistoryButton: document.querySelector("#selectRecentHistoryButton"),
+  clearHistorySelectionButton: document.querySelector("#clearHistorySelectionButton"),
+  historyClassificationFilter: document.querySelector("#historyClassificationFilter"),
+  historySearchInput: document.querySelector("#historySearchInput"),
+  selectFilteredHistoryButton: document.querySelector("#selectFilteredHistoryButton"),
+  historyTruncationNotice: document.querySelector("#historyTruncationNotice"),
+  historyList: document.querySelector("#historyList"),
+  contextPreviewSummary: document.querySelector("#contextPreviewSummary"),
+  contextPreviewWarnings: document.querySelector("#contextPreviewWarnings"),
+  contextPreviewSources: document.querySelector("#contextPreviewSources"),
+  contextPreviewOmissions: document.querySelector("#contextPreviewOmissions"),
   chatMessages: document.querySelector("#chatMessages"),
   chatForm: document.querySelector("#chatForm"),
   chatInput: document.querySelector("#chatInput"),
@@ -97,6 +117,11 @@ async function OpenProject(projectId) {
   state.chunks = [];
   state.selectedChunkIds.clear();
   state.selectedChunkPaths.clear();
+  state.chatHistory = { turns: [], chunks: [], totalMessageCount: 0, truncatedMessageCount: 0 };
+  state.selectedHistoryChunkIds.clear();
+  state.historySelectionInitialized = false;
+  state.contextPreview = undefined;
+  state.contextPreviewError = undefined;
   state.dirty = false;
   RenderProjects();
   RenderDocuments();
@@ -104,6 +129,7 @@ async function OpenProject(projectId) {
   await LoadPersonaWorkspace();
   await LoadChatSession();
   await LoadChunks();
+  await LoadChatHistory(true);
 }
 
 async function LoadChatSession() {
@@ -128,6 +154,34 @@ async function LoadChatSession() {
   RenderChat();
 }
 
+async function LoadChatHistory(selectDefaultRecent = false) {
+  if (state.activeProject === undefined) {
+    state.chatHistory = { turns: [], chunks: [], totalMessageCount: 0, truncatedMessageCount: 0 };
+    state.selectedHistoryChunkIds.clear();
+    state.historySelectionInitialized = false;
+    RenderChatHistorySelection();
+    ScheduleContextPreview();
+    return;
+  }
+  const payload = RequirePayload(await runtime.Send("chat.history.list", {
+    projectId: state.activeProject.projectId,
+    maxMessages: 400,
+  }));
+  state.chatHistory = payload.history ?? { turns: [], chunks: [], totalMessageCount: 0, truncatedMessageCount: 0 };
+  const currentChunkIds = new Set(state.chatHistory.chunks.map((chunk) => chunk.chunkId));
+  for (const chunkId of state.selectedHistoryChunkIds) {
+    if (!currentChunkIds.has(chunkId)) {
+      state.selectedHistoryChunkIds.delete(chunkId);
+    }
+  }
+  if (selectDefaultRecent && !state.historySelectionInitialized) {
+    SelectRecentHistory(Number(elements.historyRecentCount.value));
+    state.historySelectionInitialized = true;
+  }
+  RenderChatHistorySelection();
+  ScheduleContextPreview();
+}
+
 async function LoadPersonaWorkspace() {
   if (state.activeProject === undefined) {
     state.personaWorkspace = undefined;
@@ -139,6 +193,7 @@ async function LoadPersonaWorkspace() {
   }));
   state.personaWorkspace = payload.workspace;
   RenderPersonaWorkspace();
+  ScheduleContextPreview();
 }
 
 async function UpdatePersonaSelection(selection) {
@@ -151,6 +206,7 @@ async function UpdatePersonaSelection(selection) {
   }));
   state.personaWorkspace = payload.workspace;
   RenderPersonaWorkspace();
+  ScheduleContextPreview();
   ShowToast("공동 집필 페르소나·프로필을 전환했습니다.");
 }
 
@@ -171,6 +227,7 @@ async function SavePersonaVersion(mode) {
   }));
   state.personaWorkspace = payload.workspace;
   RenderPersonaWorkspace();
+  ScheduleContextPreview();
   ShowToast(createNewPersona ? "새 페르소나를 저장했습니다." : "페르소나 새 버전을 저장했습니다.");
 }
 
@@ -272,8 +329,10 @@ async function SendChatMessage() {
       message,
       documentPath: state.activeDocument?.path,
       chunkIds: [...state.selectedChunkIds],
+      historyChunkIds: [...state.selectedHistoryChunkIds],
     }));
     await LoadChatSession();
+    await LoadChatHistory(false);
   }
   finally {
     state.chatSending = false;
@@ -329,6 +388,7 @@ async function LoadChunks(documentPath = state.activeDocument?.path) {
   if (state.activeProject === undefined) {
     state.chunks = [];
     RenderContextSelection();
+    ScheduleContextPreview();
     return;
   }
   const payload = RequirePayload(await runtime.Send("chunk.list", {
@@ -338,6 +398,7 @@ async function LoadChunks(documentPath = state.activeDocument?.path) {
   state.chunks = payload.chunks ?? [];
   PruneChunkSelection(documentPath);
   RenderContextSelection();
+  ScheduleContextPreview();
 }
 
 async function SearchChunks() {
@@ -356,6 +417,7 @@ async function SearchChunks() {
   }));
   state.chunks = (payload.results ?? []).map((result) => result.chunk);
   RenderContextSelection();
+  ScheduleContextPreview();
 }
 
 function RenderContextSelection() {
@@ -388,6 +450,7 @@ function RenderContextSelection() {
         state.selectedChunkPaths.delete(chunk.chunkId);
       }
       RenderContextSelection();
+      ScheduleContextPreview();
     });
     const details = document.createElement("span");
     const title = document.createElement("strong");
@@ -414,6 +477,346 @@ function PruneChunkSelection(documentPath) {
       state.selectedChunkPaths.delete(chunkId);
     }
   }
+}
+
+function SelectRecentHistory(requestedCount) {
+  const count = Math.max(0, Math.min(100, Math.trunc(Number(requestedCount) || 0)));
+  const recentTurns = state.chatHistory.turns.slice(Math.max(0, state.chatHistory.turns.length - count));
+  for (const turn of recentTurns) {
+    for (const chunkId of turn.chunkIds) {
+      state.selectedHistoryChunkIds.add(chunkId);
+    }
+  }
+}
+
+function GetVisibleHistoryTurns() {
+  const classificationFilter = elements.historyClassificationFilter.value;
+  const search = elements.historySearchInput.value.trim().toLocaleLowerCase("ko");
+  const chunkById = new Map(state.chatHistory.chunks.map((chunk) => [chunk.chunkId, chunk]));
+  return state.chatHistory.turns.filter((turn) => {
+    if (classificationFilter && !MatchesHistoryClassification(turn.classification, classificationFilter)) {
+      return false;
+    }
+    if (!search) {
+      return true;
+    }
+    const searchable = [
+      turn.preview,
+      ...Object.values(turn.classification ?? {}),
+      ...turn.chunkIds.map((chunkId) => chunkById.get(chunkId)?.preview ?? ""),
+    ].flat().join(" ").toLocaleLowerCase("ko");
+    return searchable.includes(search);
+  });
+}
+
+function MatchesHistoryClassification(classification, filter) {
+  const separator = filter.indexOf(":");
+  const key = filter.slice(0, separator);
+  const value = filter.slice(separator + 1);
+  if (key === "label") {
+    return classification?.labels?.includes(value) === true;
+  }
+  return classification?.[key] === value;
+}
+
+function RenderChatHistorySelection() {
+  const selectedChunks = state.chatHistory.chunks.filter((chunk) => state.selectedHistoryChunkIds.has(chunk.chunkId));
+  const selectedTokens = selectedChunks.reduce((total, chunk) => total + Number(chunk.estimatedTokens ?? 0), 0);
+  elements.historySelectionSummary.textContent = `선택 ${selectedChunks.length.toLocaleString("ko-KR")}개 · 약 ${selectedTokens.toLocaleString("ko-KR")} tok`;
+  PopulateHistoryClassificationFilter();
+  elements.selectRecentHistoryButton.disabled = state.activeProject === undefined || state.chatHistory.turns.length === 0;
+  elements.clearHistorySelectionButton.disabled = state.selectedHistoryChunkIds.size === 0;
+  elements.selectFilteredHistoryButton.disabled = GetVisibleHistoryTurns().length === 0;
+  elements.historyRecentCount.disabled = state.activeProject === undefined;
+  elements.historyClassificationFilter.disabled = state.activeProject === undefined;
+  elements.historySearchInput.disabled = state.activeProject === undefined;
+
+  const truncatedCount = Number(state.chatHistory.truncatedMessageCount ?? 0);
+  elements.historyTruncationNotice.hidden = truncatedCount === 0;
+  elements.historyTruncationNotice.textContent = truncatedCount === 0
+    ? ""
+    : `오래된 메시지 ${truncatedCount.toLocaleString("ko-KR")}개는 목록 제한으로 표시하지 않습니다.`;
+  elements.historyList.replaceChildren();
+  const visibleTurns = GetVisibleHistoryTurns();
+  if (visibleTurns.length === 0) {
+    elements.historyList.className = "history-list empty-state";
+    elements.historyList.textContent = state.activeProject === undefined
+      ? "프로젝트를 선택하세요."
+      : (state.chatHistory.turns.length === 0 ? "아직 이전 대화가 없습니다." : "필터에 맞는 대화가 없습니다.");
+    return;
+  }
+  elements.historyList.className = "history-list";
+  const chunkById = new Map(state.chatHistory.chunks.map((chunk) => [chunk.chunkId, chunk]));
+  for (const turn of visibleTurns) {
+    const turnChunks = turn.chunkIds.map((chunkId) => chunkById.get(chunkId)).filter(Boolean);
+    const selectedCount = turnChunks.filter((chunk) => state.selectedHistoryChunkIds.has(chunk.chunkId)).length;
+    const article = document.createElement("article");
+    article.className = "history-turn";
+    const heading = document.createElement("label");
+    heading.className = "history-turn-heading";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = turnChunks.length > 0 && selectedCount === turnChunks.length;
+    checkbox.indeterminate = selectedCount > 0 && selectedCount < turnChunks.length;
+    checkbox.addEventListener("change", () => {
+      for (const chunk of turnChunks) {
+        if (checkbox.checked) {
+          state.selectedHistoryChunkIds.add(chunk.chunkId);
+        }
+        else {
+          state.selectedHistoryChunkIds.delete(chunk.chunkId);
+        }
+      }
+      RenderChatHistorySelection();
+      ScheduleContextPreview();
+    });
+    const headingText = document.createElement("span");
+    const title = document.createElement("strong");
+    title.textContent = `${new Date(turn.createdAt).toLocaleString("ko-KR")} · ${turn.preview || "(빈 대화)"}`;
+    const metadata = document.createElement("small");
+    metadata.textContent = `${FormatHistoryClassification(turn.classification)} · ${turnChunks.length}청크 · 약 ${Number(turn.estimatedTokens ?? 0).toLocaleString("ko-KR")} tok`;
+    headingText.append(title, metadata);
+    heading.append(checkbox, headingText);
+    article.append(heading);
+
+    const chunks = document.createElement("details");
+    chunks.className = "history-chunks";
+    const chunksSummary = document.createElement("summary");
+    chunksSummary.textContent = `메시지 청크 ${selectedCount}/${turnChunks.length} 선택`;
+    chunks.append(chunksSummary);
+    for (const chunk of turnChunks) {
+      const chunkLabel = document.createElement("label");
+      chunkLabel.className = "history-chunk-option";
+      const chunkCheckbox = document.createElement("input");
+      chunkCheckbox.type = "checkbox";
+      chunkCheckbox.checked = state.selectedHistoryChunkIds.has(chunk.chunkId);
+      chunkCheckbox.addEventListener("change", () => {
+        if (chunkCheckbox.checked) {
+          state.selectedHistoryChunkIds.add(chunk.chunkId);
+        }
+        else {
+          state.selectedHistoryChunkIds.delete(chunk.chunkId);
+        }
+        RenderChatHistorySelection();
+        ScheduleContextPreview();
+      });
+      const chunkText = document.createElement("span");
+      const role = chunk.role === "user" ? "나" : "공필 AI";
+      chunkText.textContent = `${role} · bytes ${chunk.byteStart}-${chunk.byteEnd} · ${chunk.preview || "(빈 청크)"}`;
+      chunkLabel.append(chunkCheckbox, chunkText);
+      chunks.append(chunkLabel);
+    }
+    article.append(chunks, CreateHistoryClassificationEditor(turn));
+    elements.historyList.append(article);
+  }
+}
+
+function PopulateHistoryClassificationFilter() {
+  const selectedValue = elements.historyClassificationFilter.value;
+  const options = new Map();
+  for (const turn of state.chatHistory.turns) {
+    const classification = turn.classification;
+    for (const key of ["topic", "task", "session"]) {
+      if (classification?.[key]) {
+        options.set(`${key}:${classification[key]}`, `${HistoryClassificationLabel(key)} · ${classification[key]}`);
+      }
+    }
+    for (const label of classification?.labels ?? []) {
+      options.set(`label:${label}`, `라벨 · ${label}`);
+    }
+  }
+  elements.historyClassificationFilter.replaceChildren();
+  const all = document.createElement("option");
+  all.value = "";
+  all.textContent = "모든 분류";
+  elements.historyClassificationFilter.append(all);
+  for (const [value, label] of [...options].sort((left, right) => left[1].localeCompare(right[1], "ko"))) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    elements.historyClassificationFilter.append(option);
+  }
+  elements.historyClassificationFilter.value = options.has(selectedValue) ? selectedValue : "";
+}
+
+function CreateHistoryClassificationEditor(turn) {
+  const details = document.createElement("details");
+  details.className = "history-classification-editor";
+  const summary = document.createElement("summary");
+  summary.textContent = "분류 편집";
+  const form = document.createElement("form");
+  const fields = [
+    ["topic", "주제"],
+    ["task", "작업"],
+    ["session", "세션"],
+    ["labels", "라벨 (쉼표 구분)"],
+  ];
+  const inputs = {};
+  for (const [key, labelText] of fields) {
+    const label = document.createElement("label");
+    label.textContent = labelText;
+    const input = document.createElement("input");
+    input.maxLength = key === "labels" ? 400 : 100;
+    input.value = key === "labels"
+      ? (turn.classification?.labels ?? []).join(", ")
+      : turn.classification?.[key] ?? "";
+    inputs[key] = input;
+    label.append(input);
+    form.append(label);
+  }
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.textContent = "분류 저장";
+  form.append(save);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void RunAction(() => UpdateHistoryClassification(turn, {
+      topic: inputs.topic.value,
+      task: inputs.task.value,
+      session: inputs.session.value,
+      labels: SplitMultiline(inputs.labels.value),
+    }));
+  });
+  details.append(summary, form);
+  return details;
+}
+
+async function UpdateHistoryClassification(turn, classification) {
+  if (state.activeProject === undefined) {
+    return;
+  }
+  const messageId = turn.userMessageId ?? turn.assistantMessageIds?.[0];
+  if (!messageId) {
+    throw new Error("분류할 대화 메시지를 찾지 못했습니다.");
+  }
+  RequirePayload(await runtime.Send("chat.message.classification.update", {
+    projectId: state.activeProject.projectId,
+    messageId,
+    classification,
+  }));
+  await LoadChatHistory(false);
+  ShowToast("대화 분류를 저장했습니다.");
+}
+
+function FormatHistoryClassification(classification) {
+  const values = [
+    classification?.topic ? `주제 ${classification.topic}` : undefined,
+    classification?.task ? `작업 ${classification.task}` : undefined,
+    classification?.session ? `세션 ${classification.session}` : undefined,
+    ...(classification?.labels ?? []).map((label) => `#${label}`),
+  ].filter(Boolean);
+  return values.length > 0 ? values.join(" · ") : "미분류";
+}
+
+function HistoryClassificationLabel(key) {
+  return { topic: "주제", task: "작업", session: "세션" }[key] ?? key;
+}
+
+function ScheduleContextPreview() {
+  clearTimeout(ScheduleContextPreview.timeout);
+  ScheduleContextPreview.timeout = setTimeout(() => void PreviewContext(), 180);
+}
+ScheduleContextPreview.timeout = undefined;
+
+async function PreviewContext() {
+  const sequence = ++state.contextPreviewSequence;
+  if (state.activeProject === undefined) {
+    state.contextPreview = undefined;
+    state.contextPreviewError = undefined;
+    state.contextPreviewLoading = false;
+    RenderContextPreview();
+    return;
+  }
+  state.contextPreviewLoading = true;
+  state.contextPreviewError = undefined;
+  RenderContextPreview();
+  try {
+    const payload = RequirePayload(await runtime.Send("chat.context.preview", {
+      projectId: state.activeProject.projectId,
+      documentPath: state.activeDocument?.path,
+      chunkIds: [...state.selectedChunkIds],
+      historyChunkIds: [...state.selectedHistoryChunkIds],
+      message: elements.chatInput.value.trim() || "다음 공동 집필 요청",
+    }));
+    if (sequence !== state.contextPreviewSequence) {
+      return;
+    }
+    state.contextPreview = payload.snapshot;
+  }
+  catch (error) {
+    if (sequence !== state.contextPreviewSequence) {
+      return;
+    }
+    state.contextPreview = undefined;
+    state.contextPreviewError = error instanceof Error ? error.message : "컨텍스트를 계산하지 못했습니다.";
+  }
+  finally {
+    if (sequence === state.contextPreviewSequence) {
+      state.contextPreviewLoading = false;
+      RenderContextPreview();
+    }
+  }
+}
+
+function RenderContextPreview() {
+  elements.contextPreviewWarnings.replaceChildren();
+  elements.contextPreviewSources.replaceChildren();
+  elements.contextPreviewOmissions.replaceChildren();
+  if (state.activeProject === undefined) {
+    elements.contextPreviewSummary.textContent = "프로젝트를 선택하세요.";
+    return;
+  }
+  if (state.contextPreviewLoading) {
+    elements.contextPreviewSummary.textContent = "토큰과 포함 순서를 계산 중…";
+    return;
+  }
+  if (state.contextPreviewError) {
+    elements.contextPreviewSummary.textContent = "미리보기 실패";
+    const warning = document.createElement("p");
+    warning.textContent = state.contextPreviewError;
+    elements.contextPreviewWarnings.append(warning);
+    return;
+  }
+  const snapshot = state.contextPreview;
+  if (!snapshot) {
+    elements.contextPreviewSummary.textContent = "선택을 계산합니다.";
+    return;
+  }
+  elements.contextPreviewSummary.textContent = [
+    `약 ${Number(snapshot.estimatedInputTokens ?? 0).toLocaleString("ko-KR")} / ${Number(snapshot.profile?.contextTokenBudget ?? 0).toLocaleString("ko-KR")} tok`,
+    `포함 ${snapshot.includedSourceCount}/${snapshot.requestedSourceCount}`,
+    `제외 ${snapshot.omittedSourceCount}`,
+  ].join(" · ");
+  for (const warningText of snapshot.warnings ?? []) {
+    const warning = document.createElement("p");
+    warning.textContent = warningText;
+    elements.contextPreviewWarnings.append(warning);
+  }
+  for (const source of snapshot.sources ?? []) {
+    const item = document.createElement("li");
+    const title = document.createElement("strong");
+    title.textContent = DescribeContextSource(source);
+    const preview = document.createElement("span");
+    const compact = String(source.content ?? "").replace(/\s+/g, " ").trim();
+    preview.textContent = compact.length > 120 ? `${compact.slice(0, 117)}...` : compact || "(빈 내용)";
+    item.append(title, preview);
+    elements.contextPreviewSources.append(item);
+  }
+  for (const omission of snapshot.omissions ?? []) {
+    const row = document.createElement("p");
+    const reason = omission.reason === "duplicate" ? "같은 내용 중복" : "토큰 예산 초과";
+    const kind = omission.sourceKind === "conversation" ? "대화" : "문서";
+    row.textContent = `${kind} 제외 · ${reason} · ${omission.sourceReference}`;
+    elements.contextPreviewOmissions.append(row);
+  }
+}
+
+function DescribeContextSource(source) {
+  if (source.sourceKind === "conversation") {
+    const role = source.role === "user" ? "나" : "공필 AI";
+    return `대화 · ${role} · ${new Date(source.createdAt).toLocaleString("ko-KR")} · bytes ${source.byteStart}-${source.byteEnd}`;
+  }
+  return `문서 · ${source.path} · L${source.lineStart}-${source.lineEnd} · bytes ${source.byteStart}-${source.byteEnd}`;
 }
 
 async function RefreshDocuments() {
@@ -718,12 +1121,26 @@ function RenderContextSnapshot(snapshot) {
     const sourceDetails = document.createElement("details");
     sourceDetails.className = "source-snapshot";
     const sourceSummary = document.createElement("summary");
-    const selectionLabel = source.selectionKind === "explicit" ? "명시 선택" : "현재 문서";
-    sourceSummary.textContent = `${selectionLabel} · ${source.path} · L${source.lineStart}-${source.lineEnd} · bytes ${source.byteStart}-${source.byteEnd} · rev ${source.revision.slice(0, 10)}`;
+    if (source.sourceKind === "conversation") {
+      const role = source.role === "user" ? "나" : "공필 AI";
+      sourceSummary.textContent = `이전 대화 · ${role} · ${new Date(source.createdAt).toLocaleString("ko-KR")} · bytes ${source.byteStart}-${source.byteEnd} · ${FormatHistoryClassification(source.classification)}`;
+    }
+    else {
+      const selectionLabel = source.selectionKind === "explicit" ? "명시 선택" : "현재 문서";
+      const revision = typeof source.revision === "string" ? source.revision.slice(0, 10) : "확인 불가";
+      sourceSummary.textContent = `${selectionLabel} · ${source.path} · L${source.lineStart}-${source.lineEnd} · bytes ${source.byteStart}-${source.byteEnd} · rev ${revision}`;
+    }
     const content = document.createElement("pre");
     content.textContent = source.content;
     sourceDetails.append(sourceSummary, content);
     details.append(sourceDetails);
+  }
+  for (const omission of snapshot.omissions ?? []) {
+    const omitted = document.createElement("p");
+    omitted.className = "context-omission";
+    const reason = omission.reason === "duplicate" ? "같은 내용 중복" : "토큰 예산 초과";
+    omitted.textContent = `제외 · ${omission.sourceKind === "conversation" ? "대화" : "문서"} · ${reason} · ${omission.sourceReference}`;
+    details.append(omitted);
   }
   return details;
 }
@@ -872,6 +1289,7 @@ elements.chatForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void RunAction(SendChatMessage);
 });
+elements.chatInput.addEventListener("input", ScheduleContextPreview);
 elements.chunkSearchForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void RunAction(SearchChunks);
@@ -882,11 +1300,38 @@ elements.selectVisibleChunksButton.addEventListener("click", () => {
     state.selectedChunkPaths.set(chunk.chunkId, chunk.path);
   }
   RenderContextSelection();
+  ScheduleContextPreview();
 });
 elements.clearChunkSelectionButton.addEventListener("click", () => {
   state.selectedChunkIds.clear();
   state.selectedChunkPaths.clear();
   RenderContextSelection();
+  ScheduleContextPreview();
+});
+elements.selectRecentHistoryButton.addEventListener("click", () => {
+  state.selectedHistoryChunkIds.clear();
+  SelectRecentHistory(Number(elements.historyRecentCount.value));
+  state.historySelectionInitialized = true;
+  RenderChatHistorySelection();
+  ScheduleContextPreview();
+});
+elements.clearHistorySelectionButton.addEventListener("click", () => {
+  state.selectedHistoryChunkIds.clear();
+  state.historySelectionInitialized = true;
+  RenderChatHistorySelection();
+  ScheduleContextPreview();
+});
+elements.historyClassificationFilter.addEventListener("change", RenderChatHistorySelection);
+elements.historySearchInput.addEventListener("input", RenderChatHistorySelection);
+elements.selectFilteredHistoryButton.addEventListener("click", () => {
+  for (const turn of GetVisibleHistoryTurns()) {
+    for (const chunkId of turn.chunkIds) {
+      state.selectedHistoryChunkIds.add(chunkId);
+    }
+  }
+  state.historySelectionInitialized = true;
+  RenderChatHistorySelection();
+  ScheduleContextPreview();
 });
 elements.shutdownButton.addEventListener("click", () => {
   if (!confirm("공필 Core를 종료하시겠습니까?")) {
@@ -925,7 +1370,10 @@ runtime.Subscribe((event) => {
   }
   if (["chat.message.completed", "proposal.created", "proposal.applied", "proposal.rejected"].includes(event.eventName)
     && event.payload.projectId === state.activeProject?.projectId) {
-    void RunAction(LoadChatSession);
+    void RunAction(async () => {
+      await LoadChatSession();
+      await LoadChatHistory(false);
+    });
   }
 });
 
@@ -939,4 +1387,6 @@ void RunAction(async () => {
   await Promise.all([LoadProjects(), LoadProviderStatus()]);
   RenderPersonaWorkspace();
   RenderContextSelection();
+  RenderChatHistorySelection();
+  RenderContextPreview();
 });

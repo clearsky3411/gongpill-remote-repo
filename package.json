@@ -18,7 +18,7 @@
     "test:ai": "node --test tests/ai/openai-chat-proposal.test.ts tests/ai/codex-provider-usage.test.ts",
     "test:diagnostics": "node --test tests/diagnostics/developer-log.test.ts",
     "test:chunks": "node --test tests/chunks/chunk-index-search.test.ts",
-    "test:context": "node --test tests/context/persona-context-source.test.ts tests/context/chat-history-context.test.ts",
+    "test:context": "node --test tests/context/persona-context-source.test.ts tests/context/chat-history-context.test.ts tests/context/chat-history-ui.test.ts",
     "test:mvp": "node --test tests/mvp/project-document-mvp.test.ts",
     "test:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-installer.ps1",
     "test:portable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-portable.ps1",

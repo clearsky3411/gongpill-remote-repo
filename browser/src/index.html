@@ -129,6 +129,37 @@
             <button id="clearChunkSelectionButton" class="ghost-button" type="button">선택 해제</button>
           </div>
           <div id="chunkList" class="chunk-list empty-state">문서를 선택하면 청크가 표시됩니다.</div>
+          <details id="historyContextDetails" class="history-context" open>
+            <summary>
+              <strong>이전 대화 지정</strong>
+              <span id="historySelectionSummary">선택 0개</span>
+            </summary>
+            <div class="history-recent-controls">
+              <label for="historyRecentCount">최근 턴
+                <input id="historyRecentCount" type="number" min="0" max="100" value="10">
+              </label>
+              <button id="selectRecentHistoryButton" class="ghost-button" type="button">최근 적용</button>
+              <button id="clearHistorySelectionButton" class="ghost-button" type="button">전체 해제</button>
+            </div>
+            <div class="history-filter-controls">
+              <select id="historyClassificationFilter" aria-label="대화 분류 필터">
+                <option value="">모든 분류</option>
+              </select>
+              <input id="historySearchInput" maxlength="100" placeholder="대화 내용 검색" aria-label="대화 내용 검색">
+              <button id="selectFilteredHistoryButton" class="ghost-button" type="button">보이는 턴 선택</button>
+            </div>
+            <p id="historyTruncationNotice" class="history-notice" hidden></p>
+            <div id="historyList" class="history-list empty-state">이전 대화를 불러오는 중입니다.</div>
+          </details>
+          <section id="contextPreviewPanel" class="context-preview-panel" aria-live="polite">
+            <div class="context-preview-heading">
+              <strong>전송 컨텍스트 미리보기</strong>
+              <span id="contextPreviewSummary">선택을 계산합니다.</span>
+            </div>
+            <div id="contextPreviewWarnings" class="context-preview-warnings"></div>
+            <ol id="contextPreviewSources" class="context-preview-sources"></ol>
+            <div id="contextPreviewOmissions" class="context-preview-omissions"></div>
+          </section>
         </section>
         <div id="chatMessages" class="chat-messages empty-state" aria-live="polite">
           프로젝트를 선택하면 AI와 함께 작성할 수 있습니다.
