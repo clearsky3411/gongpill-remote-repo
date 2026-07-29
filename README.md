@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + Instance 레이아웃 저장 계약
-- 최근 작업 브랜치: `codex/instance-panel-layout-contract`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 복원 가능한 Instance 작업 영역
+- 최근 작업 브랜치: `codex/instance-panel-layout-ui`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -21,7 +21,7 @@
 npm start
 ```
 
-처음 실행하면 Windows 클라이언트 홈이 먼저 열린다. `홈`에서 Client·Instance 상태, 지금 가능한 작업과 패치노트를 확인하고 `설정`에서 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 즉시 끝내며, Browser 창을 닫아 생존 응답이 끊겨도 약 30초 뒤 Instance Runtime만 끝난다. 상주 Client Runtime의 홈에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
+처음 실행하면 Windows 클라이언트 홈이 먼저 열린다. `홈`에서 Client·Instance 상태, 지금 가능한 작업과 패치노트를 확인하고 `설정`에서 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. 각 영역 제목의 버튼으로 프로젝트·문서·편집기·공동 집필 영역을 접거나 좌우로 옮기고, 경계 손잡이를 끌거나 방향키로 너비를 바꿀 수 있다. 배치는 데이터 루트에 저장되어 다시 열 때 복원되며 `영역 배치 초기화`로 기본값을 되찾는다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 즉시 끝내며, Browser 창을 닫아 생존 응답이 끊겨도 약 30초 뒤 Instance Runtime만 끝난다. 상주 Client Runtime의 홈에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
 
 OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 API 키를 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일을 선택한다. 키는 Git 저장소나 Browser에 넣지 않는다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`, 포터블 설정은 앱 옆 `GongpilClient/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. 포터블 프로젝트 데이터는 계속 `GongpilData`에 남는다. Codex 인증은 선택한 `dataRoot/integrations/codex` 아래의 공필 전용 `CODEX_HOME`에 격리된다.
 
@@ -52,6 +52,7 @@ npm run demo:bootstrap
 npm run demo:network
 npm run demo:network:loopback
 npm run test:bootstrap
+npm run test:browser
 npm run test:client
 npm run test:ai
 npm run test:diagnostics
@@ -88,6 +89,7 @@ npm run validate:release
 - [x] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
 - [x] Windows Installer의 Client 화면 최초값 선택과 재설치 설정 보존
 - [x] Instance 작업 영역 순서·접힘·너비의 검증·원자 저장 계약
+- [x] 현재 프로젝트·문서·편집기·공동 집필 영역 접기·펼치기, 좌우 순서·너비 조절과 전역 복원
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필
@@ -101,7 +103,7 @@ npm run validate:release
 - [ ] 실행 Flow/Scope/Trace, 진행률, 취소와 오류 추적
 - [ ] 플러그인 계약·SDK·권한·설치 관리자
 - [ ] 플러그인별 backend 프로세스와 sandboxed UI 격리
-- [ ] 프로젝트·문서·편집·공동 집필 영역 접기·펼치기와 이동·도킹
+- [ ] 작업 영역을 자유 부동 창으로 이동·재도킹하고 프로젝트별 레이아웃 저장
 - [ ] 지도 뷰어 검증 플러그인
 - [ ] 채팅, 브랜치, 페르소나, 장기 기억과 출처 추적
 - [ ] Markdown 편집기와 검색 플러그인
