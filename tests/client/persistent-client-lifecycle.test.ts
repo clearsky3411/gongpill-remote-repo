@@ -70,6 +70,37 @@ test("Client Runtime이 Instance Runtime 정상·비정상 종료 뒤 다시 시
   }
 });
 
+test("Browser 생존 임대가 만료되면 Instance만 종료하고 Client는 idle로 돌아간다", async () => {
+  const dataRoot = await mkdtemp(join(tmpdir(), "gongpil-browser-presence-"));
+  const manager = new GongpilCoreProcessManager({
+    coreEntryPath: CORE_ENTRY_PATH,
+    coreEnvironment: {
+      GONGPIL_BROWSER_PRESENCE_TIMEOUT_MS: "150",
+      GONGPIL_BROWSER_STARTUP_GRACE_MS: "500",
+      GONGPIL_BROWSER_RESUME_TOLERANCE_MS: "50",
+    },
+  });
+  const runtime = new GongpilClientRuntime(new GongpilClientBootstrap(manager));
+
+  try {
+    await runtime.StartInstance(CreateConfig(dataRoot));
+    const browserSession = await runtime.GetNetworkRuntime().Send("browser.session.create", {});
+    assert.equal(browserSession.state, "succeeded");
+
+    const heartbeat = await runtime.GetNetworkRuntime().Send("browser.presence.ack", {
+      heartbeatId: "test-heartbeat",
+    });
+    assert.equal(heartbeat.state, "succeeded");
+    assert.equal((await runtime.WaitForInstanceExit()).reason, "stopped");
+    assert.equal(runtime.GetState(), "idle");
+    assert.deepEqual(manager.GetRunningProcessIds(), []);
+  }
+  finally {
+    await runtime.Shutdown();
+    await rm(dataRoot, { recursive: true, force: true });
+  }
+});
+
 function CreateConfig(dataRoot: string): GongpilClientBootstrapConfig {
   const launchId = `launch-${crypto.randomUUID()}`;
   const sessionId = `session-${crypto.randomUUID()}`;

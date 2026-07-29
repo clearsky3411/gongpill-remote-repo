@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "persistent-client-lifecycle",
+    "activeWorkUnit": "browser-presence-lifecycle",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/persistent-client-lifecycle",
+    "branch": "codex/browser-presence-lifecycle",
     "activeComponentIds": [
       "gongpil.client",
       "gongpil.core",
@@ -18,15 +18,14 @@
     ],
     "activeFeatureIds": [
       "client.runtime.lifecycle",
+      "browser.presence.lifecycle",
       "bootstrap.core.lifecycle",
-      "client.connector.settings",
       "ui.shell",
-      "ui.workspace.layout",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Client Runtime을 상주시켜 Instance Runtime 종료 뒤 다시 시작할 수 있게 하고, Client와 Instance 수명 경계를 분리한다.",
-    "nextRecommendedWorkUnit": "instance-workspace-layout"
+    "summary": "Browser heartbeat 응답이 끊기면 Instance Runtime만 정상 종료하고 Client Runtime은 다시 시작 가능한 idle 상태로 유지한다.",
+    "nextRecommendedWorkUnit": "client-home-dashboard"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -73,10 +72,10 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "프로젝트 데이터, revision, 권한, 변경 승인과 저장의 최종 집행",
-      "owns": ["bootstrap-process", "loopback-network-host", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "chat-history-context", "permissions", "proposals", "ai-provider", "diagnostic-logs", "chunk-parser", "chunk-index", "persona-store", "context-builder", "source-snapshots"],
+      "owns": ["bootstrap-process", "loopback-network-host", "browser-presence-lifecycle", "project-state", "project-manifest", "source-data", "document-store", "revision", "atomic-save", "document-history", "chat-store", "chat-history-context", "permissions", "proposals", "ai-provider", "diagnostic-logs", "chunk-parser", "chunk-index", "persona-store", "context-builder", "source-snapshots"],
       "dependsOn": ["gongpil.platform", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.client", "gongpil.browser", "gongpil.installer", "gongpil.builtin-plugins", "gongpil.tests"],
-      "publicInterfaces": ["core/src/core-process.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/chat-history-context.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts", "core/src/chunk-parser.ts", "core/src/chunk-index-store.ts", "core/src/persona-store.ts", "core/src/context-builder.ts"],
+      "publicInterfaces": ["core/src/core-process.ts", "core/src/browser-presence-monitor.ts", "core/src/project-store.ts", "core/src/document-store.ts", "core/src/chat-store.ts", "core/src/chat-history-context.ts", "core/src/openai-config.ts", "core/src/codex-app-server-client.ts", "core/src/diagnostic-log-store.ts", "core/src/chunk-parser.ts", "core/src/chunk-index-store.ts", "core/src/persona-store.ts", "core/src/context-builder.ts"],
       "tests": ["tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/ai/openai-chat-proposal.test.ts", "tests/ai/codex-provider-usage.test.ts", "tests/diagnostics/developer-log.test.ts", "tests/chunks/chunk-index-search.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts"],
       "relatedDocs": ["core/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
@@ -309,6 +308,16 @@
       "entrypoints": ["GongpilClientRuntime.StartInstance", "GongpilClientRuntime.WaitForInstanceExit", "GongpilClientRuntime.StopInstance", "GongpilClientRuntime.Shutdown", "instance.shutdown.request"],
       "tests": ["tests/client/persistent-client-lifecycle.test.ts", "tests/mvp/project-document-mvp.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "command", "ownerComponentId": "gongpil.network-runtime", "commands": ["instance.shutdown.request", "system.shutdown.request"], "events": [] }
+    },
+    {
+      "id": "browser.presence.lifecycle",
+      "name": "Browser 생존 임대와 자동 Instance 종료",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/browser-presence-monitor.ts",
+      "entrypoints": ["GongpilBrowserPresenceMonitor.Start", "GongpilBrowserPresenceMonitor.Acknowledge", "browser.presence.ack", "gongpil-heartbeat"],
+      "tests": ["platform/network-runtime/test/loopback-network-runtime.test.ts", "tests/client/persistent-client-lifecycle.test.ts"],
+      "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["browser.presence.ack"], "events": ["browser.presence.ping"] }
     },
     {
       "id": "bootstrap.core.lifecycle",

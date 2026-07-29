@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 청크·검색 + 페르소나·출처 snapshot + 상주 Client Runtime
-- 최근 작업 브랜치: `codex/persistent-client-lifecycle`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 청크·검색 + 페르소나·출처 snapshot + Browser 생존 감지
+- 최근 작업 브랜치: `codex/browser-presence-lifecycle`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -21,7 +21,7 @@
 npm start
 ```
 
-처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 끝내며, 상주 Client Runtime의 접속기에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
+처음 실행하면 Windows 클라이언트(접속기)가 먼저 열린다. 설치형은 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 즉시 끝내며, Browser 창을 닫아 생존 응답이 끊겨도 약 30초 뒤 Instance Runtime만 끝난다. 상주 Client Runtime의 접속기에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
 
 OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 API 키를 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일을 선택한다. 키는 Git 저장소나 Browser에 넣지 않는다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. Codex 인증은 선택한 `dataRoot/integrations/codex` 아래의 공필 전용 `CODEX_HOME`에 격리된다.
 
@@ -79,6 +79,7 @@ npm run validate:release
 - [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
 - [x] Windows 클라이언트(접속기)의 데이터 폴더·시작 옵션 관리
 - [x] 상주 Client Runtime과 단일 Instance Runtime 종료·재시작
+- [x] Browser heartbeat ACK 만료 시 Instance Runtime 자동 종료와 Client Runtime 생존
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필

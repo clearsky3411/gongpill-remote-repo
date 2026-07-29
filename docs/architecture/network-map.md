@@ -34,6 +34,7 @@
 |---|---|---|---|
 | `bootstrap.core.lifecycle` | `command` | `system.health.read` | - |
 | `bootstrap.core.version-activation` | `command` | `system.readiness.verify` | - |
+| `browser.presence.lifecycle` | `both` | `browser.presence.ack` | `browser.presence.ping` |
 | `project.document.revision` | `both` | `document.read`, `document.save` | `document.changed` |
 | `ai.openai.responses` | `external` | `responses.create` | `response.output_text.delta` |
 | `chat.session.persist` | `both` | `chat.session.read`, `chat.message.send` | `chat.message.delta`, `chat.message.completed`, `proposal.created` |
