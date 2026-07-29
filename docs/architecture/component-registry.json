@@ -2,30 +2,23 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "chat-history-context-ui",
+    "activeWorkUnit": "terminology-guidelines",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/chat-history-context-ui",
+    "branch": "codex/terminology-guidelines",
     "activeComponentIds": [
-      "gongpil.browser",
-      "gongpil.installer",
-      "gongpil.distribution",
-      "gongpil.tests",
+      "gongpil.repository",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "ui.context-selection",
-      "ui.chat-history-context",
-      "release.validation",
-      "distribution.portable",
-      "install.windows",
+      "architecture.terminology",
       "architecture.code-map.track",
       "architecture.code-map.validate"
     ],
-    "summary": "인스턴스에서 최근 10개·턴·개별 대화 청크와 분류 필터를 선택하고 문서·대화 통합 토큰·포함 순서·누락 사유를 미리 본다.",
-    "nextRecommendedWorkUnit": "chat-history-summary-modes"
+    "summary": "개발 패키지, 저장소, 서버·클라이언트·인스턴스·Core·Host Adapter의 Package/Runtime 용어와 수명·업데이트 경계를 고정한다.",
+    "nextRecommendedWorkUnit": "persistent-client-lifecycle"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -184,12 +177,12 @@
       "kind": "documentation",
       "status": "CURRENT",
       "responsibility": "현재 구조, 목표 경계, 기능 위치와 의존성 기록",
-      "owns": ["repository-layout", "bootstrap-flow", "bootstrap-contract", "network-runtime", "network-map", "code-map", "component-registry"],
+      "owns": ["repository-layout", "bootstrap-flow", "bootstrap-contract", "network-runtime", "network-map", "code-map", "component-registry", "terminology"],
       "dependsOn": [],
       "usedBy": ["gongpil.code-map-tooling"],
       "publicInterfaces": [],
       "tests": ["scripts/validate-code-map.ps1", "scripts/validate-network-map.ps1"],
-      "relatedDocs": ["docs/architecture/code-map.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md", "docs/architecture/network-map.md"]
+      "relatedDocs": ["docs/architecture/code-map.md", "docs/architecture/terminology.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md", "docs/architecture/network-map.md"]
     },
     {
       "id": "gongpil.code-map-tooling",
@@ -249,6 +242,16 @@
     }
   ],
   "features": [
+    {
+      "id": "architecture.terminology",
+      "name": "개발 패키지·저장소·Package/Runtime 용어 기준",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.architecture",
+      "path": "docs/architecture/terminology.md",
+      "entrypoints": ["docs/architecture/terminology.md"],
+      "tests": ["scripts/validate-code-map.ps1"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
     {
       "id": "architecture.code-map.track",
       "name": "기능과 현재 작업 위치 추적",

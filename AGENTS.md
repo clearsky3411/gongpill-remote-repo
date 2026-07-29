@@ -62,6 +62,14 @@
 1. Follow existing local file conventions unless they clearly hurt maintainability.
 2. Follow this guide strictly for newly created files.
 
+## Terminology Rules
+
+1. Before architecture, lifecycle, installer, updater, Client, Core, Browser, or host-boundary work, read `docs/architecture/terminology.md`.
+2. In design documents and work reports, distinguish `Package` from `Runtime`; do not use them interchangeably.
+3. Use `Instance` only as the Gongpil product aggregate. Use `Instance Package` or `Instance Runtime` when the exact boundary matters.
+4. Use `Host Adapter Package` and `Host Adapter Runtime` as the official names. Treat `wrapper` only as an implementation technique.
+5. Treat `component-registry.json` as implementation state truth and `terminology.md` as terminology truth; do not label a terminology-only target as implemented.
+
 ## Code Map Rules
 
 1. Before implementation, read `docs/architecture/component-registry.json` and `docs/architecture/code-map.md`.
