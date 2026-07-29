@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + Browser 생존 감지 + Client 홈·패치노트
-- 최근 작업 브랜치: `codex/client-home-dashboard`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + Client appearance 계약·자체 글꼴
+- 최근 작업 브랜치: `codex/client-appearance-contract`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -23,7 +23,7 @@ npm start
 
 처음 실행하면 Windows 클라이언트 홈이 먼저 열린다. `홈`에서 Client·Instance 상태, 지금 가능한 작업과 패치노트를 확인하고 `설정`에서 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` 패널에서 AI와 대화하거나 문서 변경안을 요청한다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 즉시 끝내며, Browser 창을 닫아 생존 응답이 끊겨도 약 30초 뒤 Instance Runtime만 끝난다. 상주 Client Runtime의 홈에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
 
-OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 API 키를 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일을 선택한다. 키는 Git 저장소나 Browser에 넣지 않는다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. Codex 인증은 선택한 `dataRoot/integrations/codex` 아래의 공필 전용 `CODEX_HOME`에 격리된다.
+OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 API 키를 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일을 선택한다. 키는 Git 저장소나 Browser에 넣지 않는다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`, 포터블 설정은 앱 옆 `GongpilClient/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. 포터블 프로젝트 데이터는 계속 `GongpilData`에 남는다. Codex 인증은 선택한 `dataRoot/integrations/codex` 아래의 공필 전용 `CODEX_HOME`에 격리된다.
 
 Node 설치 없이 포터블로 사용:
 
@@ -81,6 +81,10 @@ npm run validate:release
 - [x] 상주 Client Runtime과 단일 Instance Runtime 종료·재시작
 - [x] Browser heartbeat ACK 만료 시 Instance Runtime 자동 종료와 Client Runtime 생존
 - [x] Client 홈의 Runtime 상태·사용 가능 기능·패치노트와 설정 탭
+- [x] Client 설정 v2의 96 DPI·DIP 창 크기·글자 크기·UI 배율·글꼴 역할 계약
+- [x] 나눔고딕 Regular/Bold·D2Coding과 라이선스·checksum을 포함한 Client Package 글꼴 카탈로그
+- [x] 포터블 Client 설정·사용자 글꼴을 프로젝트 데이터와 분리하고 기존 설정을 검증 후 이동
+- [ ] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필

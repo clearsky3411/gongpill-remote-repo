@@ -1,15 +1,22 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, parse } from "node:path";
 import test from "node:test";
 
 import {
+  GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
   LoadClientSettings,
+  ResolveClientFontRoot,
   ResolveClientSettingsPath,
   SaveClientSettings,
 } from "../../client/src/client-settings-store.ts";
+import {
+  ListClientUserFontFiles,
+  LoadClientFontCatalog,
+} from "../../client/src/client-font-catalog.ts";
+import { ResolveClientStoragePaths } from "../../client/src/bootstrap-paths.ts";
 import { LoadClientReleaseNotes } from "../../client/src/client-connector.ts";
 
 const APP_ROOT = process.cwd();
@@ -44,11 +51,16 @@ test("설치형 첫 실행은 기본 dataRoot와 접속기 표시 옵션을 준�
     const loaded = await LoadClientSettings(context);
     assert.equal(loaded.isFirstRun, true);
     assert.equal(loaded.settings.dataRoot, join(testRoot, "program", "GongpilData"));
+    assert.equal(loaded.settings.schemaVersion, 2);
     assert.equal(loaded.settings.showConnectorOnStartup, true);
     assert.equal(loaded.settings.aiProvider, "codex");
     assert.equal(loaded.settings.codexModel, "gpt-5.6-terra");
     assert.equal(loaded.settings.openAiModel, "gpt-5.6-terra");
     assert.equal(loaded.settingsPath, join(context.settingsRoot, "client-settings.json"));
+    assert.deepEqual(loaded.settings.appearance, {
+      ...GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
+      fontRoot: join(context.settingsRoot, "fonts"),
+    });
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });
@@ -65,32 +77,39 @@ test("설치형 사용자 경로와 시작 옵션을 원자 저장하고 다시 
       settingsRoot: join(testRoot, "settings"),
     };
     const dataRoot = join(testRoot, "selected-data");
+    const defaults = (await LoadClientSettings(context)).settings;
     await SaveClientSettings(context, {
-      schemaVersion: 1,
-      dataRoot,
-      showConnectorOnStartup: false,
-      openAiModel: "gpt-5.6-terra",
-    });
-    await SaveClientSettings(context, {
-      schemaVersion: 1,
+      ...defaults,
       dataRoot,
       showConnectorOnStartup: true,
-      aiProvider: "codex",
-      codexModel: "gpt-5.6-terra",
-      openAiModel: "gpt-5.6-terra",
+      appearance: {
+        ...defaults.appearance,
+        baseFontSizePt: 10,
+        uiScalePercent: 110,
+        windowWidthDip: 900,
+        windowHeightDip: 800,
+      },
     });
     const loaded = await LoadClientSettings(context);
     assert.equal(loaded.isFirstRun, false);
     assert.equal(loaded.settings.dataRoot, dataRoot);
     assert.equal(loaded.settings.showConnectorOnStartup, true);
-    assert.deepEqual(await readdir(context.settingsRoot), ["client-settings.json"]);
+    assert.deepEqual((await readdir(context.settingsRoot)).sort(), ["client-settings.json", "fonts"]);
     assert.deepEqual(JSON.parse(await readFile(loaded.settingsPath, "utf8")), {
-      schemaVersion: 1,
+      schemaVersion: 2,
       dataRoot,
       showConnectorOnStartup: true,
       aiProvider: "codex",
       codexModel: "gpt-5.6-terra",
       openAiModel: "gpt-5.6-terra",
+      appearance: {
+        ...GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
+        fontRoot: join(context.settingsRoot, "fonts"),
+        baseFontSizePt: 10,
+        uiScalePercent: 110,
+        windowWidthDip: 900,
+        windowHeightDip: 800,
+      },
     });
   }
   finally {
@@ -147,7 +166,36 @@ test("포터블은 저장된 값과 무관하게 앱 옆 GongpilData로 고정�
     assert.equal(saved.dataRoot, join(context.appRoot, "GongpilData"));
     const loaded = await LoadClientSettings(context);
     assert.equal(loaded.settings.dataRoot, join(context.appRoot, "GongpilData"));
-    assert.equal(ResolveClientSettingsPath(context), join(context.appRoot, "GongpilData", "client-settings.json"));
+    assert.equal(ResolveClientSettingsPath(context), join(context.appRoot, "GongpilClient", "client-settings.json"));
+    assert.equal(ResolveClientFontRoot(context), join(context.appRoot, "GongpilClient", "fonts"));
+  }
+  finally {
+    await rm(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("포터블의 이전 GongpilData 설정을 GongpilClient로 검증 후 이동한다", async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), "gongpil-client-settings-portable-migrate-"));
+  try {
+    const context = {
+      mode: "portable" as const,
+      appRoot: join(testRoot, "Gongpil"),
+    };
+    const legacyPath = join(context.appRoot, "GongpilData", "client-settings.json");
+    await mkdir(join(context.appRoot, "GongpilData"), { recursive: true });
+    await writeFile(legacyPath, JSON.stringify({
+      schemaVersion: 1,
+      dataRoot: join(testRoot, "ignored"),
+      showConnectorOnStartup: false,
+    }), "utf8");
+
+    const loaded = await LoadClientSettings(context);
+    assert.equal(loaded.settings.schemaVersion, 2);
+    assert.equal(loaded.settings.dataRoot, join(context.appRoot, "GongpilData"));
+    assert.equal(loaded.settings.appearance.fontRoot, join(context.appRoot, "GongpilClient", "fonts"));
+    assert.equal(loaded.settingsPath, join(context.appRoot, "GongpilClient", "client-settings.json"));
+    await assert.rejects(readFile(legacyPath), /ENOENT/);
+    assert.equal(JSON.parse(await readFile(loaded.settingsPath, "utf8")).schemaVersion, 2);
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });
@@ -197,10 +245,60 @@ test("설치 패키지는 기존 LOCALAPPDATA 설정을 앱 기준 설정 폴더
     assert.equal(loaded.settingsPath, join(testRoot, "program", "GongpilConfig", "client-settings.json"));
     await assert.rejects(readFile(legacyPath), /ENOENT/);
     assert.equal(JSON.parse(await readFile(loaded.settingsPath, "utf8")).openAiModel, "gpt-5.6-terra");
+    assert.equal(JSON.parse(await readFile(loaded.settingsPath, "utf8")).schemaVersion, 2);
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });
   }
+});
+
+test("Client Package 글꼴 manifest가 나눔고딕 두 파일과 공식 D2Coding을 checksum으로 검증한다", async () => {
+  const catalog = await LoadClientFontCatalog(APP_ROOT);
+  assert.equal(catalog.schemaVersion, 1);
+  assert.deepEqual(catalog.fonts.map((font) => font.id), ["nanum-gothic", "d2coding"]);
+  assert.equal(catalog.fonts.flatMap((font) => font.files).length, 3);
+  assert.equal(catalog.fonts.find((font) => font.id === "nanum-gothic")?.files.length, 2);
+  assert.equal(catalog.fonts.find((font) => font.id === "d2coding")?.files[0]?.families[0], "D2Coding");
+  assert.deepEqual(catalog.licenses.map((license) => license.id), ["naver-nanum", "d2coding-ofl-1.1"]);
+});
+
+test("사용자 글꼴 루트는 지원 확장자의 일반 파일만 checksum과 함께 열거한다", async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), "gongpil-client-user-fonts-"));
+  try {
+    const fontRoot = join(testRoot, "fonts");
+    await mkdir(fontRoot, { recursive: true });
+    await copyFile(join(APP_ROOT, "client", "resources", "fonts", "NanumGothic.ttf"), join(fontRoot, "MyFont.ttf"));
+    await writeFile(join(fontRoot, "ignore.txt"), "not a font", "utf8");
+    const fonts = await ListClientUserFontFiles(fontRoot);
+    assert.equal(fonts.length, 1);
+    assert.equal(fonts[0].id, "user:myfont.ttf");
+    assert.equal(fonts[0].bytes, 4691820);
+    assert.equal(fonts[0].sha256, "48a28e97b34fc8e5b157657633670cd1b7de126cfc414da65ce9c3d5bc8be733");
+  }
+  finally {
+    await rm(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("Client Runtime 설정·글꼴 루트는 설치형과 포터블에서 프로젝트 데이터와 분리된다", () => {
+  const installed = ResolveClientStoragePaths({
+    mode: "installed",
+    appRoot: "C:\\Apps\\Gongpil",
+  });
+  assert.deepEqual(installed, {
+    clientConfigRoot: "C:\\Apps\\GongpilConfig",
+    settingsPath: "C:\\Apps\\GongpilConfig\\client-settings.json",
+    userFontRoot: "C:\\Apps\\GongpilConfig\\fonts",
+  });
+  const portable = ResolveClientStoragePaths({
+    mode: "portable",
+    appRoot: "D:\\Portable\\Gongpil",
+  });
+  assert.deepEqual(portable, {
+    clientConfigRoot: "D:\\Portable\\Gongpil\\GongpilClient",
+    settingsPath: "D:\\Portable\\Gongpil\\GongpilClient\\client-settings.json",
+    userFontRoot: "D:\\Portable\\Gongpil\\GongpilClient\\fonts",
+  });
 });
 
 test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을 반환한다", async () => {

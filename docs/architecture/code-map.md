@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `client-home-dashboard` |
+| 작업 단위 | `client-appearance-contract` |
 | 상태 | `COMPLETED` |
 | 시작일 | `2026-07-29` |
 | 완료일 | `2026-07-29` |
-| 브랜치 | `codex/client-home-dashboard` |
+| 브랜치 | `codex/client-appearance-contract` |
 | 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.connector.settings`, `client.home.dashboard`, `client.release-notes`, `distribution.portable`, `install.windows`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | 상주 Client Runtime 접속기에 상태, 사용 가능 기능, 패치노트, 설정과 실행 정보를 구분해 표시 |
-| 다음 작업 | `instance-workspace-layout` |
+| 활성 기능 | `client.connector.settings`, `client.config.root`, `client.appearance.settings`, `client.font.catalog`, `distribution.portable`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Client Runtime 설정 루트와 appearance 계약을 분리하고 나눔고딕·D2Coding 자체 글꼴 카탈로그를 패키지에 등록 |
+| 다음 작업 | `client-private-font-ui` |
 
 ## 상태 라벨
 
@@ -64,6 +64,10 @@ flowchart TD
 | Code Map 검증 | Code Map Tooling | `scripts/validate-code-map.ps1` | `CURRENT` |
 | 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
 | Windows 클라이언트 접속기와 설정 | Client | `client/src/client-connector.ts` | `CURRENT` |
+| Client Runtime 설정·사용자 글꼴 전용 루트 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
+| Client Runtime appearance 설정 계약과 마이그레이션 | Client | `client/src/client-settings-store.ts` | `CURRENT` |
+| 자기완결 Client Package 글꼴 카탈로그와 라이선스 | Client | `client/src/client-font-catalog.ts` | `CURRENT` |
+| Client Runtime 비공개 글꼴·DPI·창 크기 적용 UI | Client | `client/windows/GongpilConnector.ps1` | `TARGET` |
 | Client Runtime 홈과 상태·작업 선택 | Client | `client/windows/GongpilConnector.ps1` | `CURRENT` |
 | Client Package 구조화 릴리스 정보 | Client | `client/src/client-release-notes.json` | `CURRENT` |
 | 상주 Client Runtime과 Instance Runtime 재시작 | Client | `client/src/client-runtime.ts` | `CURRENT` |
@@ -109,6 +113,7 @@ flowchart TD
 | 페르소나·작업 프로필 전환과 요청 출처 확인 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | 플러그인 격리 실행 | Platform | `platform/` | `TARGET` |
 | Windows 설치 패키지 | Installer | `installer/windows/Gongpil.iss` | `CURRENT` |
+| Installer Client appearance 최초 설정 | Installer | `installer/windows/Gongpil.iss` | `TARGET` |
 | 자기완결 Windows 포터블 ZIP | Installer | `scripts/build-portable.ps1` | `CURRENT` |
 | MVP 전체 릴리스 검증 | Code Map Tooling | `scripts/validate-release.ps1` | `CURRENT` |
 | Markdown 편집기 | Built-in Plugins | `builtin-plugins/` | `TARGET` |
@@ -119,7 +124,10 @@ flowchart TD
 Client
 ├─ appRoot
 ├─ dataRoot
-├─ client settings
+├─ clientConfigRoot
+│  ├─ client settings v2
+│  └─ user fonts
+├─ bundled fonts + licenses
 ├─ Windows connector UI
 ├─ versionRoot
 ├─ sessionTemp

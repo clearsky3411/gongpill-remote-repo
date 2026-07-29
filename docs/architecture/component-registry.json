@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "updatedAt": "2026-07-29",
   "workTracking": {
-    "activeWorkUnit": "client-home-dashboard",
+    "activeWorkUnit": "client-appearance-contract",
     "status": "COMPLETED",
     "startedAt": "2026-07-29",
     "completedAt": "2026-07-29",
-    "branch": "codex/client-home-dashboard",
+    "branch": "codex/client-appearance-contract",
     "activeComponentIds": [
       "gongpil.client",
       "gongpil.installer",
@@ -17,15 +17,15 @@
     ],
     "activeFeatureIds": [
       "client.connector.settings",
-      "client.home.dashboard",
-      "client.release-notes",
+      "client.config.root",
+      "client.appearance.settings",
+      "client.font.catalog",
       "distribution.portable",
-      "install.windows",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "상주 Client Runtime 접속기에 상태, 사용 가능 기능, 패치노트, 설정과 실행 정보를 구분해 표시한다.",
-    "nextRecommendedWorkUnit": "instance-workspace-layout"
+    "summary": "Client Runtime 설정 루트와 appearance 계약을 분리하고 나눔고딕·D2Coding 자체 글꼴 카탈로그를 패키지에 등록한다.",
+    "nextRecommendedWorkUnit": "client-private-font-ui"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -58,10 +58,10 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "인스턴스 실행 전 모드·경로·옵션·런타임·세션 기준 결정과 Core 수명 관리",
-      "owns": ["bootstrap-paths", "client-settings", "connector-ui", "client-home-dashboard", "client-release-notes", "client-runtime-lifecycle", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch"],
+      "owns": ["bootstrap-paths", "client-config-root", "client-settings", "client-appearance-settings", "client-font-catalog", "connector-ui", "client-home-dashboard", "client-release-notes", "client-runtime-lifecycle", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
-      "publicInterfaces": ["client/src/client-process.ts", "client/src/client-runtime.ts", "client/src/client-settings-store.ts", "client/src/client-connector.ts", "client/src/client-release-notes.json", "client/windows/GongpilConnector.ps1", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
+      "publicInterfaces": ["client/src/client-process.ts", "client/src/client-runtime.ts", "client/src/client-settings-store.ts", "client/src/client-font-catalog.ts", "client/src/client-connector.ts", "client/src/client-release-notes.json", "client/resources/fonts/font-manifest.json", "client/windows/GongpilConnector.ps1", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
       "tests": ["tests/client/client-connector-settings.test.ts", "tests/client/persistent-client-lifecycle.test.ts", "tests/bootstrap/client-core-loopback-bootstrap.test.ts", "tests/mvp/project-document-mvp.test.ts"],
       "relatedDocs": ["client/README.md", "docs/architecture/bootstrap-flow.md", "docs/architecture/bootstrap-contract.md", "docs/architecture/network-runtime.md"]
     },
@@ -100,7 +100,7 @@
       "kind": "distribution",
       "status": "CURRENT",
       "responsibility": "설치형·포터블 패키지, 제거 선택지와 배포 자원 관리",
-      "owns": ["installed-package", "portable-package", "client-settings-shortcut", "uninstall-policy"],
+      "owns": ["installed-package", "portable-package", "bundled-font-assets", "client-settings-shortcut", "uninstall-policy"],
       "dependsOn": ["gongpil.client", "gongpil.core", "gongpil.browser", "gongpil.platform"],
       "usedBy": ["gongpil.tests", "gongpil.distribution"],
       "publicInterfaces": ["scripts/build-portable.ps1", "scripts/build-installer.ps1", "installer/windows/Gongpil.iss", "installer/launcher/Gongpil.cmd", "installer/launcher/Gongpil.vbs"],
@@ -297,6 +297,56 @@
       "path": "client/src/client-connector.ts",
       "entrypoints": ["client/src/client-process.ts", "ShowClientConnector", "LoadClientSettings", "SaveClientSettings", "client/windows/GongpilConnector.ps1"],
       "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.config.root",
+      "name": "Client Runtime 설정·사용자 글꼴 전용 루트",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/src/bootstrap-paths.ts",
+      "entrypoints": ["ResolveClientStoragePaths", "ResolveClientSettingsPath", "ResolveClientFontRoot"],
+      "tests": ["tests/client/client-connector-settings.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.appearance.settings",
+      "name": "Client Runtime appearance 설정 계약과 마이그레이션",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/src/client-settings-store.ts",
+      "entrypoints": ["GONGPIL_CLIENT_APPEARANCE_DEFAULTS", "LoadClientSettings", "SaveClientSettings"],
+      "tests": ["tests/client/client-connector-settings.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.font.catalog",
+      "name": "자기완결 Client Package 글꼴 카탈로그와 라이선스",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/src/client-font-catalog.ts",
+      "entrypoints": ["LoadClientFontCatalog", "ListClientUserFontFiles", "client/resources/fonts/font-manifest.json"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.appearance.ui",
+      "name": "Client Runtime 비공개 글꼴·DPI·창 크기 적용 UI",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/windows/GongpilConnector.ps1",
+      "entrypoints": [],
+      "tests": [],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "install.appearance.seed",
+      "name": "Installer Client appearance 최초 설정",
+      "status": "TARGET",
+      "ownerComponentId": "gongpil.installer",
+      "path": "installer/windows/Gongpil.iss",
+      "entrypoints": [],
+      "tests": [],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

@@ -37,8 +37,16 @@ test("포터블 패키지가 포함 Node만으로 실행되고 앱 옆에 데이
     access(join(packageRoot, "Gongpil.vbs")),
     access(join(packageRoot, "client", "windows", "GongpilConnector.ps1")),
     access(join(packageRoot, "client", "src", "client-release-notes.json")),
+    access(join(packageRoot, "client", "resources", "fonts", "font-manifest.json")),
+    access(join(packageRoot, "client", "resources", "fonts", "NanumGothic.ttf")),
+    access(join(packageRoot, "client", "resources", "fonts", "NanumGothicBold.ttf")),
+    access(join(packageRoot, "client", "resources", "fonts", "D2Coding-Ver1.3.2-20180524-all.ttc")),
+    access(join(packageRoot, "client", "resources", "fonts", "licenses", "NAVER-NANUM-LICENSE-KO.txt")),
+    access(join(packageRoot, "client", "resources", "fonts", "licenses", "D2CODING-OFL-1.1.txt")),
     access(join(packageRoot, "runtime", "NODE_LICENSE.txt")),
   ]);
+  const buildManifest = JSON.parse(await readFile(join(packageRoot, "build-manifest.json"), "utf8"));
+  assert.equal(buildManifest.bundledFontManifest, "client/resources/fonts/font-manifest.json");
 
   const firstRun = StartPortableClient(isolatedEnvironment);
   try {

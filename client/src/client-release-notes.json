@@ -9,11 +9,13 @@
     "Codex 또는 OpenAI API를 이용한 공동 집필 채팅과 변경 승인",
     "문서·대화 청크 검색, 선택과 통합 토큰 미리보기",
     "페르소나 버전과 작업 프로필 관리",
-    "상주 Client Runtime에서 Instance Runtime 종료·재시작"
+    "상주 Client Runtime에서 Instance Runtime 종료·재시작",
+    "Client Package 자체 나눔고딕·D2Coding과 검증 가능한 라이선스"
   ],
   "changes": [
     "Browser heartbeat 응답이 끊기면 Instance Runtime만 자동 종료합니다.",
     "Instance Runtime 정상·비정상 종료 뒤 Client Runtime에서 다시 시작할 수 있습니다.",
-    "설치형과 포터블 패키지의 기존 사용자 데이터와 설정을 유지합니다."
+    "설치형과 포터블 패키지의 기존 사용자 데이터와 설정을 유지합니다.",
+    "Client 화면 설정을 96 DPI 기준 DIP·글자 크기·배율·글꼴 역할로 명시했습니다."
   ]
 }

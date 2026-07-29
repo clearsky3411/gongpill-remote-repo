@@ -165,6 +165,9 @@
 - [ ] 파일 연결, 시작 프로그램, 바탕화면 바로가기는 선택 사항으로 둔다.
 - [ ] 레지스트리는 제거 프로그램 등록 등 Windows가 요구하는 최소 범위만 사용한다.
 - [ ] WebView2는 기존 런타임 사용을 우선하고, 필요할 때만 독립형 포함 또는 안내한다.
+- [x] Client Package에 나눔고딕 Regular/Bold와 D2Coding, 라이선스·checksum manifest를 포함한다.
+- [x] Client Runtime appearance는 96 DPI 기준 DIP, 760×720 DIP, 9pt, 100% 기본값을 명시한다.
+- [ ] Client Runtime이 포함 글꼴을 시스템 설치 없이 비공개로 로드하고 DPI·창 크기를 적용한다.
 
 ## 3.2 실행 격리
 
@@ -1166,6 +1169,9 @@ Instance Runtime 종료 요청
 - [x] Instance Runtime 정상·비정상 종료 뒤 수동 재시작
 - [x] Browser heartbeat ACK 만료 시 Instance Runtime 자동 종료와 Client Runtime 생존
 - [x] Client 홈의 상태·가능 기능·패치노트와 설정·정보 구분
+- [x] Client 설정 v2의 appearance 계약과 포터블 Client 설정 루트 분리
+- [x] 나눔고딕·D2Coding 번들, 공식 라이선스와 SHA-256 검증
+- [ ] WinForms Client Runtime의 비공개 글꼴·DPI·창 크기 실제 적용
 - [ ] Windows 재부팅·로그오프 처리
 
 ---
