@@ -16,6 +16,7 @@
 
 ```powershell
 npm run test:bootstrap
+npm run test:browser
 npm run test:network
 npm run test:ai
 npm run test:context
@@ -31,6 +32,8 @@ MVP 통합 테스트는 프로젝트·문서 생성, 경로 경계, revision 충
 
 컨텍스트 테스트는 페르소나 버전, 이전 대화 턴·UTF-8 byte 청크, 최근/개별 선택, 프로젝트 격리, 분류 저장, 문서·대화 중복 제거, 예산 누락과 snapshot 비재귀 포함을 검증한다. AI 통합 테스트는 이 기능의 실제 loopback 명령과 공급자 입력까지 확인한다.
 
+Browser 테스트는 Instance 작업 영역 레이아웃의 기본값, 입력 경계, 원자 저장, 동시 저장 직렬화와 손상 파일 처리를 검증한다.
+
 포터블 테스트는 실제 ZIP을 새 임시 폴더에 풀고 시스템 `PATH` 없이 포함 Node로 두 번 실행하여 데이터 재사용과 포터블 데이터 루트를 검증한다.
 
 Installer 테스트는 Setup.exe를 임시 경로에 silent 설치하고 포함 Node로 프로젝트·문서를 만든 뒤 제거한다. 프로그램 경로 삭제와 사용자 데이터 보존을 확인하고 재설치 후 같은 데이터를 다시 읽은 다음 한 번 더 제거한다.
@@ -38,6 +41,7 @@ Installer 테스트는 Setup.exe를 임시 경로에 silent 설치하고 포함 
 구현 위치:
 
 - `tests/bootstrap/client-core-loopback-bootstrap.test.ts`
+- `tests/browser/instance-panel-layout.test.ts`
 - `tests/client/persistent-client-lifecycle.test.ts`
 - `tests/mvp/project-document-mvp.test.ts`
 - `tests/ai/openai-chat-proposal.test.ts`

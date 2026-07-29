@@ -61,6 +61,7 @@ $env:GIT_CONFIG_VALUE_0 = $projectRoot.Replace('\', '/')
 
 Invoke-NpmScript -Name 'test:network'
 Invoke-NpmScript -Name 'test:bootstrap'
+Invoke-NpmScript -Name 'test:browser'
 Invoke-NpmScript -Name 'test:client'
 Invoke-NpmScript -Name 'test:ai'
 Invoke-NpmScript -Name 'test:diagnostics'
@@ -78,6 +79,6 @@ Write-Host "`n[release] Gongpil $Version MVP 전체 검증 성공" -ForegroundCo
 [ordered]@{
     version = $Version
     validatedAt = (Get-Date).ToUniversalTime().ToString('o')
-    checks = @('test:network', 'test:bootstrap', 'test:client', 'test:ai', 'test:diagnostics', 'test:chunks', 'test:context', 'test:mvp', 'test:portable', 'test:installer', 'validate:architecture')
+    checks = @('test:network', 'test:bootstrap', 'test:browser', 'test:client', 'test:ai', 'test:diagnostics', 'test:chunks', 'test:context', 'test:mvp', 'test:portable', 'test:installer', 'validate:architecture')
     artifacts = @($portableArtifact, $installerArtifact)
 } | ConvertTo-Json -Depth 4

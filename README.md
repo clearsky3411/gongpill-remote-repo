@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 자기완결 Client 화면 설정
-- 최근 작업 브랜치: `codex/installer-appearance-seed`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + Instance 레이아웃 저장 계약
+- 최근 작업 브랜치: `codex/instance-panel-layout-contract`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -87,6 +87,7 @@ npm run validate:release
 - [x] 포터블 Client 설정·사용자 글꼴을 프로젝트 데이터와 분리하고 기존 설정을 검증 후 이동
 - [x] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
 - [x] Windows Installer의 Client 화면 최초값 선택과 재설치 설정 보존
+- [x] Instance 작업 영역 순서·접힘·너비의 검증·원자 저장 계약
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
 - [x] ChatGPT 구독 인증을 쓰는 격리된 Codex App Server 공동 집필
