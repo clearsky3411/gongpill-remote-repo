@@ -11,14 +11,17 @@ import {
 } from "../../core/src/instance-layout-store.ts";
 import {
   CreateDefaultInstanceLayout as CreateDefaultBrowserInstanceLayout,
-  MoveInstancePanel,
-  ResizeAdjacentInstancePanels,
-  ToggleInstancePanel,
+  MoveCoWriterPartSection,
+  MoveInstancePartWindow,
+  ResizeAdjacentCoWriterPartSections,
+  ResizeAdjacentInstancePartWindows,
+  ToggleCoWriterPartSection,
+  ToggleInstancePartWindow,
 } from "../../browser/src/instance-layout.js";
 
 const APP_ROOT = process.cwd();
 
-test("Instance 레이아웃 기본값은 네 작업 영역의 순서·접힘·너비를 명시한다", async () => {
+test("Instance 레이아웃 v2 기본값은 Part Window와 공동 집필 Part Section을 명시한다", async () => {
   const dataRoot = await mkdtemp(join(tmpdir(), "gongpil-instance-layout-default-"));
   try {
     const store = new GongpilInstanceLayoutStore(dataRoot);
@@ -37,15 +40,24 @@ test("Instance 레이아웃을 원자 저장하고 새 Store에서 다시 읽는
     const defaults = CreateDefaultCoreInstanceLayout();
     const saved = await store.Update({
       ...defaults,
-      panelOrder: ["documents", "projects", "editor", "co-writer"],
-      panels: {
-        ...defaults.panels,
-        projects: { collapsed: true, widthCssPx: 260 },
-        editor: { collapsed: false, widthCssPx: 900 },
+      partWindowOrder: ["documents", "projects", "editor", "co-writer"],
+      partWindows: {
+        ...defaults.partWindows,
+        projects: { minimized: true, widthCssPx: 260 },
+        editor: { minimized: false, widthCssPx: 900 },
+      },
+      coWriter: {
+        partSectionOrder: ["chat", "context", "request"],
+        partSections: {
+          ...defaults.coWriter.partSections,
+          chat: { collapsed: false, heightCssPx: 600 },
+        },
       },
     });
-    assert.deepEqual(saved.panelOrder, ["documents", "projects", "editor", "co-writer"]);
-    assert.deepEqual(saved.panels.projects, { collapsed: true, widthCssPx: 260 });
+    assert.deepEqual(saved.partWindowOrder, ["documents", "projects", "editor", "co-writer"]);
+    assert.deepEqual(saved.partWindows.projects, { minimized: true, widthCssPx: 260 });
+    assert.deepEqual(saved.coWriter.partSectionOrder, ["chat", "context", "request"]);
+    assert.deepEqual(saved.coWriter.partSections.chat, { collapsed: false, heightCssPx: 600 });
     assert.equal(Date.parse(saved.updatedAt) > 0, true);
     assert.deepEqual(await new GongpilInstanceLayoutStore(dataRoot).Read(), saved);
     assert.deepEqual(
@@ -67,7 +79,7 @@ test("잘못된 순서와 너비는 기존 Instance 레이아웃을 바꾸지 �
     await assert.rejects(
       store.Update({
         ...defaults,
-        panelOrder: ["projects", "projects", "editor", "co-writer"],
+        partWindowOrder: ["projects", "projects", "editor", "co-writer"],
       }),
       (error: unknown) => error instanceof GongpilInstanceLayoutStoreError
         && error.code === "INSTANCE_LAYOUT_INVALID",
@@ -75,9 +87,9 @@ test("잘못된 순서와 너비는 기존 Instance 레이아웃을 바꾸지 �
     await assert.rejects(
       store.Update({
         ...defaults,
-        panels: { ...defaults.panels, editor: { collapsed: false, widthCssPx: 100 } },
+        partWindows: { ...defaults.partWindows, editor: { minimized: false, widthCssPx: 100 } },
       }),
-      /editor 작업 영역 너비/,
+      /editor Part Window 너비/,
     );
     assert.deepEqual(await store.Read(), saved);
   }
@@ -93,49 +105,102 @@ test("동시 Instance 레이아웃 저장은 호출 순서대로 직렬화된다
     const defaults = CreateDefaultCoreInstanceLayout();
     const first = store.Update({
       ...defaults,
-      panels: { ...defaults.panels, documents: { collapsed: true, widthCssPx: 220 } },
+      partWindows: { ...defaults.partWindows, documents: { minimized: true, widthCssPx: 220 } },
     });
     const second = store.Update({
       ...defaults,
-      panels: { ...defaults.panels, documents: { collapsed: false, widthCssPx: 360 } },
+      partWindows: { ...defaults.partWindows, documents: { minimized: false, widthCssPx: 360 } },
     });
     await Promise.all([first, second]);
-    assert.deepEqual((await store.Read()).panels.documents, { collapsed: false, widthCssPx: 360 });
+    assert.deepEqual((await store.Read()).partWindows.documents, { minimized: false, widthCssPx: 360 });
   }
   finally {
     await rm(dataRoot, { recursive: true, force: true });
   }
 });
 
-test("Browser와 Core는 같은 Instance 패널 기본값을 사용한다", () => {
+test("Browser와 Core는 같은 Instance Part Window v2 기본값을 사용한다", () => {
   assert.deepEqual(CreateDefaultBrowserInstanceLayout(), CreateDefaultCoreInstanceLayout());
 });
 
-test("Instance 패널을 접고 펼치며 좌우 경계 안에서 이동한다", () => {
+test("Instance Part Window를 최소화하고 좌우 경계 안에서 이동한다", () => {
   const defaults = CreateDefaultBrowserInstanceLayout();
-  const collapsed = ToggleInstancePanel(defaults, "projects");
-  assert.equal(collapsed.panels.projects.collapsed, true);
-  assert.equal(defaults.panels.projects.collapsed, false);
-  assert.deepEqual(MoveInstancePanel(defaults, "projects", -1).panelOrder, defaults.panelOrder);
+  const minimized = ToggleInstancePartWindow(defaults, "projects");
+  assert.equal(minimized.partWindows.projects.minimized, true);
+  assert.equal(defaults.partWindows.projects.minimized, false);
+  assert.deepEqual(MoveInstancePartWindow(defaults, "projects", -1).partWindowOrder, defaults.partWindowOrder);
   assert.deepEqual(
-    MoveInstancePanel(defaults, "documents", -1).panelOrder,
+    MoveInstancePartWindow(defaults, "documents", -1).partWindowOrder,
     ["documents", "projects", "editor", "co-writer"],
   );
-  assert.deepEqual(MoveInstancePanel(defaults, "co-writer", 1).panelOrder, defaults.panelOrder);
+  assert.deepEqual(MoveInstancePartWindow(defaults, "co-writer", 1).partWindowOrder, defaults.partWindowOrder);
 });
 
-test("인접 Instance 패널 크기 조절은 합계와 최소·최대 경계를 지킨다", () => {
+test("기존 v1 작업 영역 설정은 순서·너비·접힘을 보존해 v2로 읽는다", async () => {
+  const dataRoot = await mkdtemp(join(tmpdir(), "gongpil-instance-layout-v1-"));
+  try {
+    const store = new GongpilInstanceLayoutStore(dataRoot);
+    await mkdir(join(dataRoot, "settings"), { recursive: true });
+    await writeFile(store.GetLayoutPath(), JSON.stringify({
+      schemaVersion: 1,
+      panelOrder: ["documents", "projects", "co-writer", "editor"],
+      panels: {
+        projects: { collapsed: true, widthCssPx: 260 },
+        documents: { collapsed: false, widthCssPx: 320 },
+        editor: { collapsed: false, widthCssPx: 800 },
+        "co-writer": { collapsed: true, widthCssPx: 500 },
+      },
+      updatedAt: "2026-07-28T00:00:00.000Z",
+    }), "utf8");
+
+    const migrated = await store.Read();
+    assert.equal(migrated.schemaVersion, 2);
+    assert.deepEqual(migrated.partWindowOrder, ["documents", "projects", "co-writer", "editor"]);
+    assert.deepEqual(migrated.partWindows.projects, { minimized: true, widthCssPx: 260 });
+    assert.deepEqual(migrated.partWindows["co-writer"], { minimized: true, widthCssPx: 500 });
+    assert.deepEqual(migrated.coWriter, CreateDefaultCoreInstanceLayout().coWriter);
+    assert.equal(migrated.updatedAt, "2026-07-28T00:00:00.000Z");
+    assert.equal(JSON.parse(await readFile(store.GetLayoutPath(), "utf8")).schemaVersion, 1);
+
+    const saved = await store.Update(migrated);
+    assert.equal(JSON.parse(await readFile(store.GetLayoutPath(), "utf8")).schemaVersion, 2);
+    assert.deepEqual(await store.Read(), saved);
+  }
+  finally {
+    await rm(dataRoot, { recursive: true, force: true });
+  }
+});
+
+test("인접 Instance Part Window 크기 조절은 합계와 최소·최대 경계를 지킨다", () => {
   const defaults = CreateDefaultBrowserInstanceLayout();
-  const resized = ResizeAdjacentInstancePanels(defaults, "editor", "co-writer", 100);
-  assert.equal(resized.panels.editor.widthCssPx, 740);
-  assert.equal(resized.panels["co-writer"].widthCssPx, 320);
-  const clamped = ResizeAdjacentInstancePanels(defaults, "editor", "co-writer", 1000);
-  assert.equal(clamped.panels.editor.widthCssPx, 760);
-  assert.equal(clamped.panels["co-writer"].widthCssPx, 300);
-  const collapsed = ToggleInstancePanel(defaults, "editor");
+  const resized = ResizeAdjacentInstancePartWindows(defaults, "editor", "co-writer", 100);
+  assert.equal(resized.partWindows.editor.widthCssPx, 740);
+  assert.equal(resized.partWindows["co-writer"].widthCssPx, 320);
+  const clamped = ResizeAdjacentInstancePartWindows(defaults, "editor", "co-writer", 1000);
+  assert.equal(clamped.partWindows.editor.widthCssPx, 760);
+  assert.equal(clamped.partWindows["co-writer"].widthCssPx, 300);
+  const minimized = ToggleInstancePartWindow(defaults, "editor");
   assert.deepEqual(
-    ResizeAdjacentInstancePanels(collapsed, "editor", "co-writer", 100),
-    collapsed,
+    ResizeAdjacentInstancePartWindows(minimized, "editor", "co-writer", 100),
+    minimized,
+  );
+});
+
+test("공동 집필 Part Section은 순서·접힘·높이 경계를 독립적으로 바꾼다", () => {
+  const defaults = CreateDefaultBrowserInstanceLayout();
+  const expandedContext = ToggleCoWriterPartSection(defaults, "context");
+  assert.equal(expandedContext.coWriter.partSections.context.collapsed, false);
+  assert.equal(defaults.coWriter.partSections.context.collapsed, true);
+  assert.deepEqual(
+    MoveCoWriterPartSection(defaults, "chat", -1).coWriter.partSectionOrder,
+    ["chat", "context", "request"],
+  );
+  const resized = ResizeAdjacentCoWriterPartSections(expandedContext, "context", "chat", 80);
+  assert.equal(resized.coWriter.partSections.context.heightCssPx, 360);
+  assert.equal(resized.coWriter.partSections.chat.heightCssPx, 340);
+  assert.deepEqual(
+    ResizeAdjacentCoWriterPartSections(defaults, "context", "chat", 80),
+    defaults,
   );
 });
 

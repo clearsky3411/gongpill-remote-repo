@@ -163,22 +163,22 @@ test("실제 Core API와 일회용 Browser 쿠키 세션으로 프로젝트·문
 
     const defaultLayoutResult = await bootstrap.GetNetworkRuntime().Send("instance.layout.read", {});
     assert.equal(defaultLayoutResult.state, "succeeded");
-    assert.deepEqual(defaultLayoutResult.payload?.layout.panelOrder, ["projects", "documents", "editor", "co-writer"]);
+    assert.deepEqual(defaultLayoutResult.payload?.layout.partWindowOrder, ["projects", "documents", "editor", "co-writer"]);
     const defaultLayout = CreateDefaultInstanceLayout();
     const updateLayoutResult = await bootstrap.GetNetworkRuntime().Send("instance.layout.update", {
       layout: {
         ...defaultLayout,
-        panelOrder: ["documents", "projects", "editor", "co-writer"],
-        panels: {
-          ...defaultLayout.panels,
-          "co-writer": { collapsed: true, widthCssPx: 500 },
+        partWindowOrder: ["documents", "projects", "editor", "co-writer"],
+        partWindows: {
+          ...defaultLayout.partWindows,
+          "co-writer": { minimized: true, widthCssPx: 500 },
         },
       },
     });
     assert.equal(updateLayoutResult.state, "succeeded");
-    assert.deepEqual(updateLayoutResult.payload?.layout.panels["co-writer"], { collapsed: true, widthCssPx: 500 });
+    assert.deepEqual(updateLayoutResult.payload?.layout.partWindows["co-writer"], { minimized: true, widthCssPx: 500 });
     const invalidLayoutResult = await bootstrap.GetNetworkRuntime().Send("instance.layout.update", {
-      layout: { ...defaultLayout, panelOrder: ["projects", "projects", "editor", "co-writer"] },
+      layout: { ...defaultLayout, partWindowOrder: ["projects", "projects", "editor", "co-writer"] },
     });
     assert.equal(invalidLayoutResult.state, "failed");
     assert.equal(invalidLayoutResult.error?.code, "INSTANCE_LAYOUT_INVALID");

@@ -85,7 +85,15 @@ Instance Runtime 종료는 Client Runtime 종료를 뜻하지 않는다. 현재 
 - 현재는 외부 Browser Host를 사용하고, 나중에는 같은 Instance Package를 Desktop WebView Host에서 로드할 수 있어야 한다.
 - 호스트마다 필요한 차이는 Host Adapter Package에 격리한다.
 
-## 7. 개발 요청 해석
+## 7. Instance UI 구성
+
+- `Part Window(파트 윈도우)`는 Instance Runtime 화면 안에서 프로젝트·문서·편집기·공동 집필처럼 독립적으로 순서 이동, 크기 조절, 최소화와 복원이 가능한 UI 단위다.
+- Part Window는 별도 OS 창, OS 프로세스, Package 또는 Runtime이 아니다. 현재 배치는 Instance Runtime 화면 안의 스냅 순서를 사용한다.
+- 핵심 Part Window는 화면에서 삭제하지 않는다. 최소화해도 작은 제목 레일을 남겨 즉시 복원할 수 있어야 한다.
+- `Part Section(파트 섹션)`은 Part Window 내부에서 독립적으로 순서 이동, 높이 조절, 접기와 펼치기가 가능한 하위 UI 단위다.
+- 현재 공동 집필 Part Window의 Part Section은 `context`, `chat`, `request`이며, 데이터 항목의 이름 변경·복제·휴지통 메뉴와 Part Window 배치 메뉴를 구분한다.
+
+## 8. 개발 요청 해석
 
 | 요청 | 정확한 해석 |
 |---|---|
@@ -97,14 +105,14 @@ Instance Runtime 종료는 Client Runtime 종료를 뜻하지 않는다. 현재 
 | “공필을 다시 연다” | Client Runtime이 Instance Package를 로드해 새 Instance Runtime을 생성한다 |
 | “호스트 어댑터 작업하자” | 문맥을 확인한 뒤 Host Adapter Package 또는 Host Adapter Runtime 중 정확한 대상을 명시한다 |
 
-## 8. 개발과 공필 작업의 경계
+## 9. 개발과 공필 작업의 경계
 
 - 기능·디자인 개발은 Development Package에서 사용자와 Codex가 수행한다.
 - Instance Runtime 안의 AI는 문서 작성, 대화, 청크, 페르소나, 제안 같은 공통 작업을 돕는다.
 - Instance Runtime 안의 AI가 Client Package나 Instance Package의 제품 코드를 스스로 수정·배포하는 기능은 범위에 포함하지 않는다.
 - 개발 결과는 검증과 배포 절차를 거쳐 새 Package가 된 뒤 Client Runtime의 업데이트로 사용자에게 전달된다.
 
-## 9. 현재와 목표를 구분하는 표현
+## 10. 현재와 목표를 구분하는 표현
 
 - 이미 존재하고 검증된 동작만 `CURRENT`라고 쓴다.
 - 상주 Client Runtime과 단일 Instance Runtime의 독립 수명은 `CURRENT`다. 여러 Instance Runtime 동시 관리, Update Channel, 서명 검증, 클라우드 Server Runtime은 `TARGET`이라고 쓴다.

@@ -2,9 +2,9 @@ import { GongpilBrowserNetworkRuntime } from "/network-runtime.js";
 import {
   CloneInstanceLayout,
   CreateDefaultInstanceLayout,
-  MoveInstancePanel,
-  ResizeAdjacentInstancePanels,
-  ToggleInstancePanel,
+  MoveInstancePartWindow,
+  ResizeAdjacentInstancePartWindows,
+  ToggleInstancePartWindow,
 } from "./instance-layout.js";
 
 const runtime = new GongpilBrowserNetworkRuntime();
@@ -128,20 +128,20 @@ function RenderInstanceLayout(rebuildResizers = true) {
   if (rebuildResizers) {
     elements.workspace.querySelectorAll(".panel-resizer").forEach((resizer) => resizer.remove());
   }
-  state.instanceLayout.panelOrder.forEach((panelId, index) => {
+  state.instanceLayout.partWindowOrder.forEach((panelId, index) => {
     const panel = instancePanelElements.get(panelId);
-    const panelState = state.instanceLayout.panels[panelId];
+    const panelState = state.instanceLayout.partWindows[panelId];
     panel.style.gridColumn = String((index * 2) + 1);
     panel.style.gridRow = "1";
-    panel.classList.toggle("is-collapsed", panelState.collapsed);
+    panel.classList.toggle("is-collapsed", panelState.minimized);
     const toggleButton = panel.querySelector('[data-panel-action="toggle"]');
-    toggleButton.textContent = panelState.collapsed ? "펼치기" : "접기";
-    toggleButton.setAttribute("aria-expanded", String(!panelState.collapsed));
+    toggleButton.textContent = panelState.minimized ? "펼치기" : "접기";
+    toggleButton.setAttribute("aria-expanded", String(!panelState.minimized));
     panel.querySelector('[data-panel-action="move-left"]').disabled = index === 0;
-    panel.querySelector('[data-panel-action="move-right"]').disabled = index === state.instanceLayout.panelOrder.length - 1;
-    columns.push(panelState.collapsed ? "var(--collapsed-panel-width)" : `${panelState.widthCssPx}px`);
-    if (index < state.instanceLayout.panelOrder.length - 1) {
-      const rightPanelId = state.instanceLayout.panelOrder[index + 1];
+    panel.querySelector('[data-panel-action="move-right"]').disabled = index === state.instanceLayout.partWindowOrder.length - 1;
+    columns.push(panelState.minimized ? "var(--collapsed-panel-width)" : `${panelState.widthCssPx}px`);
+    if (index < state.instanceLayout.partWindowOrder.length - 1) {
+      const rightPanelId = state.instanceLayout.partWindowOrder[index + 1];
       if (rebuildResizers) {
         const resizer = CreatePanelResizer(panelId, rightPanelId, (index * 2) + 2);
         elements.workspace.append(resizer);
@@ -154,8 +154,8 @@ function RenderInstanceLayout(rebuildResizers = true) {
 
 function CreatePanelResizer(leftPanelId, rightPanelId, gridColumn) {
   const resizer = document.createElement("div");
-  const disabled = state.instanceLayout.panels[leftPanelId].collapsed
-    || state.instanceLayout.panels[rightPanelId].collapsed;
+  const disabled = state.instanceLayout.partWindows[leftPanelId].minimized
+    || state.instanceLayout.partWindows[rightPanelId].minimized;
   resizer.className = "panel-resizer";
   resizer.style.gridColumn = String(gridColumn);
   resizer.tabIndex = disabled ? -1 : 0;
@@ -171,7 +171,7 @@ function CreatePanelResizer(leftPanelId, rightPanelId, gridColumn) {
       }
       event.preventDefault();
       const delta = event.key === "ArrowLeft" ? -16 : 16;
-      ApplyInstanceLayout(ResizeAdjacentInstancePanels(state.instanceLayout, leftPanelId, rightPanelId, delta), false);
+      ApplyInstanceLayout(ResizeAdjacentInstancePartWindows(state.instanceLayout, leftPanelId, rightPanelId, delta), false);
       ScheduleInstanceLayoutSave();
     });
   }
@@ -188,7 +188,7 @@ function BeginPanelResize(event, resizer, leftPanelId, rightPanelId) {
   resizer.classList.add("is-resizing");
   resizer.setPointerCapture?.(event.pointerId);
   const Move = (moveEvent) => {
-    state.instanceLayout = ResizeAdjacentInstancePanels(
+    state.instanceLayout = ResizeAdjacentInstancePartWindows(
       startLayout,
       leftPanelId,
       rightPanelId,
@@ -1486,13 +1486,13 @@ elements.workspace.addEventListener("click", (event) => {
   const panelId = panel.dataset.panelId;
   const action = button.dataset.panelAction;
   if (action === "toggle") {
-    ApplyInstanceLayout(ToggleInstancePanel(state.instanceLayout, panelId));
+    ApplyInstanceLayout(ToggleInstancePartWindow(state.instanceLayout, panelId));
   }
   else if (action === "move-left") {
-    ApplyInstanceLayout(MoveInstancePanel(state.instanceLayout, panelId, -1));
+    ApplyInstanceLayout(MoveInstancePartWindow(state.instanceLayout, panelId, -1));
   }
   else if (action === "move-right") {
-    ApplyInstanceLayout(MoveInstancePanel(state.instanceLayout, panelId, 1));
+    ApplyInstanceLayout(MoveInstancePartWindow(state.instanceLayout, panelId, 1));
   }
   else {
     return;

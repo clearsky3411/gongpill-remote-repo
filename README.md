@@ -4,8 +4,8 @@
 
 ## 현재 단계
 
-- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 복원 가능한 Instance 작업 영역
-- 최근 작업 브랜치: `codex/instance-panel-layout-ui`
+- 상태: `CURRENT` 프로젝트·문서 MVP + Codex/API 공동 집필 + 복원 가능한 Instance Part Window
+- 최근 작업 브랜치: `codex/instance-part-window-contract`
 - 구현 코드: `client/src/`, `core/src/`, `browser/src/`, `platform/network-runtime/`, `tests/mvp/`
 - 설계 기준: `GONGPIL_MASTER_CONTEXT_AND_CHECKLIST_KO.md`
 - 개발 용어 기준: `docs/architecture/terminology.md`
@@ -88,7 +88,7 @@ npm run validate:release
 - [x] 포터블 Client 설정·사용자 글꼴을 프로젝트 데이터와 분리하고 기존 설정을 검증 후 이동
 - [x] WinForms에 Client Package 비공개 글꼴·DPI·창 크기 설정 적용
 - [x] Windows Installer의 Client 화면 최초값 선택과 재설치 설정 보존
-- [x] Instance 작업 영역 순서·접힘·너비의 검증·원자 저장 계약
+- [x] Instance Part Window 순서·최소화·너비와 공동 집필 Part Section 순서·접힘·높이의 v2 검증·원자 저장 계약 및 v1 마이그레이션
 - [x] 현재 프로젝트·문서·편집기·공동 집필 영역 접기·펼치기, 좌우 순서·너비 조절과 전역 복원
 - [x] 외부 API 환경파일 선택과 Browser 비밀키 비노출
 - [x] OpenAI Responses API 스트리밍 공동 집필 채팅
@@ -103,7 +103,8 @@ npm run validate:release
 - [ ] 실행 Flow/Scope/Trace, 진행률, 취소와 오류 추적
 - [ ] 플러그인 계약·SDK·권한·설치 관리자
 - [ ] 플러그인별 backend 프로세스와 sandboxed UI 격리
-- [ ] 작업 영역을 자유 부동 창으로 이동·재도킹하고 프로젝트별 레이아웃 저장
+- [ ] 작은 창 형태의 Part Window 제목 바, 화면 내부 스냅 재배치와 공동 집필 Part Section 조작 UI
+- [ ] 프로젝트별 레이아웃 저장
 - [ ] 지도 뷰어 검증 플러그인
 - [ ] 채팅, 브랜치, 페르소나, 장기 기억과 출처 추적
 - [ ] Markdown 편집기와 검색 플러그인
