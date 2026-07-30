@@ -8,15 +8,15 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `client-package-0.1.1` |
+| 작업 단위 | `pair-writer-context-retrieval` |
 | 상태 | `COMPLETED` |
-| 시작일 | `2026-07-29` |
-| 완료일 | `2026-07-29` |
-| 브랜치 | `codex/client-package-0.1.1` |
-| 활성 컴포넌트 | `gongpil.client`, `gongpil.core`, `gongpil.browser`, `gongpil.installer`, `gongpil.packages`, `gongpil.distribution`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `client.release-notes`, `distribution.portable`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Client 중앙 정렬 핫픽스와 Part Window v2/UI를 0.1.1 Installer·portable 산출물 및 릴리스 정보로 묶어 검증 |
-| 다음 작업 | `distribution-update-channel` |
+| 시작일 | `2026-07-30` |
+| 완료일 | `2026-07-30` |
+| 브랜치 | `codex/pair-writer-context-retrieval` |
+| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `context.pair-writer.chunk-retrieval`, `ai.provider.codex`, `context.build.budget`, `context.source.snapshot`, `ui.persona-context`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | Codex가 프로젝트 문서 청크를 필요에 따라 검색·읽고 실제 자동 참조 출처를 snapshot으로 남김 |
+| 다음 작업 | `pair-writer-long-term-memory` |
 
 ## 상태 라벨
 
@@ -103,6 +103,7 @@ flowchart TD
 | 프로젝트 페르소나 버전과 작업 프로필 관리 | Core | `core/src/persona-store.ts` | `CURRENT` |
 | 토큰 예산·중복 제거·누락 경고 컨텍스트 조립 | Core | `core/src/context-builder.ts` | `CURRENT` |
 | AI 요청 실제 문서·대화 출처 좌표·내용 snapshot | Core | `core/src/chat-store.ts` | `CURRENT` |
+| 페어 작가 프로젝트 청크 자동 검색·읽기와 관찰 가능한 출처 기록 | Core | `core/src/pair-writer-context-tools.ts` | `CURRENT` |
 | 변경 제안 승인과 적용 | Core | `core/src/core-process.ts` | `CURRENT` |
 | 공통 작업 UI | Browser | `browser/src/index.html` | `CURRENT` |
 | Instance Part Window·공동 집필 Part Section v2 저장 및 v1 마이그레이션 계약 | Core | `core/src/instance-layout-store.ts` | `CURRENT` |

@@ -4,12 +4,13 @@ import type { GongpilChunkDescriptor } from "./chunk-parser.ts";
 import type { GongpilChatHistoryChunk } from "./chat-history-context.ts";
 import type { GongpilChatClassification } from "./chat-store.ts";
 import type { GongpilDocumentSnapshot } from "./document-store.ts";
+import type { GongpilPairWriterRetrievalTrace } from "./pair-writer-context-tools.ts";
 import type { GongpilActivePersonaContext } from "./persona-store.ts";
 
 export interface GongpilDocumentSourceSnapshot {
   sourceId: string;
   sourceKind: "document";
-  selectionKind: "explicit" | "active-document";
+  selectionKind: "explicit" | "active-document" | "pair-writer";
   chunkId?: string;
   fileId: string;
   path: string;
@@ -74,6 +75,13 @@ export interface GongpilContextSnapshot {
   warnings: string[];
   omissions: GongpilContextOmissionSnapshot[];
   sources: GongpilSourceSnapshot[];
+  automaticRetrieval?: {
+    dynamicToolsEnabled: boolean;
+    searchQueries: string[];
+    requestedChunkIds: string[];
+    includedChunkIds: string[];
+    warnings: string[];
+  };
 }
 
 export interface GongpilBuiltWritingContext {
@@ -183,6 +191,59 @@ export function EstimateTokenCount(text: string): number {
   return Math.max(1, Math.ceil(Buffer.byteLength(text, "utf8") / 4));
 }
 
+export function FinalizePairWriterContextSnapshot(
+  snapshot: GongpilContextSnapshot,
+  trace: GongpilPairWriterRetrievalTrace,
+  dynamicToolsEnabled: boolean,
+): GongpilContextSnapshot {
+  const contentHashes = new Set(snapshot.sources.map((source) => source.contentSha256));
+  const automaticSources: GongpilDocumentSourceSnapshot[] = [];
+  const omissions = trace.omissions.map((omission): GongpilContextOmissionSnapshot => ({
+    sourceReference: omission.chunkId,
+    sourceKind: "document",
+    reason: omission.reason,
+  }));
+  for (const chunk of trace.retrievedChunks) {
+    const source = CreateDocumentSource(chunk, "pair-writer");
+    if (contentHashes.has(source.contentSha256)) {
+      if (!omissions.some((omission) => omission.sourceReference === chunk.chunkId)) {
+        omissions.push(CreateOmission(source, "duplicate"));
+      }
+      continue;
+    }
+    automaticSources.push(source);
+    contentHashes.add(source.contentSha256);
+  }
+  const automaticWarnings = [...trace.warnings];
+  if (!dynamicToolsEnabled) {
+    automaticWarnings.push("현재 Codex 버전이 자동 청크 검색 도구를 지원하지 않아 명시 선택 컨텍스트만 사용했습니다.");
+  }
+  const uniqueWarnings = [...new Set([...snapshot.warnings, ...automaticWarnings])];
+  const estimatedAutomaticTokens = automaticSources.reduce(
+    (total, source, index) => total + EstimateTokenCount(CreateSourceBlock(source, snapshot.sources.length + index + 1)),
+    0,
+  );
+  return {
+    ...snapshot,
+    requestedSourceCount: snapshot.requestedSourceCount + new Set(trace.requestedChunkIds).size,
+    includedSourceCount: snapshot.includedSourceCount + automaticSources.length,
+    omittedSourceCount: snapshot.omittedSourceCount + omissions.length,
+    estimatedInputTokens: snapshot.estimatedInputTokens + estimatedAutomaticTokens,
+    warnings: uniqueWarnings,
+    omissions: [...snapshot.omissions.map((omission) => ({ ...omission })), ...omissions],
+    sources: [...snapshot.sources.map(CloneSource), ...automaticSources],
+    automaticRetrieval: {
+      dynamicToolsEnabled,
+      searchQueries: [...trace.searchQueries],
+      requestedChunkIds: [...trace.requestedChunkIds],
+      includedChunkIds: automaticSources
+        .map((source) => source.chunkId)
+        .filter((chunkId): chunkId is string => chunkId !== undefined),
+      warnings: automaticWarnings,
+    },
+  };
+}
+
 function CreateInstructions(
   baseInstructions: string,
   activePersona: GongpilActivePersonaContext,
@@ -220,22 +281,7 @@ function CreateSourceCandidates(
         uniqueChunks.set(chunk.chunkId, chunk);
       }
     }
-    documentSources.push(...[...uniqueChunks.values()].map((chunk) => ({
-      sourceId: `source-${randomUUID()}`,
-      sourceKind: "document" as const,
-      selectionKind: "explicit",
-      chunkId: chunk.chunkId,
-      fileId: chunk.fileId,
-      path: chunk.path,
-      revision: chunk.revision,
-      title: chunk.title,
-      byteStart: chunk.coordinate.byteStart,
-      byteEnd: chunk.coordinate.byteEnd,
-      lineStart: chunk.coordinate.lineStart,
-      lineEnd: chunk.coordinate.lineEnd,
-      content: chunk.content,
-      contentSha256: CreateContentHash(chunk.content),
-    })));
+    documentSources.push(...[...uniqueChunks.values()].map((chunk) => CreateDocumentSource(chunk, "explicit")));
   }
   else if (activeDocument !== undefined) {
     documentSources.push({
@@ -293,8 +339,13 @@ function CreateSourceBlock(source: GongpilSourceSnapshot, index: number): string
       `--- 출처 ${index} 끝 ---`,
     ].join("\n");
   }
+  const selectionLabel = source.selectionKind === "explicit"
+    ? "명시 선택"
+    : source.selectionKind === "pair-writer"
+      ? "페어 작가 자동 참조"
+      : "현재 문서";
   return [
-    `--- 출처 ${index} (${source.selectionKind === "explicit" ? "명시 선택" : "현재 문서"}) ---`,
+    `--- 출처 ${index} (${selectionLabel}) ---`,
     `문서: ${source.path}`,
     `revision: ${source.revision}`,
     `UTF-8 bytes: [${source.byteStart}, ${source.byteEnd})`,
@@ -333,4 +384,39 @@ function FormatClassification(classification: GongpilChatClassification | undefi
 
 function CreateContentHash(content: string): string {
   return createHash("sha256").update(content, "utf8").digest("hex");
+}
+
+function CreateDocumentSource(
+  chunk: GongpilChunkDescriptor,
+  selectionKind: GongpilDocumentSourceSnapshot["selectionKind"],
+): GongpilDocumentSourceSnapshot {
+  return {
+    sourceId: `source-${randomUUID()}`,
+    sourceKind: "document",
+    selectionKind,
+    chunkId: chunk.chunkId,
+    fileId: chunk.fileId,
+    path: chunk.path,
+    revision: chunk.revision,
+    title: chunk.title,
+    byteStart: chunk.coordinate.byteStart,
+    byteEnd: chunk.coordinate.byteEnd,
+    lineStart: chunk.coordinate.lineStart,
+    lineEnd: chunk.coordinate.lineEnd,
+    content: chunk.content,
+    contentSha256: CreateContentHash(chunk.content),
+  };
+}
+
+function CloneSource(source: GongpilSourceSnapshot): GongpilSourceSnapshot {
+  return source.sourceKind === "conversation"
+    ? {
+      ...source,
+      classification: source.classification === undefined
+        ? undefined
+        : { ...source.classification, labels: source.classification.labels === undefined
+          ? undefined
+          : [...source.classification.labels] },
+    }
+    : { ...source };
 }

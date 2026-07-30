@@ -242,6 +242,7 @@ input:focus, textarea:focus { outline: 2px solid rgba(165, 71, 42, 0.2); border-
 .chat-role { display: block; margin-bottom: 5px; color: var(--muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; }
 .context-snapshot { margin-top: 9px; padding-top: 8px; border-top: 1px dashed var(--line); white-space: normal; }
 .context-snapshot > summary { cursor: pointer; color: var(--accent-dark); font-size: 0.72rem; font-weight: 800; }
+.context-retrieval-summary { margin: 0.5rem 0; color: var(--accent-dark); font-size: 0.72rem; }
 .context-warning { margin: 7px 0; color: #9a4a2d; font-size: 0.72rem; }
 .context-omission { margin: 6px 0 0; color: #9a4a2d; font-size: 0.68rem; }
 .source-snapshot { margin-top: 6px; font-size: 0.7rem; }

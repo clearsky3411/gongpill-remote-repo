@@ -34,6 +34,28 @@ export interface GongpilCodexGenerationResponse {
   usage?: GongpilCodexUsage;
   threadId: string;
   turnId?: string;
+  dynamicToolsEnabled: boolean;
+}
+
+export interface GongpilCodexDynamicToolSpec {
+  type: "function";
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
+export interface GongpilCodexDynamicToolCall {
+  callId: string;
+  threadId: string;
+  turnId: string;
+  tool: string;
+  namespace?: string;
+  arguments: unknown;
+}
+
+export interface GongpilCodexDynamicToolResult {
+  success: boolean;
+  contentItems: Array<{ type: "inputText"; text: string }>;
 }
 
 export interface GongpilCodexAppServerOptions {
@@ -112,31 +134,59 @@ export class GongpilCodexAppServerClient {
     instructions: string;
     input: string;
     signal?: AbortSignal;
+    dynamicTools?: readonly GongpilCodexDynamicToolSpec[];
+    onDynamicToolCall?: (call: GongpilCodexDynamicToolCall) => Promise<GongpilCodexDynamicToolResult>;
   }): Promise<GongpilCodexGenerationResponse> {
     await this.EnsureStarted();
-    const threadResult = await this.Request("thread/start", {
+    const threadParams: Record<string, unknown> = {
       model: this.options.model,
       cwd: this.options.workspaceRoot,
       approvalPolicy: "never",
       sandbox: "read-only",
       serviceName: "gongpil",
       ephemeral: true,
-    });
+    };
+    if ((request.dynamicTools?.length ?? 0) > 0) {
+      threadParams.dynamicTools = request.dynamicTools;
+    }
+    let dynamicToolsEnabled = (request.dynamicTools?.length ?? 0) > 0;
+    let threadResult: Record<string, unknown>;
+    try {
+      threadResult = await this.Request("thread/start", threadParams);
+    }
+    catch (error) {
+      if (!dynamicToolsEnabled || !IsDynamicToolsUnsupported(error)) {
+        throw error;
+      }
+      delete threadParams.dynamicTools;
+      dynamicToolsEnabled = false;
+      threadResult = await this.Request("thread/start", threadParams);
+    }
     const threadId = ReadString(AsRecord(threadResult.thread), "id");
     if (threadId === undefined) {
       throw new GongpilCodexAppServerError("CODEX_PROTOCOL_INVALID", "Codex thread를 시작하지 못했습니다.");
     }
-    const turnResult = await this.Request("turn/start", {
-      threadId,
-      input: [{ type: "text", text: `${request.instructions}\n\n${request.input}` }],
-      approvalPolicy: "never",
-      sandboxPolicy: { type: "readOnly" },
-      model: this.options.model,
-      effort: "low",
-      outputSchema: CreateOutputSchema(),
-    });
-    const turnId = ReadString(AsRecord(turnResult.turn), "id");
-    const completed = await this.WaitForTurn(threadId, turnId, request.signal);
+    if (dynamicToolsEnabled && request.onDynamicToolCall !== undefined) {
+      this.dynamicToolHandlers.set(threadId, request.onDynamicToolCall);
+    }
+    let turnId: string | undefined;
+    let completed: { text: string; usage?: GongpilCodexUsage };
+    try {
+      const turnResult = await this.Request("turn/start", {
+        threadId,
+        input: [{ type: "text", text: `${request.instructions}\n\n${request.input}` }],
+        approvalPolicy: "never",
+        sandboxPolicy: { type: "readOnly" },
+        model: this.options.model,
+        effort: "low",
+        outputSchema: CreateOutputSchema(),
+      });
+      turnId = ReadString(AsRecord(turnResult.turn), "id");
+      completed = await this.WaitForTurn(threadId, turnId, request.signal);
+    }
+    finally {
+      this.dynamicToolHandlers.delete(threadId);
+    }
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(completed.text) as Record<string, unknown>;
@@ -150,6 +200,7 @@ export class GongpilCodexAppServerClient {
       usage: completed.usage,
       threadId,
       turnId,
+      dynamicToolsEnabled,
     };
   }
 
@@ -157,6 +208,7 @@ export class GongpilCodexAppServerClient {
     const process = this.process;
     this.process = undefined;
     this.started = undefined;
+    this.dynamicToolHandlers.clear();
     if (process === undefined || process.exitCode !== null) {
       return;
     }
@@ -254,6 +306,12 @@ export class GongpilCodexAppServerClient {
     catch {
       return;
     }
+    const method = ReadString(message, "method");
+    const params = AsRecord(message.params) ?? {};
+    if (method !== undefined && message.id !== undefined) {
+      void this.HandleServerRequest(message.id, method, params).catch(() => undefined);
+      return;
+    }
     if (typeof message.id === "number") {
       const pending = this.pending.get(message.id);
       if (pending === undefined) {
@@ -272,10 +330,50 @@ export class GongpilCodexAppServerClient {
       }
       return;
     }
-    const method = ReadString(message, "method");
-    const params = AsRecord(message.params) ?? {};
     for (const listener of this.notificationListeners) {
       listener(method ?? "", params);
+    }
+  }
+
+  private async HandleServerRequest(
+    id: unknown,
+    method: string,
+    params: Record<string, unknown>,
+  ): Promise<void> {
+    if (method !== "item/tool/call") {
+      this.Write({ id, error: { code: -32601, message: `지원하지 않는 Codex 서버 요청입니다: ${method}` } });
+      return;
+    }
+    const threadId = ReadString(params, "threadId");
+    const turnId = ReadString(params, "turnId");
+    const callId = ReadString(params, "callId");
+    const tool = ReadString(params, "tool");
+    const handler = threadId === undefined ? undefined : this.dynamicToolHandlers.get(threadId);
+    if (threadId === undefined || turnId === undefined || callId === undefined || tool === undefined || handler === undefined) {
+      this.Write({
+        id,
+        result: CreateFailedDynamicToolResult("Codex 도구 요청을 현재 공필 작업과 연결하지 못했습니다."),
+      });
+      return;
+    }
+    try {
+      const result = await handler({
+        threadId,
+        turnId,
+        callId,
+        tool,
+        namespace: ReadString(params, "namespace"),
+        arguments: params.arguments,
+      });
+      this.Write({ id, result });
+    }
+    catch (error) {
+      this.Write({
+        id,
+        result: CreateFailedDynamicToolResult(
+          error instanceof Error ? error.message : "페어 작가 컨텍스트 도구가 실패했습니다.",
+        ),
+      });
     }
   }
 
@@ -333,6 +431,7 @@ export class GongpilCodexAppServerClient {
       pending.reject(error);
     }
     this.pending.clear();
+    this.dynamicToolHandlers.clear();
   }
 
   private readonly options: GongpilCodexAppServerOptions;
@@ -341,9 +440,27 @@ export class GongpilCodexAppServerClient {
     method: string,
     params: Record<string, unknown>,
   ) => void>();
+  private readonly dynamicToolHandlers = new Map<
+    string,
+    (call: GongpilCodexDynamicToolCall) => Promise<GongpilCodexDynamicToolResult>
+  >();
   private process?: ChildProcessWithoutNullStreams;
   private started?: Promise<void>;
   private nextRequestId = 1;
+}
+
+function CreateFailedDynamicToolResult(message: string): GongpilCodexDynamicToolResult {
+  return {
+    success: false,
+    contentItems: [{ type: "inputText", text: JSON.stringify({ error: message }) }],
+  };
+}
+
+function IsDynamicToolsUnsupported(error: unknown): boolean {
+  if (!(error instanceof GongpilCodexAppServerError) || error.code !== "CODEX_REQUEST_FAILED") {
+    return false;
+  }
+  return /dynamicTools|unknown field|unknown parameter|invalid params/i.test(error.message);
 }
 
 function CreateOutputSchema(): Record<string, unknown> {
