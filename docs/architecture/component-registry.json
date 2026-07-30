@@ -1,32 +1,31 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-29",
+  "updatedAt": "2026-07-30",
   "workTracking": {
-    "activeWorkUnit": "client-package-0.1.1",
+    "activeWorkUnit": "pair-writer-context-retrieval",
     "status": "COMPLETED",
-    "startedAt": "2026-07-29",
-    "completedAt": "2026-07-29",
-    "branch": "codex/client-package-0.1.1",
+    "startedAt": "2026-07-30",
+    "completedAt": "2026-07-30",
+    "branch": "codex/pair-writer-context-retrieval",
     "activeComponentIds": [
-      "gongpil.client",
       "gongpil.core",
       "gongpil.browser",
-      "gongpil.installer",
-      "gongpil.packages",
-      "gongpil.distribution",
       "gongpil.tests",
       "gongpil.repository",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "client.release-notes",
-      "distribution.portable",
+      "context.pair-writer.chunk-retrieval",
+      "ai.provider.codex",
+      "context.build.budget",
+      "context.source.snapshot",
+      "ui.persona-context",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Client 중앙 정렬 핫픽스와 Part Window v2/UI를 0.1.1 Installer, portable 산출물과 릴리스 정보로 묶어 검증한다.",
-    "nextRecommendedWorkUnit": "distribution-update-channel"
+    "summary": "Codex가 프로젝트 문서 청크를 필요에 따라 검색하고 읽으며 자동 참조 출처를 관찰 가능한 snapshot으로 남긴다.",
+    "nextRecommendedWorkUnit": "pair-writer-long-term-memory"
   },
   "networkTracking": {
     "runtimeComponentId": "gongpil.network-runtime",
@@ -589,6 +588,16 @@
       "entrypoints": ["GongpilContextSnapshot", "GongpilChatStore.AppendMessage", "chat.session.read", "chat.context.preview"],
       "tests": ["tests/context/persona-context-source.test.ts", "tests/context/chat-history-context.test.ts", "tests/ai/openai-chat-proposal.test.ts"],
       "networkUsage": { "kind": "both", "ownerComponentId": "gongpil.network-runtime", "commands": ["chat.session.read", "chat.context.preview", "chat.message.send"], "events": ["chat.message.completed"] }
+    },
+    {
+      "id": "context.pair-writer.chunk-retrieval",
+      "name": "페어 작가 프로젝트 청크 자동 검색·읽기와 관찰 가능한 출처 기록",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.core",
+      "path": "core/src/pair-writer-context-tools.ts",
+      "entrypoints": ["GongpilPairWriterContextTools", "GongpilCodexAppServerClient.Generate", "FinalizePairWriterContextSnapshot", "GongpilChatStore.UpdateMessageContextSnapshot"],
+      "tests": ["tests/ai/codex-provider-usage.test.ts", "tests/context/persona-context-source.test.ts", "tests/context/chat-history-ui.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {
       "id": "ui.persona-context",

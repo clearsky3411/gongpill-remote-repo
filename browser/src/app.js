@@ -1019,7 +1019,7 @@ function RenderChatHistorySelection() {
         ScheduleContextPreview();
       });
       const chunkText = document.createElement("span");
-      const role = chunk.role === "user" ? "나" : "공필 AI";
+      const role = chunk.role === "user" ? "나" : "페어 작가";
       chunkText.textContent = `${role} · bytes ${chunk.byteStart}-${chunk.byteEnd} · ${chunk.preview || "(빈 청크)"}`;
       chunkLabel.append(chunkCheckbox, chunkText);
       chunks.append(chunkLabel);
@@ -1231,7 +1231,7 @@ function RenderContextPreview() {
 
 function DescribeContextSource(source) {
   if (source.sourceKind === "conversation") {
-    const role = source.role === "user" ? "나" : "공필 AI";
+    const role = source.role === "user" ? "나" : "페어 작가";
     return `대화 · ${role} · ${new Date(source.createdAt).toLocaleString("ko-KR")} · bytes ${source.byteStart}-${source.byteEnd}`;
   }
   return `문서 · ${source.path} · L${source.lineStart}-${source.lineEnd} · bytes ${source.byteStart}-${source.byteEnd}`;
@@ -1323,7 +1323,7 @@ function RenderChat() {
   elements.aiStatus.dataset.ready = String(state.chatConfigured);
   elements.chatInput.disabled = !hasProject || !state.chatConfigured || state.chatSending;
   elements.chatSendButton.disabled = elements.chatInput.disabled;
-  elements.chatSendButton.textContent = state.chatSending ? "작성 중…" : "AI에게 보내기";
+  elements.chatSendButton.textContent = state.chatSending ? "작성 중…" : "페어 작가에게 보내기";
   elements.chatMessages.replaceChildren();
   if (!hasProject) {
     elements.chatMessages.className = "part-section-content chat-messages empty-state";
@@ -1508,7 +1508,7 @@ function CreateChatMessage(message) {
   article.dataset.role = message.role;
   const label = document.createElement("span");
   label.className = "chat-role";
-  label.textContent = message.role === "user" ? "나" : "공필 AI";
+  label.textContent = message.role === "user" ? "나" : "페어 작가";
   const text = document.createElement("span");
   text.textContent = message.content;
   article.append(label, text);
@@ -1529,6 +1529,16 @@ function RenderContextSnapshot(snapshot) {
     `약 ${snapshot.estimatedInputTokens.toLocaleString("ko-KR")} tokens`,
   ].join(" · ");
   details.append(summary);
+  if (snapshot.automaticRetrieval) {
+    const retrieval = document.createElement("p");
+    retrieval.className = "context-retrieval-summary";
+    const searches = snapshot.automaticRetrieval.searchQueries?.length ?? 0;
+    const included = snapshot.automaticRetrieval.includedChunkIds?.length ?? 0;
+    retrieval.textContent = snapshot.automaticRetrieval.dynamicToolsEnabled
+      ? `페어 작가 자동 검색 ${searches}회 · 자동 참조 ${included}개`
+      : "페어 작가 자동 검색을 지원하지 않는 Codex 버전 · 명시 선택 출처만 사용";
+    details.append(retrieval);
+  }
   for (const warningText of snapshot.warnings ?? []) {
     const warning = document.createElement("p");
     warning.className = "context-warning";
@@ -1540,11 +1550,15 @@ function RenderContextSnapshot(snapshot) {
     sourceDetails.className = "source-snapshot";
     const sourceSummary = document.createElement("summary");
     if (source.sourceKind === "conversation") {
-      const role = source.role === "user" ? "나" : "공필 AI";
+      const role = source.role === "user" ? "나" : "페어 작가";
       sourceSummary.textContent = `이전 대화 · ${role} · ${new Date(source.createdAt).toLocaleString("ko-KR")} · bytes ${source.byteStart}-${source.byteEnd} · ${FormatHistoryClassification(source.classification)}`;
     }
     else {
-      const selectionLabel = source.selectionKind === "explicit" ? "명시 선택" : "현재 문서";
+      const selectionLabel = source.selectionKind === "explicit"
+        ? "명시 선택"
+        : source.selectionKind === "pair-writer"
+          ? "페어 작가 자동 참조"
+          : "현재 문서";
       const revision = typeof source.revision === "string" ? source.revision.slice(0, 10) : "확인 불가";
       sourceSummary.textContent = `${selectionLabel} · ${source.path} · L${source.lineStart}-${source.lineEnd} · bytes ${source.byteStart}-${source.byteEnd} · rev ${revision}`;
     }

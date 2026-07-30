@@ -5,8 +5,14 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { GongpilChatStore } from "../../core/src/chat-store.ts";
-import { BuildWritingContext } from "../../core/src/context-builder.ts";
+import { GongpilChunkIndexStore } from "../../core/src/chunk-index-store.ts";
+import {
+  BuildWritingContext,
+  FinalizePairWriterContextSnapshot,
+} from "../../core/src/context-builder.ts";
 import type { GongpilChunkDescriptor } from "../../core/src/chunk-parser.ts";
+import { GongpilDocumentStore } from "../../core/src/document-store.ts";
+import { GongpilPairWriterContextTools } from "../../core/src/pair-writer-context-tools.ts";
 import { GongpilPersonaStore } from "../../core/src/persona-store.ts";
 import { GongpilProjectStore } from "../../core/src/project-store.ts";
 
@@ -122,6 +128,98 @@ test("기존 메타데이터 없는 채팅 JSON을 그대로 읽는다", async (
   }
 });
 
+test("페어 작가가 검색 후보를 본 뒤 필요한 프로젝트 청크만 읽고 snapshot에 확정한다", async () => {
+  const dataRoot = await mkdtemp(join(tmpdir(), "gongpil-pair-writer-context-"));
+  const projectStore = new GongpilProjectStore(dataRoot);
+  const documentStore = new GongpilDocumentStore(projectStore);
+  const chunkIndexStore = new GongpilChunkIndexStore(dataRoot, documentStore);
+  const personaStore = new GongpilPersonaStore(dataRoot);
+  const chatStore = new GongpilChatStore(dataRoot);
+  try {
+    const project = await projectStore.CreateProject("페어 작가 기억 테스트");
+    await documentStore.CreateDocument(
+      project.projectId,
+      "world/인물.md",
+      "# 연화\n연화는 달빛을 머금은 은색 검 월영을 사용한다.\n\n# 백운\n백운은 활을 사용한다.",
+    );
+    const activePersona = await personaStore.GetActiveContext(project.projectId);
+    const built = BuildWritingContext({
+      baseInstructions: "필요한 프로젝트 근거를 찾는다.",
+      projectName: project.name,
+      userText: "연화의 무기는 뭐야?",
+      activePersona,
+    });
+    const tools = new GongpilPairWriterContextTools({
+      projectId: project.projectId,
+      chunkIndexStore,
+      contextSnapshot: built.snapshot,
+    });
+    const searchResult = await tools.Handle({
+      threadId: "thread-test",
+      turnId: "turn-test",
+      callId: "search-test",
+      tool: "gongpil_search_project_chunks",
+      arguments: { query: "연화 무기", limit: 5 },
+    });
+    assert.equal(searchResult.success, true);
+    const searchPayload = JSON.parse(searchResult.contentItems[0].text);
+    assert.equal(searchPayload.candidates.length, 1);
+    assert.equal(searchPayload.candidates[0].title, "연화");
+
+    const readResult = await tools.Handle({
+      threadId: "thread-test",
+      turnId: "turn-test",
+      callId: "read-test",
+      tool: "gongpil_read_project_chunks",
+      arguments: { chunkIds: [searchPayload.candidates[0].chunkId] },
+    });
+    assert.equal(readResult.success, true);
+    assert.match(readResult.contentItems[0].text, /월영/);
+
+    const finalized = FinalizePairWriterContextSnapshot(built.snapshot, tools.GetTrace(), true);
+    assert.equal(finalized.automaticRetrieval?.dynamicToolsEnabled, true);
+    assert.deepEqual(finalized.automaticRetrieval?.searchQueries, ["연화 무기"]);
+    assert.equal(finalized.automaticRetrieval?.includedChunkIds.length, 1);
+    assert.equal(finalized.sources[0].selectionKind, "pair-writer");
+    assert.match(finalized.sources[0].content, /은색 검 월영/);
+
+    const userMessage = await chatStore.AppendMessage(project.projectId, "user", "연화의 무기는 뭐야?", {
+      contextSnapshot: built.snapshot,
+    });
+    await chatStore.UpdateMessageContextSnapshot(project.projectId, userMessage.messageId, finalized);
+    const stored = await chatStore.ReadSession(project.projectId);
+    assert.equal(stored.messages[0].contextSnapshot?.sources[0].selectionKind, "pair-writer");
+    assert.equal(stored.messages[0].contextSnapshot?.automaticRetrieval?.searchQueries[0], "연화 무기");
+
+    const selectedChunk = (await chunkIndexStore.Search(project.projectId, "연화 무기", { limit: 1 }))[0].chunk;
+    const pinned = BuildWritingContext({
+      baseInstructions: "명시 선택 출처를 우선한다.",
+      projectName: project.name,
+      userText: "연화의 무기는 뭐야?",
+      activePersona,
+      selectedChunks: [selectedChunk],
+    });
+    const duplicateTools = new GongpilPairWriterContextTools({
+      projectId: project.projectId,
+      chunkIndexStore,
+      contextSnapshot: pinned.snapshot,
+    });
+    await duplicateTools.Handle({
+      threadId: "thread-test",
+      turnId: "turn-test",
+      callId: "duplicate-read-test",
+      tool: "gongpil_read_project_chunks",
+      arguments: { chunkIds: [selectedChunk.chunkId] },
+    });
+    const duplicateTrace = duplicateTools.GetTrace();
+    assert.equal(duplicateTrace.retrievedChunks.length, 0);
+    assert.deepEqual(duplicateTrace.omissions, [{ chunkId: selectedChunk.chunkId, reason: "duplicate" }]);
+  }
+  finally {
+    await rm(dataRoot, { recursive: true, force: true });
+  }
+});
+
 test("인스턴스가 페르소나·프로필 전환과 요청 출처 확인 UI를 제공한다", async () => {
   const [html, script, styles] = await Promise.all([
     readFile(join(process.cwd(), "browser", "src", "index.html"), "utf8"),
@@ -138,6 +236,8 @@ test("인스턴스가 페르소나·프로필 전환과 요청 출처 확인 UI�
   assert.match(script, /persona\.selection\.update/);
   assert.match(script, /function RenderContextSnapshot/);
   assert.match(script, /source\.revision\.slice/);
+  assert.match(script, /페어 작가 자동 참조/);
+  assert.match(script, /context-retrieval-summary/);
   assert.match(styles, /\.context-snapshot/);
   assert.match(styles, /\.source-snapshot/);
 });

@@ -29,6 +29,7 @@ test("인스턴스가 이전 대화 선택·분류·통합 토큰 미리보기 U
   assert.match(script, /runtime\.Send\("chat\.message\.classification\.update"/);
   assert.match(script, /historyChunkIds: \[\.\.\.state\.selectedHistoryChunkIds\]/);
   assert.match(script, /source\.sourceKind === "conversation"/);
+  assert.match(script, /"페어 작가"/);
   assert.match(script, /omission\.reason === "duplicate"/);
 
   assert.match(styles, /\.history-turn/);

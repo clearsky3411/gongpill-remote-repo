@@ -109,6 +109,30 @@ export class GongpilChatStore {
     });
   }
 
+  public async UpdateMessageContextSnapshot(
+    projectId: string,
+    messageId: string,
+    contextSnapshot: GongpilContextSnapshot,
+  ): Promise<GongpilChatMessage> {
+    return await this.RunMutation(projectId, async () => {
+      const session = await this.ReadSessionUnsafe(projectId);
+      const message = session.messages.find((candidate) => candidate.messageId === messageId);
+      if (message === undefined) {
+        throw new GongpilChatStoreError(
+          "CHAT_MESSAGE_NOT_FOUND",
+          "컨텍스트를 확정할 채팅 메시지가 없거나 현재 프로젝트에 속하지 않습니다.",
+        );
+      }
+      if (!IsContextSnapshot(contextSnapshot)) {
+        throw new GongpilChatStoreError("CHAT_CONTEXT_INVALID", "채팅 컨텍스트 snapshot이 올바르지 않습니다.");
+      }
+      message.contextSnapshot = contextSnapshot;
+      session.updatedAt = new Date().toISOString();
+      await this.WriteSession(session);
+      return message;
+    });
+  }
+
   public async CreateProposal(
     projectId: string,
     value: Omit<GongpilDocumentProposal, "proposalId" | "status" | "createdAt">,
@@ -260,7 +284,8 @@ function IsContextSnapshot(value: GongpilContextSnapshot): boolean {
       ))
     ))
     && Array.isArray(value.sources)
-    && value.sources.every(IsSourceSnapshot);
+    && value.sources.every(IsSourceSnapshot)
+    && (value.automaticRetrieval === undefined || IsAutomaticRetrieval(value.automaticRetrieval));
 }
 
 function IsSourceSnapshot(source: GongpilContextSnapshot["sources"][number]): boolean {
@@ -282,13 +307,29 @@ function IsSourceSnapshot(source: GongpilContextSnapshot["sources"][number]): bo
       && (source.classification === undefined || IsChatClassification(source.classification));
   }
   return (source.sourceKind === undefined || source.sourceKind === "document")
-    && (source.selectionKind === "explicit" || source.selectionKind === "active-document")
+    && (source.selectionKind === "explicit"
+      || source.selectionKind === "active-document"
+      || source.selectionKind === "pair-writer")
     && typeof source.fileId === "string"
     && typeof source.path === "string"
     && typeof source.revision === "string"
     && typeof source.title === "string"
     && Number.isSafeInteger(source.lineStart)
     && Number.isSafeInteger(source.lineEnd);
+}
+
+function IsAutomaticRetrieval(value: NonNullable<GongpilContextSnapshot["automaticRetrieval"]>): boolean {
+  return typeof value === "object"
+    && value !== null
+    && typeof value.dynamicToolsEnabled === "boolean"
+    && Array.isArray(value.searchQueries)
+    && value.searchQueries.every((query) => typeof query === "string")
+    && Array.isArray(value.requestedChunkIds)
+    && value.requestedChunkIds.every((chunkId) => typeof chunkId === "string")
+    && Array.isArray(value.includedChunkIds)
+    && value.includedChunkIds.every((chunkId) => typeof chunkId === "string")
+    && Array.isArray(value.warnings)
+    && value.warnings.every((warning) => typeof warning === "string");
 }
 
 function IsChatClassification(value: GongpilChatClassification): boolean {
