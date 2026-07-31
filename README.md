@@ -22,7 +22,7 @@
 npm start
 ```
 
-처음 실행하면 Windows 클라이언트 홈이 먼저 열린다. `홈`에서 Client·Instance 상태, 지금 가능한 작업과 패치노트를 확인하고 `설정`에서 데이터 폴더와 AI 연결 방식을 정한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` Part Window에서 AI와 대화하거나 문서 변경안을 요청한다. 프로젝트·문서·편집기·공동 집필 Part Window는 작은 제목 바를 끌어 화면 안에서 스냅 이동하거나 `‹`·`›`로 옮기고, `—`로 최소화하며 경계 손잡이로 너비를 바꾼다. 공동 집필의 컨텍스트·대화·요청 Part Section도 같은 방식으로 순서·접힘·높이를 조절한다. 배치는 데이터 루트에 저장되어 다시 열 때 복원되며 `창 배치 초기화`로 기본값을 되찾는다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 즉시 끝내며, Browser 창을 닫아 생존 응답이 끊겨도 약 30초 뒤 Instance Runtime만 끝난다. 상주 Client Runtime의 홈에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
+처음 실행하면 Windows 클라이언트 홈이 먼저 열린다. `홈`에서 Client·Instance 상태, 지금 가능한 작업과 패치노트를 확인하고 `설정`에서 데이터 폴더와 AI 연결 방식을 정한다. `시스템`에서는 Source Repository, Distribution Repository와 Update Channel을 같은 `client-settings.json`에서 확인·변경한 뒤 `인스턴스 시작`을 누른다. 기본값은 `Codex Pro (ChatGPT 로그인)`이며, 인스턴스의 `AI 사용 정보`에서 공필 전용 Codex 로그인을 한 번 완료한다. 열린 인스턴스에서 프로젝트와 문서를 만들고, 오른쪽 `공동 집필` Part Window에서 AI와 대화하거나 문서 변경안을 요청한다. 프로젝트·문서·편집기·공동 집필 Part Window는 작은 제목 바를 끌어 화면 안에서 스냅 이동하거나 `‹`·`›`로 옮기고, `—`로 최소화하며 경계 손잡이로 너비를 바꾼다. 공동 집필의 컨텍스트·대화·요청 Part Section도 같은 방식으로 순서·접힘·높이를 조절한다. 배치는 데이터 루트에 저장되어 다시 열 때 복원되며 `창 배치 초기화`로 기본값을 되찾는다. AI 변경은 원본에 바로 쓰이지 않으며 변경 전후를 확인하고 `적용`을 눌러야 저장된다. 화면의 `인스턴스 종료`는 현재 Instance Runtime만 즉시 끝내며, Browser 창을 닫아 생존 응답이 끊겨도 약 30초 뒤 Instance Runtime만 끝난다. 상주 Client Runtime의 홈에서 새 Instance Runtime을 시작하거나 Client를 최종 종료할 수 있다.
 
 OpenAI API는 별도 과금이 필요한 선택 기능이다. 사용할 때만 API 키를 별도 보안 폴더의 `.env.local`에 `OPENAI_API_KEY=<비밀키>` 형식으로 보관하고 접속기에서 그 파일을 선택한다. 키는 Git 저장소나 Browser에 넣지 않는다. 설치형 설정은 설치 폴더 옆 `GongpilConfig/client-settings.json`, 포터블 설정은 앱 옆 `GongpilClient/client-settings.json`에 저장되며 키 값이 아닌 환경파일 경로만 기록한다. 포터블 프로젝트 데이터는 계속 `GongpilData`에 남는다. Codex 인증은 선택한 `dataRoot/integrations/codex` 아래의 공필 전용 `CODEX_HOME`에 격리된다.
 
@@ -81,6 +81,7 @@ npm run validate:release
 - [x] 포함 런타임으로 동작하는 자기완결 Client-Core 실행
 - [x] 설치형·포터블 모드와 독립된 데이터 루트 결정
 - [x] Windows 클라이언트(접속기)의 데이터 폴더·시작 옵션 관리
+- [x] 기존 `client-settings.json`을 확장한 단일 Gongpil System Config의 Source·Distribution Repository와 Update Channel 관리
 - [x] 상주 Client Runtime과 단일 Instance Runtime 종료·재시작
 - [x] Browser heartbeat ACK 만료 시 Instance Runtime 자동 종료와 Client Runtime 생존
 - [x] Client 홈의 Runtime 상태·사용 가능 기능·패치노트와 설정 탭

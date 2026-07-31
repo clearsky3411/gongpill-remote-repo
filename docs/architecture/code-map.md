@@ -8,14 +8,14 @@
 
 | 항목 | 값 |
 |---|---|
-| 작업 단위 | `pair-writer-context-retrieval` |
+| 작업 단위 | `central-gongpil-system-config` |
 | 상태 | `COMPLETED` |
-| 시작일 | `2026-07-30` |
-| 완료일 | `2026-07-30` |
-| 브랜치 | `codex/pair-writer-context-retrieval` |
-| 활성 컴포넌트 | `gongpil.core`, `gongpil.browser`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
-| 활성 기능 | `context.pair-writer.chunk-retrieval`, `ai.provider.codex`, `context.build.budget`, `context.source.snapshot`, `ui.persona-context`, `architecture.code-map.track`, `release.validation` |
-| 작업 목표 | Codex가 프로젝트 문서 청크를 필요에 따라 검색·읽고 실제 자동 참조 출처를 snapshot으로 남김 |
+| 시작일 | `2026-07-31` |
+| 완료일 | `2026-07-31` |
+| 브랜치 | `codex/central-gongpil-system-config` |
+| 활성 컴포넌트 | `gongpil.client`, `gongpil.installer`, `gongpil.tests`, `gongpil.repository`, `gongpil.architecture`, `gongpil.code-map-tooling` |
+| 활성 기능 | `client.system-config.manage`, `client.connector.settings`, `client.config.root`, `distribution.portable`, `install.windows`, `architecture.code-map.track`, `release.validation` |
+| 작업 목표 | 기존 `client-settings.json`을 Source Repository, Distribution Repository와 Update Channel까지 관리하는 단일 Gongpil System Config로 확장 |
 | 다음 작업 | `pair-writer-long-term-memory` |
 
 ## 상태 라벨
@@ -65,6 +65,7 @@ flowchart TD
 | 실행 기준 경로 결정 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
 | Windows 클라이언트 접속기와 설정 | Client | `client/src/client-connector.ts` | `CURRENT` |
 | Client Runtime 설정·사용자 글꼴 전용 루트 | Client | `client/src/bootstrap-paths.ts` | `CURRENT` |
+| 단일 Gongpil System Config의 저장소·Update Channel 관리 | Client | `client/src/client-settings-store.ts` | `CURRENT` |
 | Client Runtime appearance 설정 계약과 마이그레이션 | Client | `client/src/client-settings-store.ts` | `CURRENT` |
 | 자기완결 Client Package 글꼴 카탈로그와 라이선스 | Client | `client/src/client-font-catalog.ts` | `CURRENT` |
 | Client Runtime 비공개 글꼴·DPI·창 크기 적용 UI | Client | `client/windows/GongpilConnector.ps1` | `CURRENT` |

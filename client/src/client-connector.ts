@@ -5,7 +5,11 @@ import { join } from "node:path";
 
 import type { GongpilClientBootstrapConfig } from "../../packages/contracts/bootstrap/contracts.ts";
 import { ListClientUserFontFiles, LoadClientFontCatalog } from "./client-font-catalog.ts";
-import type { GongpilClientSettings } from "./client-settings-store.ts";
+import type {
+  GongpilClientSettings,
+  GongpilRepositorySettings,
+  GongpilUpdateSettings,
+} from "./client-settings-store.ts";
 
 export interface GongpilClientConnectorInput {
   mode: GongpilClientBootstrapConfig["mode"];
@@ -58,6 +62,8 @@ export async function ShowClientConnector(
         openAiEnvFile?: unknown;
         openAiModel?: unknown;
         appearance?: unknown;
+        repositories?: unknown;
+        update?: unknown;
       };
       if (output.action === "cancel") {
         return { action: "cancel", settings: input.settings };
@@ -72,6 +78,8 @@ export async function ShowClientConnector(
         || (output.openAiEnvFile !== undefined && typeof output.openAiEnvFile !== "string")
         || typeof output.openAiModel !== "string"
         || !IsAppearanceResponse(output.appearance)
+        || !IsRepositoryResponse(output.repositories)
+        || !IsUpdateResponse(output.update)
       ) {
         throw new Error("클라이언트 접속기의 응답 형식이 올바르지 않습니다.");
       }
@@ -87,6 +95,8 @@ export async function ShowClientConnector(
           openAiEnvFile: output.openAiEnvFile === "" ? undefined : output.openAiEnvFile,
           openAiModel: output.openAiModel,
           appearance: output.appearance,
+          repositories: output.repositories,
+          update: output.update,
         },
       };
     }
@@ -100,6 +110,38 @@ export async function ShowClientConnector(
   finally {
     await rm(exchangeRoot, { recursive: true, force: true });
   }
+}
+
+function IsRepositoryResponse(value: unknown): value is GongpilRepositorySettings {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const repositories = value as Readonly<Record<string, unknown>>;
+  if (
+    typeof repositories.source !== "object"
+    || repositories.source === null
+    || Array.isArray(repositories.source)
+    || typeof repositories.distribution !== "object"
+    || repositories.distribution === null
+    || Array.isArray(repositories.distribution)
+  ) {
+    return false;
+  }
+  const source = repositories.source as Readonly<Record<string, unknown>>;
+  const distribution = repositories.distribution as Readonly<Record<string, unknown>>;
+  return source.type === "git"
+    && typeof source.url === "string"
+    && typeof source.defaultBranch === "string"
+    && distribution.type === "github-releases"
+    && typeof distribution.url === "string";
+}
+
+function IsUpdateResponse(value: unknown): value is GongpilUpdateSettings {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const channel = (value as Readonly<Record<string, unknown>>).channel;
+  return channel === "stable" || channel === "beta" || channel === "dev";
 }
 
 function IsAppearanceResponse(value: unknown): value is GongpilClientSettings["appearance"] {

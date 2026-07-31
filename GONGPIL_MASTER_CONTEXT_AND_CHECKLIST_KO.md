@@ -169,6 +169,7 @@
 - [x] Client Runtime appearance는 96 DPI 기준 DIP, 760×720 DIP, 9pt, 100% 기본값을 명시한다.
 - [x] Client Runtime이 포함 글꼴을 시스템 설치 없이 비공개로 로드하고 DPI·창 크기를 적용한다.
 - [x] Windows Installer가 사용자 글꼴 폴더·글자 크기·UI 배율·창 DIP 최초값을 받고 기존 Client 설정은 덮어쓰지 않는다.
+- [x] 설치형·포터블 `client-settings.json` 하나에서 Client 설정, Source Repository, Distribution Repository와 Update Channel을 검증·원자 저장한다.
 
 ## 3.2 실행 격리
 
@@ -1170,6 +1171,7 @@ Instance Runtime 종료 요청
 - [x] Instance Runtime 정상·비정상 종료 뒤 수동 재시작
 - [x] Browser heartbeat ACK 만료 시 Instance Runtime 자동 종료와 Client Runtime 생존
 - [x] Client 홈의 상태·가능 기능·패치노트와 설정·정보 구분
+- [x] Client `시스템` 탭의 Source·Distribution Repository와 Update Channel 통합 설정
 - [x] Client 설정 v2의 appearance 계약과 포터블 Client 설정 루트 분리
 - [x] 나눔고딕·D2Coding 번들, 공식 라이선스와 SHA-256 검증
 - [x] WinForms Client Runtime의 비공개 글꼴·DPI·창 크기 실제 적용
@@ -1839,6 +1841,7 @@ interface GongpilError {
 - [x] bundled runtime
 - [x] core version package
 - [ ] update manifest
+- [x] Source Repository, Distribution Repository와 Update Channel 단일 Config 저장·편집
 - [x] checksum
 - [ ] atomic active switch
 - [ ] rollback
