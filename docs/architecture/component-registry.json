@@ -1,30 +1,30 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-07-30",
+  "updatedAt": "2026-07-31",
   "workTracking": {
-    "activeWorkUnit": "pair-writer-context-retrieval",
+    "activeWorkUnit": "central-gongpil-system-config",
     "status": "COMPLETED",
-    "startedAt": "2026-07-30",
-    "completedAt": "2026-07-30",
-    "branch": "codex/pair-writer-context-retrieval",
+    "startedAt": "2026-07-31",
+    "completedAt": "2026-07-31",
+    "branch": "codex/central-gongpil-system-config",
     "activeComponentIds": [
-      "gongpil.core",
-      "gongpil.browser",
+      "gongpil.client",
+      "gongpil.installer",
       "gongpil.tests",
       "gongpil.repository",
       "gongpil.architecture",
       "gongpil.code-map-tooling"
     ],
     "activeFeatureIds": [
-      "context.pair-writer.chunk-retrieval",
-      "ai.provider.codex",
-      "context.build.budget",
-      "context.source.snapshot",
-      "ui.persona-context",
+      "client.system-config.manage",
+      "client.connector.settings",
+      "client.config.root",
+      "distribution.portable",
+      "install.windows",
       "architecture.code-map.track",
       "release.validation"
     ],
-    "summary": "Codex가 프로젝트 문서 청크를 필요에 따라 검색하고 읽으며 자동 참조 출처를 관찰 가능한 snapshot으로 남긴다.",
+    "summary": "기존 client-settings.json을 Source Repository, Distribution Repository와 Update Channel까지 관리하는 단일 Gongpil System Config로 확장한다.",
     "nextRecommendedWorkUnit": "pair-writer-long-term-memory"
   },
   "networkTracking": {
@@ -58,7 +58,7 @@
       "kind": "process",
       "status": "CURRENT",
       "responsibility": "인스턴스 실행 전 모드·경로·옵션·런타임·세션 기준 결정과 Core 수명 관리",
-      "owns": ["bootstrap-paths", "client-config-root", "client-settings", "client-appearance-settings", "client-font-catalog", "connector-ui", "client-home-dashboard", "client-release-notes", "client-runtime-lifecycle", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch"],
+      "owns": ["bootstrap-paths", "client-config-root", "client-settings", "system-config", "client-appearance-settings", "client-font-catalog", "connector-ui", "client-home-dashboard", "client-release-notes", "client-runtime-lifecycle", "process-lifecycle", "core-activation", "browser-session-summary", "browser-launch"],
       "dependsOn": ["gongpil.core", "gongpil.packages", "gongpil.contracts", "gongpil.network-runtime"],
       "usedBy": ["gongpil.installer", "gongpil.tests"],
       "publicInterfaces": ["client/src/client-process.ts", "client/src/client-runtime.ts", "client/src/client-settings-store.ts", "client/src/client-font-catalog.ts", "client/src/client-connector.ts", "client/src/client-release-notes.json", "client/resources/fonts/font-manifest.json", "client/windows/GongpilConnector.ps1", "client/src/bootstrap-paths.ts", "client/src/core-process-manager.ts", "client/src/client-bootstrap.ts"],
@@ -307,6 +307,16 @@
       "path": "client/src/bootstrap-paths.ts",
       "entrypoints": ["ResolveClientStoragePaths", "ResolveClientSettingsPath", "ResolveClientFontRoot"],
       "tests": ["tests/client/client-connector-settings.test.ts"],
+      "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
+    },
+    {
+      "id": "client.system-config.manage",
+      "name": "단일 Gongpil System Config의 저장소·Update Channel 관리",
+      "status": "CURRENT",
+      "ownerComponentId": "gongpil.client",
+      "path": "client/src/client-settings-store.ts",
+      "entrypoints": ["GongpilClientSettings.repositories", "GongpilClientSettings.update", "LoadClientSettings", "SaveClientSettings", "client/windows/GongpilConnector.ps1"],
+      "tests": ["tests/client/client-connector-settings.test.ts", "tests/distribution/portable-package.test.ts", "tests/distribution/windows-installer.test.ts"],
       "networkUsage": { "kind": "none", "ownerComponentId": null, "commands": [], "events": [] }
     },
     {

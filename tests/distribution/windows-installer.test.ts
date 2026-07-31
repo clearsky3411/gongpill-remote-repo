@@ -57,6 +57,15 @@ test("Windows Installer 화면 시드는 최초 설정에만 적용되고 재설
     assert.equal(firstSettings.appearance.uiScalePercent, 125);
     assert.equal(firstSettings.appearance.windowWidthDip, 980);
     assert.equal(firstSettings.appearance.windowHeightDip, 820);
+    assert.equal(
+      firstSettings.repositories.source.url,
+      "https://github.com/clearsky3411/gongpill-remote-repo.git",
+    );
+    assert.equal(
+      firstSettings.repositories.distribution.url,
+      "https://github.com/clearsky3411/gongpill-remote-repo/releases",
+    );
+    assert.equal(firstSettings.update.channel, "dev");
     await assert.rejects(readFile(seedPath), /ENOENT/);
 
     Uninstall(installRoot, join(testRoot, "uninstall-1.log"), environment);
@@ -125,7 +134,10 @@ test("Windows Installer가 사용자 지정 dataRoot로 실행되고 제거 뒤 
     Uninstall(installRoot, join(testRoot, "uninstall-1.log"), environment);
     await WaitForMissing(installRoot);
     assert.equal(JSON.parse(await readFile(join(dataRoot, "machine.json"), "utf8")).machineId, machineBeforeUninstall.machineId);
-    assert.equal(JSON.parse(await readFile(settingsPath, "utf8")).dataRoot, dataRoot);
+    const settingsAfterUninstall = JSON.parse(await readFile(settingsPath, "utf8"));
+    assert.equal(settingsAfterUninstall.dataRoot, dataRoot);
+    assert.equal(settingsAfterUninstall.repositories.source.defaultBranch, "main");
+    assert.equal(settingsAfterUninstall.update.channel, "dev");
 
     Install(installRoot, join(testRoot, "install-2.log"), environment);
     const secondRun = StartInstalledClient(installRoot, environment);

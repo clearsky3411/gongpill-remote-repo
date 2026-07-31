@@ -147,6 +147,45 @@ function New-ClientFont {
     return New-Object System.Drawing.Font -ArgumentList @($Family, $Size, $resolvedStyle, [System.Drawing.GraphicsUnit]::Point)
 }
 
+function Resolve-HttpsConfigUrl {
+    param(
+        [Parameter(Mandatory = $true)][string]$Value,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+
+    $trimmed = $Value.Trim()
+    $uri = $null
+    if (
+        $trimmed.Length -gt 2048 -or
+        -not [System.Uri]::TryCreate($trimmed, [System.UriKind]::Absolute, [ref]$uri) -or
+        $uri.Scheme -ne 'https' -or
+        [string]::IsNullOrWhiteSpace($uri.Host) -or
+        -not [string]::IsNullOrEmpty($uri.UserInfo) -or
+        -not [string]::IsNullOrEmpty($uri.Query) -or
+        -not [string]::IsNullOrEmpty($uri.Fragment)
+    ) {
+        throw "$Label URL은 인증정보·query·fragment가 없는 HTTPS 주소여야 합니다."
+    }
+    return $uri.AbsoluteUri
+}
+
+function Resolve-GitBranch {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    $branch = $Value.Trim()
+    if (
+        $branch -notmatch '^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$' -or
+        $branch.Contains('..') -or
+        $branch.Contains('//') -or
+        $branch.Contains('@{') -or
+        $branch.EndsWith('.') -or
+        $branch.EndsWith('/')
+    ) {
+        throw 'Source Repository 기본 브랜치가 올바르지 않습니다.'
+    }
+    return $branch
+}
+
 $isPortable = $inputModel.mode -eq 'portable'
 $lifecycleReason = if ($null -eq $inputModel.PSObject.Properties['lifecycleReason']) { 'startup' } else { [string]$inputModel.lifecycleReason }
 $releaseNotes = if ($null -eq $inputModel.PSObject.Properties['releaseNotes']) {
@@ -232,6 +271,11 @@ $settingsTab = New-Object System.Windows.Forms.TabPage
 $settingsTab.Text = '설정'
 $settingsTab.BackColor = [System.Drawing.Color]::White
 $tabControl.TabPages.Add($settingsTab)
+
+$systemTab = New-Object System.Windows.Forms.TabPage
+$systemTab.Text = '시스템'
+$systemTab.BackColor = [System.Drawing.Color]::White
+$tabControl.TabPages.Add($systemTab)
 
 $appearanceTab = New-Object System.Windows.Forms.TabPage
 $appearanceTab.Text = '화면'
@@ -481,6 +525,92 @@ foreach ($control in $settingsControls) {
     $control.Top -= 80
     $settingsTab.Controls.Add($control)
 }
+
+$repositoryGroup = New-Object System.Windows.Forms.GroupBox
+$repositoryGroup.Text = '저장소 기준'
+$repositoryGroup.Location = New-Object System.Drawing.Point(18, 18)
+$repositoryGroup.Size = New-Object System.Drawing.Size(674, 310)
+$systemTab.Controls.Add($repositoryGroup)
+
+$sourceRepositoryLabel = New-Object System.Windows.Forms.Label
+$sourceRepositoryLabel.Text = 'Source Repository · 개발 패키지 소스와 변경 이력'
+$sourceRepositoryLabel.AutoSize = $true
+$sourceRepositoryLabel.Location = New-Object System.Drawing.Point(16, 30)
+$repositoryGroup.Controls.Add($sourceRepositoryLabel)
+
+$sourceRepositoryTextBox = New-Object System.Windows.Forms.TextBox
+$sourceRepositoryTextBox.Text = [string]$inputModel.settings.repositories.source.url
+$sourceRepositoryTextBox.Location = New-Object System.Drawing.Point(18, 53)
+$sourceRepositoryTextBox.Size = New-Object System.Drawing.Size(626, 27)
+$repositoryGroup.Controls.Add($sourceRepositoryTextBox)
+
+$sourceBranchLabel = New-Object System.Windows.Forms.Label
+$sourceBranchLabel.Text = '기본 브랜치'
+$sourceBranchLabel.AutoSize = $true
+$sourceBranchLabel.Location = New-Object System.Drawing.Point(16, 92)
+$repositoryGroup.Controls.Add($sourceBranchLabel)
+
+$sourceBranchTextBox = New-Object System.Windows.Forms.TextBox
+$sourceBranchTextBox.Text = [string]$inputModel.settings.repositories.source.defaultBranch
+$sourceBranchTextBox.Location = New-Object System.Drawing.Point(18, 115)
+$sourceBranchTextBox.Size = New-Object System.Drawing.Size(220, 27)
+$repositoryGroup.Controls.Add($sourceBranchTextBox)
+
+$sourceRepositoryStatusLabel = New-Object System.Windows.Forms.Label
+$sourceRepositoryStatusLabel.Text = '구성됨 · Client Runtime은 Source Repository의 브랜치나 소스를 직접 실행하지 않습니다.'
+$sourceRepositoryStatusLabel.AutoEllipsis = $true
+$sourceRepositoryStatusLabel.ForeColor = [System.Drawing.Color]::DimGray
+$sourceRepositoryStatusLabel.Location = New-Object System.Drawing.Point(260, 115)
+$sourceRepositoryStatusLabel.Size = New-Object System.Drawing.Size(384, 44)
+$repositoryGroup.Controls.Add($sourceRepositoryStatusLabel)
+
+$distributionRepositoryLabel = New-Object System.Windows.Forms.Label
+$distributionRepositoryLabel.Text = 'Distribution Repository · 검증된 Package와 manifest 게시 위치'
+$distributionRepositoryLabel.AutoSize = $true
+$distributionRepositoryLabel.Location = New-Object System.Drawing.Point(16, 172)
+$repositoryGroup.Controls.Add($distributionRepositoryLabel)
+
+$distributionRepositoryTextBox = New-Object System.Windows.Forms.TextBox
+$distributionRepositoryTextBox.Text = [string]$inputModel.settings.repositories.distribution.url
+$distributionRepositoryTextBox.Location = New-Object System.Drawing.Point(18, 195)
+$distributionRepositoryTextBox.Size = New-Object System.Drawing.Size(626, 27)
+$repositoryGroup.Controls.Add($distributionRepositoryTextBox)
+
+$distributionRepositoryStatusLabel = New-Object System.Windows.Forms.Label
+$distributionRepositoryStatusLabel.Text = '구성됨 · 현재 배포 위치를 기록하며 자동 다운로드와 활성 버전 전환은 아직 TARGET입니다.'
+$distributionRepositoryStatusLabel.AutoEllipsis = $true
+$distributionRepositoryStatusLabel.ForeColor = [System.Drawing.Color]::DarkGoldenrod
+$distributionRepositoryStatusLabel.Location = New-Object System.Drawing.Point(18, 234)
+$distributionRepositoryStatusLabel.Size = New-Object System.Drawing.Size(626, 44)
+$repositoryGroup.Controls.Add($distributionRepositoryStatusLabel)
+
+$updateGroup = New-Object System.Windows.Forms.GroupBox
+$updateGroup.Text = 'Update Channel'
+$updateGroup.Location = New-Object System.Drawing.Point(18, 344)
+$updateGroup.Size = New-Object System.Drawing.Size(674, 140)
+$systemTab.Controls.Add($updateGroup)
+
+$updateChannelLabel = New-Object System.Windows.Forms.Label
+$updateChannelLabel.Text = '추적할 배포 채널'
+$updateChannelLabel.AutoSize = $true
+$updateChannelLabel.Location = New-Object System.Drawing.Point(16, 30)
+$updateGroup.Controls.Add($updateChannelLabel)
+
+$updateChannelComboBox = New-Object System.Windows.Forms.ComboBox
+$updateChannelComboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+$updateChannelComboBox.Items.AddRange(@('stable', 'beta', 'dev'))
+$updateChannelComboBox.SelectedItem = [string]$inputModel.settings.update.channel
+$updateChannelComboBox.Location = New-Object System.Drawing.Point(18, 53)
+$updateChannelComboBox.Size = New-Object System.Drawing.Size(220, 27)
+$updateGroup.Controls.Add($updateChannelComboBox)
+
+$updateStatusLabel = New-Object System.Windows.Forms.Label
+$updateStatusLabel.Text = '설정값만 저장합니다. signed manifest 확인·버전별 설치·활성 포인터 전환·롤백은 updater 구현 뒤 사용합니다.'
+$updateStatusLabel.AutoEllipsis = $true
+$updateStatusLabel.ForeColor = [System.Drawing.Color]::DarkGoldenrod
+$updateStatusLabel.Location = New-Object System.Drawing.Point(260, 49)
+$updateStatusLabel.Size = New-Object System.Drawing.Size(384, 62)
+$updateGroup.Controls.Add($updateStatusLabel)
 
 $fontGroup = New-Object System.Windows.Forms.GroupBox
 $fontGroup.Text = 'Client Runtime 자체 글꼴'
@@ -770,12 +900,18 @@ $startButton.Add_Click({
         if ($modelComboBox.Text -notmatch '^gpt-[A-Za-z0-9._-]+$') {
             throw 'OpenAI 모델 이름이 올바르지 않습니다.'
         }
+        $sourceRepositoryTextBox.Text = Resolve-HttpsConfigUrl -Value $sourceRepositoryTextBox.Text -Label 'Source Repository'
+        $sourceBranchTextBox.Text = Resolve-GitBranch -Value $sourceBranchTextBox.Text
+        $distributionRepositoryTextBox.Text = Resolve-HttpsConfigUrl -Value $distributionRepositoryTextBox.Text -Label 'Distribution Repository'
+        if ($null -eq $updateChannelComboBox.SelectedItem) {
+            throw 'Update Channel을 선택해야 합니다.'
+        }
         $script:resultAction = 'start'
         $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
         $form.Close()
     }
     catch {
-        [System.Windows.Forms.MessageBox]::Show($form, $_.Exception.Message, '데이터 폴더를 사용할 수 없습니다.', 'OK', 'Warning') | Out-Null
+        [System.Windows.Forms.MessageBox]::Show($form, $_.Exception.Message, '공필 설정을 저장할 수 없습니다.', 'OK', 'Warning') | Out-Null
     }
 })
 $form.AcceptButton = $startButton
@@ -844,6 +980,20 @@ $outputModel = [ordered]@{
     codexModel = $codexModelComboBox.Text
     openAiEnvFile = $apiTextBox.Text
     openAiModel = $modelComboBox.Text
+    repositories = [ordered]@{
+        source = [ordered]@{
+            type = 'git'
+            url = $sourceRepositoryTextBox.Text
+            defaultBranch = $sourceBranchTextBox.Text
+        }
+        distribution = [ordered]@{
+            type = 'github-releases'
+            url = $distributionRepositoryTextBox.Text
+        }
+    }
+    update = [ordered]@{
+        channel = [string]$updateChannelComboBox.SelectedItem
+    }
     appearance = [ordered]@{
         baselineDpi = 96
         fontRoot = $fontRootTextBox.Text

@@ -17,6 +17,23 @@ export const GONGPIL_CLIENT_APPEARANCE_DEFAULTS = Object.freeze({
 
 export const GONGPIL_CLIENT_APPEARANCE_SEED_FILE = "client-settings-seed.json";
 
+export const GONGPIL_SYSTEM_CONFIG_DEFAULTS = Object.freeze({
+  repositories: Object.freeze({
+    source: Object.freeze({
+      type: "git" as const,
+      url: "https://github.com/clearsky3411/gongpill-remote-repo.git",
+      defaultBranch: "main",
+    }),
+    distribution: Object.freeze({
+      type: "github-releases" as const,
+      url: "https://github.com/clearsky3411/gongpill-remote-repo/releases",
+    }),
+  }),
+  update: Object.freeze({
+    channel: "dev" as const,
+  }),
+});
+
 export interface GongpilClientAppearanceSettings {
   baselineDpi: 96;
   fontRoot: string;
@@ -26,6 +43,26 @@ export interface GongpilClientAppearanceSettings {
   uiScalePercent: number;
   windowWidthDip: number;
   windowHeightDip: number;
+}
+
+export interface GongpilSourceRepositorySettings {
+  type: "git";
+  url: string;
+  defaultBranch: string;
+}
+
+export interface GongpilDistributionRepositorySettings {
+  type: "github-releases";
+  url: string;
+}
+
+export interface GongpilRepositorySettings {
+  source: GongpilSourceRepositorySettings;
+  distribution: GongpilDistributionRepositorySettings;
+}
+
+export interface GongpilUpdateSettings {
+  channel: "stable" | "beta" | "dev";
 }
 
 export interface GongpilClientSettings {
@@ -38,6 +75,8 @@ export interface GongpilClientSettings {
   openAiEnvFile?: string;
   openAiModel: string;
   appearance: GongpilClientAppearanceSettings;
+  repositories: GongpilRepositorySettings;
+  update: GongpilUpdateSettings;
 }
 
 export interface GongpilClientSettingsContext {
@@ -62,7 +101,10 @@ export async function LoadClientSettings(
   try {
     const parsedSettings = JSON.parse(RemoveByteOrderMark(await readFile(settingsPath, "utf8")));
     const settings = NormalizeClientSettings(parsedSettings, context);
-    if (ReadSchemaVersion(parsedSettings) === 1) {
+    if (
+      ReadSchemaVersion(parsedSettings) === 1
+      || NeedsSystemConfigUpgrade(parsedSettings)
+    ) {
       await SaveClientSettings(context, settings);
     }
     return { settings, settingsPath, isFirstRun: false };
@@ -164,6 +206,8 @@ function CreateDefaultClientSettings(context: GongpilClientSettingsContext): Gon
     codexModel: "gpt-5.6-terra",
     openAiModel: "gpt-5.6-terra",
     appearance: CreateDefaultAppearanceSettings(context),
+    repositories: CreateDefaultRepositorySettings(),
+    update: CreateDefaultUpdateSettings(),
   };
 }
 
@@ -205,7 +249,71 @@ function NormalizeClientSettings(
     appearance: schemaVersion === 1
       ? CreateDefaultAppearanceSettings(context)
       : NormalizeAppearanceSettings(candidate.appearance, context),
+    repositories: NormalizeRepositorySettings(candidate.repositories),
+    update: NormalizeUpdateSettings(candidate.update),
   };
+}
+
+function CreateDefaultRepositorySettings(): GongpilRepositorySettings {
+  return {
+    source: { ...GONGPIL_SYSTEM_CONFIG_DEFAULTS.repositories.source },
+    distribution: { ...GONGPIL_SYSTEM_CONFIG_DEFAULTS.repositories.distribution },
+  };
+}
+
+function CreateDefaultUpdateSettings(): GongpilUpdateSettings {
+  return { ...GONGPIL_SYSTEM_CONFIG_DEFAULTS.update };
+}
+
+function NormalizeRepositorySettings(value: unknown): GongpilRepositorySettings {
+  if (value === undefined) {
+    return CreateDefaultRepositorySettings();
+  }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("저장소 설정 형식이 올바르지 않습니다.");
+  }
+  const repositories = value as Readonly<Record<string, unknown>>;
+  const source = repositories.source;
+  const distribution = repositories.distribution;
+  if (typeof source !== "object" || source === null || Array.isArray(source)) {
+    throw new Error("Source Repository 설정 형식이 올바르지 않습니다.");
+  }
+  if (typeof distribution !== "object" || distribution === null || Array.isArray(distribution)) {
+    throw new Error("Distribution Repository 설정 형식이 올바르지 않습니다.");
+  }
+  const sourceSettings = source as Readonly<Record<string, unknown>>;
+  const distributionSettings = distribution as Readonly<Record<string, unknown>>;
+  if (sourceSettings.type !== "git") {
+    throw new Error("Source Repository 종류가 올바르지 않습니다.");
+  }
+  if (distributionSettings.type !== "github-releases") {
+    throw new Error("Distribution Repository 종류가 올바르지 않습니다.");
+  }
+  return {
+    source: {
+      type: "git",
+      url: NormalizeHttpsUrl(sourceSettings.url, "Source Repository"),
+      defaultBranch: NormalizeGitBranch(sourceSettings.defaultBranch),
+    },
+    distribution: {
+      type: "github-releases",
+      url: NormalizeHttpsUrl(distributionSettings.url, "Distribution Repository"),
+    },
+  };
+}
+
+function NormalizeUpdateSettings(value: unknown): GongpilUpdateSettings {
+  if (value === undefined) {
+    return CreateDefaultUpdateSettings();
+  }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Update Channel 설정 형식이 올바르지 않습니다.");
+  }
+  const channel = (value as Readonly<Record<string, unknown>>).channel;
+  if (channel !== "stable" && channel !== "beta" && channel !== "dev") {
+    throw new Error("Update Channel은 stable, beta 또는 dev여야 합니다.");
+  }
+  return { channel };
 }
 
 function NormalizeAppearanceSettings(
@@ -377,6 +485,14 @@ function ReadSchemaVersion(value: unknown): number | undefined {
   return typeof schemaVersion === "number" ? schemaVersion : undefined;
 }
 
+function NeedsSystemConfigUpgrade(value: unknown): boolean {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const settings = value as Readonly<Record<string, unknown>>;
+  return settings.repositories === undefined || settings.update === undefined;
+}
+
 function NormalizeOptionalAbsolutePath(value: unknown, name: string): string | undefined {
   if (value === undefined || value === null || value === "") {
     return undefined;
@@ -403,6 +519,45 @@ function NormalizeModel(value: unknown, label: string): string {
     throw new Error(`${label} 모델 이름이 올바르지 않습니다.`);
   }
   return model;
+}
+
+function NormalizeHttpsUrl(value: unknown, label: string): string {
+  if (typeof value !== "string" || value.length > 2048) {
+    throw new Error(`${label} URL이 올바르지 않습니다.`);
+  }
+  let url: URL;
+  try {
+    url = new URL(value.trim());
+  }
+  catch {
+    throw new Error(`${label} URL이 올바르지 않습니다.`);
+  }
+  if (
+    url.protocol !== "https:"
+    || url.hostname.length === 0
+    || url.username.length > 0
+    || url.password.length > 0
+    || url.search.length > 0
+    || url.hash.length > 0
+  ) {
+    throw new Error(`${label} URL은 인증정보·query·fragment가 없는 HTTPS 주소여야 합니다.`);
+  }
+  return url.toString();
+}
+
+function NormalizeGitBranch(value: unknown): string {
+  if (
+    typeof value !== "string"
+    || !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/.test(value)
+    || value.includes("..")
+    || value.includes("//")
+    || value.includes("@{")
+    || value.endsWith(".")
+    || value.endsWith("/")
+  ) {
+    throw new Error("Source Repository 기본 브랜치가 올바르지 않습니다.");
+  }
+  return value;
 }
 
 function NormalizeFontId(value: unknown, label: string): string {

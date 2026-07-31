@@ -7,6 +7,7 @@ import test from "node:test";
 
 import {
   GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
+  GONGPIL_SYSTEM_CONFIG_DEFAULTS,
   LoadClientSettings,
   ResolveClientAppearanceSeedPath,
   ResolveClientFontRoot,
@@ -50,14 +51,18 @@ test("Client Package 릴리스 정보가 버전·가능 기능·패치노트를 
   }
 });
 
-test("Windows 접속기 UI가 홈·설정·정보와 Runtime 상태를 구분한다", async () => {
+test("Windows 접속기 UI가 홈·설정·시스템·정보와 Runtime 상태를 구분한다", async () => {
   const script = await readFile(join(APP_ROOT, "client", "windows", "GongpilConnector.ps1"), "utf8");
   assert.match(script, /\$homeTab\.Text = '홈'/);
   assert.match(script, /\$settingsTab\.Text = '설정'/);
+  assert.match(script, /\$systemTab\.Text = '시스템'/);
   assert.match(script, /\$infoTab\.Text = '정보'/);
   assert.match(script, /Client Runtime 실행 중/);
   assert.match(script, /지금 가능한 작업/);
   assert.match(script, /패치노트/);
+  assert.match(script, /Source Repository/);
+  assert.match(script, /Distribution Repository/);
+  assert.match(script, /자동 다운로드와 활성 버전 전환은 아직 TARGET/);
   assert.match(script, /\$appearanceTab\.Text = '화면'/);
   assert.match(script, /System\.Drawing\.Text\.PrivateFontCollection/);
   assert.match(script, /SetProcessDpiAwarenessContext/);
@@ -84,6 +89,8 @@ test("설치형 첫 실행은 기본 dataRoot와 접속기 표시 옵션을 준�
     assert.equal(loaded.settings.aiProvider, "codex");
     assert.equal(loaded.settings.codexModel, "gpt-5.6-terra");
     assert.equal(loaded.settings.openAiModel, "gpt-5.6-terra");
+    assert.deepEqual(loaded.settings.repositories, GONGPIL_SYSTEM_CONFIG_DEFAULTS.repositories);
+    assert.deepEqual(loaded.settings.update, GONGPIL_SYSTEM_CONFIG_DEFAULTS.update);
     assert.equal(loaded.settingsPath, join(context.settingsRoot, "client-settings.json"));
     assert.deepEqual(loaded.settings.appearance, {
       ...GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
@@ -158,6 +165,18 @@ test("설치형 사용자 경로와 시작 옵션을 원자 저장하고 다시 
         windowWidthDip: 900,
         windowHeightDip: 800,
       },
+      repositories: {
+        source: {
+          type: "git",
+          url: "https://github.com/example/gongpil-source.git",
+          defaultBranch: "develop",
+        },
+        distribution: {
+          type: "github-releases",
+          url: "https://github.com/example/gongpil-distribution/releases",
+        },
+      },
+      update: { channel: "beta" },
     });
     const loaded = await LoadClientSettings(context);
     assert.equal(loaded.isFirstRun, false);
@@ -179,7 +198,87 @@ test("설치형 사용자 경로와 시작 옵션을 원자 저장하고 다시 
         windowWidthDip: 900,
         windowHeightDip: 800,
       },
+      repositories: {
+        source: {
+          type: "git",
+          url: "https://github.com/example/gongpil-source.git",
+          defaultBranch: "develop",
+        },
+        distribution: {
+          type: "github-releases",
+          url: "https://github.com/example/gongpil-distribution/releases",
+        },
+      },
+      update: { channel: "beta" },
     });
+  }
+  finally {
+    await rm(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("기존 v2 설정은 저장소와 Update Channel을 같은 설정 파일에 보완한다", async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), "gongpil-system-config-upgrade-"));
+  try {
+    const context = {
+      mode: "installed" as const,
+      appRoot: join(testRoot, "program", "Gongpil"),
+      settingsRoot: join(testRoot, "settings"),
+    };
+    const settingsPath = ResolveClientSettingsPath(context);
+    const dataRoot = join(testRoot, "data");
+    await mkdir(context.settingsRoot, { recursive: true });
+    await writeFile(settingsPath, JSON.stringify({
+      schemaVersion: 2,
+      dataRoot,
+      showConnectorOnStartup: true,
+      aiProvider: "codex",
+      codexModel: "gpt-5.6-terra",
+      openAiModel: "gpt-5.6-terra",
+      appearance: {
+        ...GONGPIL_CLIENT_APPEARANCE_DEFAULTS,
+        fontRoot: join(context.settingsRoot, "fonts"),
+      },
+    }), "utf8");
+
+    const loaded = await LoadClientSettings(context);
+    assert.deepEqual(loaded.settings.repositories, GONGPIL_SYSTEM_CONFIG_DEFAULTS.repositories);
+    assert.deepEqual(loaded.settings.update, GONGPIL_SYSTEM_CONFIG_DEFAULTS.update);
+    const persisted = JSON.parse(await readFile(settingsPath, "utf8"));
+    assert.deepEqual(persisted.repositories, GONGPIL_SYSTEM_CONFIG_DEFAULTS.repositories);
+    assert.deepEqual(persisted.update, GONGPIL_SYSTEM_CONFIG_DEFAULTS.update);
+  }
+  finally {
+    await rm(testRoot, { recursive: true, force: true });
+  }
+});
+
+test("System Config는 안전하지 않은 저장소 URL과 알 수 없는 Update Channel을 거부한다", async () => {
+  const testRoot = await mkdtemp(join(tmpdir(), "gongpil-system-config-invalid-"));
+  try {
+    const context = {
+      mode: "installed" as const,
+      appRoot: join(testRoot, "program", "Gongpil"),
+      settingsRoot: join(testRoot, "settings"),
+    };
+    const defaults = (await LoadClientSettings(context)).settings;
+    await assert.rejects(
+      SaveClientSettings(context, {
+        ...defaults,
+        repositories: {
+          ...defaults.repositories,
+          source: { ...defaults.repositories.source, url: "http://example.com/repository.git" },
+        },
+      }),
+      /HTTPS 주소/,
+    );
+    await assert.rejects(
+      SaveClientSettings(context, {
+        ...defaults,
+        update: { channel: "nightly" },
+      }),
+      /stable, beta 또는 dev/,
+    );
   }
   finally {
     await rm(testRoot, { recursive: true, force: true });
@@ -425,6 +524,8 @@ test("Windows 접속기 스크립트가 설정 입력을 읽고 시작 응답을
       codexModel: "gpt-5.6-terra",
       openAiEnvFile: "",
       openAiModel: "gpt-5.6-terra",
+      repositories: settings.repositories,
+      update: settings.update,
       appearance,
     });
     const shownProbeOutputPath = join(testRoot, "shown-probe-output.json");
